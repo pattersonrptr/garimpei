@@ -16,6 +16,19 @@ alerts and discover opportunities.
 
 ---
 
+## Features
+
+- 🔎 **Multi-marketplace scraping** — OLX, Mercado Livre, Enjoei, Estante Virtual
+- 🎯 **Price alerts** — set a target price per product; get notified when it drops
+- 📬 **Email notifications** — via SendGrid, with rate limiting and dedup
+- ⏱️ **Scheduled & on-demand checks** — frequency-based scheduling + manual trigger
+- 📊 **Dashboard** — manage alerts, track history, discover opportunities
+- 👤 **Admin dashboard** — user and system management
+- 💳 **Freemium model** — plans, subscriptions and usage limits
+- 🧪 **Tested** — unit tests + Playwright E2E, CI on GitHub Actions
+
+---
+
 ## Quick Start
 
 ```bash
@@ -108,6 +121,15 @@ product-tracker/
 ├── .github/workflows/ci.yml
 └── PLAN.md           ← Reorganization plan
 ```
+
+---
+
+## Status & usage
+
+Active personal project, still evolving (already functional). Built as an
+educational/portfolio project for personal use — scraping targets public
+marketplace listings; respect each platform's Terms of Service before any
+non-personal use.
 
 ---
 
