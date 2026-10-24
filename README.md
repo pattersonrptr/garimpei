@@ -135,4 +135,8 @@ non-personal use.
 
 ## License
 
-MIT
+[GNU Affero General Public License v3.0](LICENSE) (AGPL-3.0-only).
+
+You may use, study, modify and share this code, but if you run a modified version as a
+network service, you must make its complete source code available under the same license.
+For commercial licensing under different terms, contact the author.
