@@ -2,11 +2,12 @@
 
 > Development name: `product-tracker`
 
-A price monitoring and opportunity detection system for Brazilian marketplace
-resellers. Automatically tracks product prices across multiple e-commerce
-platforms (OLX, Mercado Livre, Enjoei, Estante Virtual), sends email alerts
-when products drop below target prices, and provides a dashboard to manage
-alerts and discover opportunities.
+A price monitoring and opportunity detection system for Brazilian marketplaces.
+It tracks product prices across OLX, Mercado Livre, Enjoei and Estante Virtual,
+keeps the price history, sends email alerts when a product drops below a target
+price, and provides a dashboard to manage alerts and spot opportunities.
+
+<!-- Demo GIF goes here -->
 
 | Service | Tech | Directory |
 |---|---|---|
@@ -16,25 +17,111 @@ alerts and discover opportunities.
 
 ---
 
-## Features
+## The problem
 
-- 🔎 **Multi-marketplace scraping** — OLX, Mercado Livre, Enjoei, Estante Virtual
-- 🎯 **Price alerts** — set a target price per product; get notified when it drops
-- 📬 **Email notifications** — via SendGrid, with rate limiting and dedup
-- ⏱️ **Scheduled & on-demand checks** — frequency-based scheduling + manual trigger
-- 📊 **Dashboard** — manage alerts, track history, discover opportunities
-- 👤 **Admin dashboard** — user and system management
-- 💳 **Freemium model** — plans, subscriptions and usage limits
-- 🧪 **Tested** — unit tests + Playwright E2E, CI on GitHub Actions
+Good deals on second-hand and marketplace listings disappear fast, and checking
+several sites by hand every day doesn't scale. I started Garimpei for my own
+price research: I wanted one place that searches several marketplaces, remembers
+past prices so I can see how they change over time, and warns me when something
+shows up below the price I'm willing to pay.
+
+It was designed so it could grow into a service, similar to existing price
+aggregators, but today it is a personal project and has never been offered to the
+public. Adding a new marketplace means writing one new scraper; the rest of the
+system stays the same.
 
 ---
 
-## Quick Start
+## Features
+
+- 🔎 **Multi-marketplace scraping**: OLX, Mercado Livre, Enjoei, Estante Virtual
+- 🎯 **Price alerts**: set a target price; get notified when a product shows up at or below it
+- 📬 **Email notifications**: via SendGrid, with rate limiting and dedup
+- ⏱️ **Scheduled and on-demand checks**: frequency per alert, plus a manual trigger
+- 📊 **Dashboard**: manage alerts, follow price history, see opportunities
+- 👤 **Admin dashboard**: user and system management
+- 💳 **Freemium model**: plans, subscriptions and usage limits
+- 🧪 **Tested**: 900+ backend and scraper tests, frontend unit tests and Playwright E2E, CI on GitHub Actions
+
+---
+
+## Architecture
+
+```
+┌──────────┐       HTTP        ┌──────────┐       SQL        ┌──────────┐
+│ Frontend │ ───────────────▶  │ Backend  │ ───────────────▶  │ Postgres │
+│ (React)  │                   │ (FastAPI)│                   │          │
+└──────────┘                   └────┬─────┘                   └──────────┘
+                                    │ HTTP
+                               ┌────┴─────┐
+                               │ Scrapers │       broker      ┌──────────┐
+                               │ (Celery) │ ◀───────────────  │  Redis   │
+                               └──────────┘                   └──────────┘
+```
+
+**Alert flow:** the user creates a price alert, the scheduler queues the search,
+a scraper collects the listings and sends them to the backend, the backend
+compares each price with the active alerts and emails the user when a price is at
+or below the target, and the opportunity shows up on the dashboard.
+
+### Design decisions
+
+- **Scrapers talk to the backend only through its API, with no shared database.**
+  The backend owns the data and the business rules (alerts, limits,
+  notifications). Scrapers just collect and send. Letting the workers write
+  straight to the database would be simpler at first, but it would tie every
+  scraper to the schema and spread the rules across services. This way scrapers
+  can be scaled, replaced or added without touching the data layer.
+- **Clean architecture in the backend.** Entities and use cases don't depend on
+  FastAPI, SQLAlchemy or SendGrid; those live at the edges (`infrastructure/`,
+  `interfaces/`). Email, for example, goes through an interface with a SendGrid
+  implementation, so changing the provider doesn't touch the alert logic.
+- **Gentle scraping instead of fighting the anti-bot.** Mercado Livre blocks
+  scrapers based on IP reputation. Investigating it showed the block is
+  temporary and triggered by request frequency, not volume. So the scraper slows
+  down: delays with jitter between pages, URL shuffling and a fresh browser
+  context every few requests. It was validated on 492 products with zero blocks.
+  Residential proxy support stays available as a fallback. Details in
+  [`scrapers/MERCADO_LIVRE_NOTES.md`](scrapers/MERCADO_LIVRE_NOTES.md).
+- **Notifications with rate limiting and dedup.** At most one email per alert
+  per hour (configurable), and the same product doesn't trigger the same alert
+  twice, so a busy search doesn't flood the user's inbox.
+- **JSON:API for every endpoint**, so the frontend handles all resources the
+  same way.
+
+---
+
+## What this project taught me
+
+- Clean architecture in practice, while reading Uncle Bob's book: architectural
+  boundaries, pure entities, and seeing that SOLID applies to how services
+  relate to each other, not only to classes.
+- FastAPI from scratch. I had used Django and Flask before; this was the first
+  project I started from zero with FastAPI.
+- The front end, with React, Vite and TypeScript. I'm a backend engineer, but I
+  wanted to build the whole thing myself.
+
+---
+
+## Next steps
+
+- [ ] Move it to AWS, using the project to practice AWS services
+- [ ] Load testing: many users and many scrapers running at the same time
+- [ ] Run Celery workers on separate machines
+- [ ] Social login (Google)
+- [ ] More notification channels and a better front end
+- [ ] More scrapers (Shopee, Amazon BR)
+
+Full roadmap in [`ROADMAP.md`](ROADMAP.md).
+
+---
+
+## Quick start
 
 ```bash
 # Clone
-git clone https://github.com/pattersonrptr/product-tracker.git
-cd product-tracker
+git clone https://github.com/pattersonrptr/garimpei.git
+cd garimpei
 
 # Copy env file and adjust as needed
 cp .env.example .env
@@ -85,51 +172,26 @@ See the [`Makefile`](Makefile) for all available commands.
 
 ---
 
-## Architecture
+## Project structure
 
 ```
-┌──────────┐       HTTP        ┌──────────┐       SQL        ┌──────────┐
-│ Frontend │ ───────────────▶  │ Backend  │ ───────────────▶  │ Postgres │
-│ (React)  │                   │ (FastAPI)│                   │          │
-└──────────┘                   └────┬─────┘                   └──────────┘
-                                    │ HTTP
-                               ┌────┴─────┐
-                               │ Scrapers │       broker      ┌──────────┐
-                               │ (Celery) │ ◀───────────────  │  Redis   │
-                               └──────────┘                   └──────────┘
-```
-
-- **Frontend** consumes the backend REST API (JSON:API spec).
-- **Scrapers** are Celery workers that communicate with the backend
-  exclusively via HTTP — no shared database access.
-- **Backend** owns the database and exposes all data through the API.
-- **Alert flow:** User creates PriceAlert → system schedules scraping →
-  scraper finds products → backend evaluates prices → sends email notification
-  if price ≤ target → user sees opportunity on dashboard.
-
----
-
-## Project Structure
-
-```
-product-tracker/
+garimpei/
 ├── backend/          ← FastAPI application + database
 ├── scrapers/         ← Celery workers + web scraping engines
 ├── frontend/         ← React SPA
 ├── docker-compose.yml
 ├── Makefile
 ├── .github/workflows/ci.yml
-└── PLAN.md           ← Reorganization plan
+└── ROADMAP.md        ← Product roadmap
 ```
 
 ---
 
-## Status & usage
+## Status and usage
 
-Active personal project, still evolving (already functional). Built as an
-educational/portfolio project for personal use — scraping targets public
-marketplace listings; respect each platform's Terms of Service before any
-non-personal use.
+Active personal project, still evolving (already functional). Built for personal
+use and as a portfolio project. Scraping targets public marketplace listings;
+respect each platform's Terms of Service before any non-personal use.
 
 ---
 
