@@ -22,6 +22,8 @@ export default defineConfig({
 
   use: {
     baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:80',
+    // The UI follows the browser language; the specs assert English texts.
+    locale: 'en-US',
     headless,
     screenshot: 'only-on-failure',
     trace: 'on-first-retry',

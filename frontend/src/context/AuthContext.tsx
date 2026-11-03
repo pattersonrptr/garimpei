@@ -17,6 +17,7 @@ import React, {
 import { jwtDecode } from 'jwt-decode'
 import { useNavigate } from 'react-router-dom'
 import { useSnackbar } from 'notistack'
+import { useTranslation } from 'react-i18next'
 import { setOnSessionExpired, setOnTokenUpdated } from '@/api/client'
 import { login as loginService, logout as logoutService } from '@/services/authService'
 import { logger } from '@/lib/logger'
@@ -50,6 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   )
   const navigate = useNavigate()
   const { enqueueSnackbar } = useSnackbar()
+  const { t } = useTranslation('auth')
   const sessionExpiredRef = useRef(false)
 
   // Decode JWT claims reactively — no extra state needed
@@ -69,11 +71,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       sessionExpiredRef.current = true
       localStorage.removeItem('token')
       setToken(null)
-      enqueueSnackbar(message, { variant: 'error' })
+      // The API client's message is English-only; show the translated one
+      enqueueSnackbar(t('session.expired'), { variant: 'error' })
       navigate('/login')
       logger.warn('Session expired', { message })
     },
-    [navigate, enqueueSnackbar],
+    [navigate, enqueueSnackbar, t],
   )
 
   const handleTokenUpdated = useCallback(() => {
@@ -91,10 +94,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const auth = await loginService(username, password)
       setToken(auth.accessToken)
       sessionExpiredRef.current = false
-      enqueueSnackbar('Login successful!', { variant: 'success' })
+      enqueueSnackbar(t('session.loggedIn'), { variant: 'success' })
       navigate('/')
     },
-    [navigate, enqueueSnackbar],
+    [navigate, enqueueSnackbar, t],
   )
 
   return (

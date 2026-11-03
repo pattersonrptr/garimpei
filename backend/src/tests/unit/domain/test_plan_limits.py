@@ -1,14 +1,14 @@
 """
 Unit tests for plan limits domain logic.
 
-Tests PlanLimits checks: alert limit, frequency limit, source limit.
+Tests the PlanLimits checks exposed at the HTTP edge (JSON:API errors):
+alert limit, frequency limit, source limit.
 """
 
 from unittest.mock import MagicMock
 
-from src.app.domain.plan_limits import (
-    FREE_PLAN_DEFAULTS,
-    PlanLimits,
+from src.app.domain.plan_limits import FREE_PLAN_DEFAULTS, PlanLimits
+from src.app.interfaces.http.plan_limits import (
     check_alert_limit,
     check_frequency_limit,
     check_source_limit,

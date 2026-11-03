@@ -1,0 +1,52 @@
+{
+  "title": "Produtos",
+  "opportunity": "🎯 Oportunidade",
+  "fields": {
+    "title": "Título",
+    "url": "URL",
+    "condition": "Condição",
+    "available": "Disponível",
+    "seller": "Vendedor",
+    "description": "Descrição",
+    "currentPrice": "Preço atual"
+  },
+  "condition": {
+    "new": "Novo",
+    "used": "Usado",
+    "refurbished": "Recondicionado",
+    "undetermined": "Não informado"
+  },
+  "deleteSelected": "Excluir selecionados ({{count}})",
+  "empty": {
+    "title": "Nenhum produto encontrado",
+    "body": "Os produtos aparecem aqui quando seus alertas encontram resultados nos marketplaces."
+  },
+  "toast": {
+    "deleted": "Produto excluído",
+    "deleteFailed": "Não foi possível excluir o produto",
+    "bulkDeleted_one": "{{count}} produto excluído",
+    "bulkDeleted_other": "{{count}} produtos excluídos",
+    "bulkDeleteFailed": "Não foi possível excluir alguns produtos",
+    "updated": "Produto atualizado",
+    "updateFailed": "Não foi possível atualizar o produto"
+  },
+  "dialogs": {
+    "editTitle": "Editar produto — {{title}}",
+    "deleteTitle": "Excluir produto",
+    "deleteMessage": "Tem certeza de que quer excluir este produto?",
+    "bulkDeleteTitle": "Excluir produtos",
+    "bulkDeleteMessage_one": "Tem certeza de que quer excluir {{count}} produto?",
+    "bulkDeleteMessage_other": "Tem certeza de que quer excluir {{count}} produtos?"
+  },
+  "detail": {
+    "back": "Voltar para produtos",
+    "notFound": "Produto não encontrado.",
+    "availability": "Disponibilidade",
+    "available": "Disponível",
+    "unavailable": "Indisponível",
+    "sourceUrl": "Link do anúncio",
+    "priceHistory": "Histórico de preços",
+    "price": "Preço",
+    "noHistory": "Ainda não há histórico de preços para este produto."
+  }
+}

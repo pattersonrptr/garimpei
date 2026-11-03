@@ -15,6 +15,7 @@ from src.app.infrastructure.database.models.search_execution_log_model import (
 )
 from src.app.infrastructure.database.models.source_website_model import SourceWebsite
 from src.app.infrastructure.database.models.user_model import User
+from src.app.infrastructure.database.text_match import title_contains
 from src.app.infrastructure.database_config import get_db
 from src.app.security.auth import get_current_superuser
 
@@ -134,7 +135,7 @@ def cleanup_orphaned_products(
         .filter(
             PriceAlert.is_active.is_(True),
             PriceAlert.deleted_at.is_(None),
-            Product.title.ilike(func.concat("%", PriceAlert.search_term, "%")),
+            title_contains(Product.title, PriceAlert.search_term),
         )
         .distinct()
         .subquery()

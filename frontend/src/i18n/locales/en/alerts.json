@@ -1,0 +1,58 @@
+{
+  "title": "My Alerts",
+  "new": "New Alert",
+  "fields": {
+    "searchTerm": "Search term (keyword)",
+    "maxPrice": "Max price",
+    "frequency": "Check frequency (minutes)",
+    "sources": "Source websites",
+    "active": "Active"
+  },
+  "columns": {
+    "keyword": "Keyword",
+    "maxPrice": "Max Price",
+    "status": "Status",
+    "sources": "Sources",
+    "frequency": "Frequency",
+    "lastCheck": "Last Check",
+    "actions": "Actions"
+  },
+  "runNow": {
+    "run": "Run now",
+    "running": "Searching…",
+    "inactive": "Activate the alert first",
+    "noConfig": "No search config linked to this alert",
+    "triggered": "Search triggered! Scraping in progress…",
+    "done_one": "Search complete — {{count}} result",
+    "done_other": "Search complete — {{count}} results",
+    "failed": "Search failed: {{error}}",
+    "alreadyRunning": "Search is already running",
+    "triggerFailed": "Failed to trigger search"
+  },
+  "toast": {
+    "created": "Alert created!",
+    "createFailed": "Failed to create alert",
+    "updated": "Alert updated!",
+    "updateFailed": "Failed to update alert",
+    "paused": "Alert paused",
+    "resumed": "Alert resumed",
+    "deleted": "Alert deleted",
+    "deleteFailed": "Failed to delete alert",
+    "bulkDeleted_one": "{{count}} alert deleted",
+    "bulkDeleted_other": "{{count}} alerts deleted",
+    "bulkDeleteFailed": "Some deletions failed"
+  },
+  "empty": {
+    "title": "No alerts yet",
+    "body": "Create your first alert by clicking \"{{button}}\" above."
+  },
+  "dialogs": {
+    "createTitle": "Create Alert",
+    "editTitle": "Edit Alert",
+    "deleteTitle": "Delete Alert",
+    "deleteMessage": "Are you sure you want to delete this alert?",
+    "bulkDeleteTitle": "Delete Selected Alerts",
+    "bulkDeleteMessage_one": "Delete {{count}} alert?",
+    "bulkDeleteMessage_other": "Delete {{count}} alerts?"
+  }
+}

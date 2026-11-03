@@ -12,31 +12,22 @@ import Grid from '@mui/material/Grid'
 import Paper from '@mui/material/Paper'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
+import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 
 const features = [
+  { key: 'track', icon: <SearchIcon sx={{ fontSize: 40 }} color="primary" /> },
   {
-    icon: <SearchIcon sx={{ fontSize: 40 }} color="primary" />,
-    title: 'Monitore Preços',
-    description:
-      'Acompanhe preços em OLX, Mercado Livre, Enjoei e Estante Virtual automaticamente.',
-  },
-  {
+    key: 'alerts',
     icon: <NotificationsActiveIcon sx={{ fontSize: 40 }} color="primary" />,
-    title: 'Receba Alertas',
-    description:
-      'Defina um preço máximo e receba um e-mail quando encontrarmos uma oportunidade.',
   },
-  {
-    icon: <TrendingDownIcon sx={{ fontSize: 40 }} color="primary" />,
-    title: 'Encontre Oportunidades',
-    description:
-      'Veja os melhores achados no seu dashboard e garanta antes dos outros.',
-  },
-]
+  { key: 'deals', icon: <TrendingDownIcon sx={{ fontSize: 40 }} color="primary" /> },
+] as const
 
 export function LandingPage() {
   const navigate = useNavigate()
+  const { t } = useTranslation('landing')
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
@@ -47,8 +38,12 @@ export function LandingPage() {
           color: 'white',
           py: { xs: 8, md: 12 },
           px: 2,
+          position: 'relative',
         }}
       >
+        <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
+          <LanguageSwitcher />
+        </Box>
         <Container maxWidth="md">
           <Typography
             variant="h2"
@@ -67,8 +62,7 @@ export function LandingPage() {
               maxWidth: 600,
             }}
           >
-            Encontre as melhores oportunidades nos marketplaces brasileiros.
-            Monitoramento automático de preços com alertas por e-mail.
+            {t('hero.tagline')}
           </Typography>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <Button
@@ -83,7 +77,7 @@ export function LandingPage() {
                 '&:hover': { bgcolor: 'grey.100' },
               }}
             >
-              Criar conta grátis
+              {t('hero.signUp')}
             </Button>
             <Button
               variant="outlined"
@@ -100,7 +94,7 @@ export function LandingPage() {
                 },
               }}
             >
-              Entrar
+              {t('hero.signIn')}
             </Button>
           </Stack>
         </Container>
@@ -115,7 +109,7 @@ export function LandingPage() {
           gutterBottom
           sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }}
         >
-          Como funciona
+          {t('howItWorks.title')}
         </Typography>
         <Typography
           variant="body1"
@@ -123,12 +117,12 @@ export function LandingPage() {
           textAlign="center"
           sx={{ mb: 6, maxWidth: 500, mx: 'auto' }}
         >
-          Configure alertas de preço e deixe o Garimpei fazer o trabalho pesado.
+          {t('howItWorks.subtitle')}
         </Typography>
 
         <Grid container spacing={4}>
           {features.map((f) => (
-            <Grid size={{ xs: 12, md: 4 }} key={f.title}>
+            <Grid size={{ xs: 12, md: 4 }} key={f.key}>
               <Paper
                 elevation={0}
                 sx={{
@@ -142,10 +136,10 @@ export function LandingPage() {
               >
                 <Box sx={{ mb: 2 }}>{f.icon}</Box>
                 <Typography variant="h6" fontWeight={600} gutterBottom>
-                  {f.title}
+                  {t(`features.${f.key}.title`)}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {f.description}
+                  {t(`features.${f.key}.description`)}
                 </Typography>
               </Paper>
             </Grid>
@@ -162,11 +156,10 @@ export function LandingPage() {
             gutterBottom
             sx={{ fontSize: { xs: '1.3rem', md: '1.5rem' } }}
           >
-            Pronto para garimpar?
+            {t('cta.title')}
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            Crie sua conta grátis e configure seu primeiro alerta em menos de 1
-            minuto.
+            {t('cta.subtitle')}
           </Typography>
           <Button
             variant="contained"
@@ -174,7 +167,7 @@ export function LandingPage() {
             onClick={() => navigate('/register')}
             sx={{ fontWeight: 700, px: 5 }}
           >
-            Começar agora
+            {t('cta.button')}
           </Button>
         </Container>
       </Box>
@@ -182,8 +175,7 @@ export function LandingPage() {
       {/* Footer */}
       <Box sx={{ py: 3, textAlign: 'center' }}>
         <Typography variant="caption" color="text.secondary">
-          Garimpei © {new Date().getFullYear()} — Monitoramento de preços para
-          revendedores
+          Garimpei © {new Date().getFullYear()} — {t('footer')}
         </Typography>
       </Box>
     </Box>

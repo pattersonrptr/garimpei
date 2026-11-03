@@ -17,11 +17,14 @@ import Typography from '@mui/material/Typography'
 import { useState } from 'react'
 import { Link as RouterLink } from 'react-router-dom'
 import { useSnackbar } from 'notistack'
+import { useTranslation } from 'react-i18next'
+import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 import { useAuth } from '@/context/AuthContext'
 import { logger } from '@/lib/logger'
 
 export function LoginPage() {
   const { login } = useAuth()
+  const { t } = useTranslation('auth')
   const { enqueueSnackbar } = useSnackbar()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -31,7 +34,7 @@ export function LoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!username || !password) {
-      enqueueSnackbar('Please enter username and password', { variant: 'warning' })
+      enqueueSnackbar(t('login.missingFields'), { variant: 'warning' })
       return
     }
     setLoading(true)
@@ -39,7 +42,7 @@ export function LoginPage() {
       await login(username, password)
     } catch (err) {
       logger.error('Login failed', { username }, err)
-      enqueueSnackbar('Invalid username or password', { variant: 'error' })
+      enqueueSnackbar(t('login.invalidCredentials'), { variant: 'error' })
     } finally {
       setLoading(false)
     }
@@ -53,8 +56,12 @@ export function LoginPage() {
         alignItems: 'center',
         justifyContent: 'center',
         bgcolor: 'background.default',
+        position: 'relative',
       }}
     >
+      <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
+        <LanguageSwitcher color="primary" />
+      </Box>
       <Paper sx={{ p: 4, width: '100%', maxWidth: 400 }}>
         <Typography variant="h5" fontWeight={700} gutterBottom textAlign="center">
           🏴‍☠️ Garimpei
@@ -65,12 +72,12 @@ export function LoginPage() {
           textAlign="center"
           mb={3}
         >
-          Entrar na sua conta
+          {t('login.subtitle')}
         </Typography>
 
         <Box component="form" onSubmit={handleSubmit} noValidate>
           <TextField
-            label="Username"
+            label={t('fields.username')}
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             fullWidth
@@ -80,7 +87,7 @@ export function LoginPage() {
             disabled={loading}
           />
           <TextField
-            label="Password"
+            label={t('fields.password')}
             type={showPassword ? 'text' : 'password'}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -94,7 +101,7 @@ export function LoginPage() {
                   <IconButton
                     onClick={() => setShowPassword((v) => !v)}
                     edge="end"
-                    aria-label="toggle password visibility"
+                    aria-label={t('fields.togglePassword')}
                   >
                     {showPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
@@ -109,15 +116,15 @@ export function LoginPage() {
             sx={{ mt: 2 }}
             disabled={loading}
           >
-            {loading ? <CircularProgress size={22} color="inherit" /> : 'Sign In'}
+            {loading ? <CircularProgress size={22} color="inherit" /> : t('login.submit')}
           </Button>
 
           <Divider sx={{ my: 2 }} />
 
           <Typography variant="body2" textAlign="center" color="text.secondary">
-            Don&apos;t have an account?{' '}
+            {t('login.noAccount')}{' '}
             <Link component={RouterLink} to="/register">
-              Create account
+              {t('login.createAccount')}
             </Link>
           </Typography>
         </Box>

@@ -11,12 +11,18 @@ services:
     depends_on:
       - db
       - redis
+      - mailpit
     environment:
       - DATABASE_URL=postgresql://user:password@db:5432/price_monitor
       - PYTHONPATH=/src
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_WORKER_USERNAME=celery_user
       - CELERY_WORKER_PASSWORD=celery_user_password
+      # Email: Mailpit (local inbox at http://localhost:8026) by default;
+      # set EMAIL_BACKEND=sendgrid + SENDGRID_API_KEY to send real emails.
+      - EMAIL_BACKEND=${EMAIL_BACKEND:-smtp}
+      - SMTP_HOST=${SMTP_HOST:-mailpit}
+      - SMTP_PORT=${SMTP_PORT:-1025}
       - SENDGRID_API_KEY=${SENDGRID_API_KEY:-}
       - FROM_EMAIL=${FROM_EMAIL:-noreply@garimpei.com}
       - NOTIFICATION_FROM_NAME=${NOTIFICATION_FROM_NAME:-Garimpei}
@@ -116,6 +122,13 @@ services:
       - pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+
+  # ── Mailpit (local email inbox for development) ─────────────────────────
+  mailpit:
+    image: axllent/mailpit:v1.27.0
+    container_name: mailpit
+    ports:
+      - "${MAILPIT_UI_PORT:-8026}:8025" # web UI; SMTP (1025) stays inside the compose network
 
   # ── Redis ────────────────────────────────────────────────────────────────
   redis:

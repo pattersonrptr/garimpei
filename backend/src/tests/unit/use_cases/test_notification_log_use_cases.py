@@ -12,7 +12,7 @@ from src.app.entities.price_alert import PriceAlert as PriceAlertEntity
 from src.app.entities.product import Product as ProductEntity
 from src.app.entities.source_website import SourceWebsite as SourceWebsiteEntity
 from src.app.entities.user import User as UserEntity
-from src.app.infrastructure.services.email_service import EmailResult
+from src.app.interfaces.services.email_service import EmailResult
 from src.app.use_cases.notification_log_use_cases import (
     CreateNotificationLogUseCase,
     DeleteNotificationLogUseCase,

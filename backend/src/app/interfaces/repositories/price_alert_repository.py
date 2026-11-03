@@ -35,6 +35,7 @@ class PriceAlertRepositoryInterface(ABC):
         offset: int = 0,
         sort_by: str | None = None,
         sort_order: str | None = None,
+        user_id: int | None = None,
     ) -> tuple[list[PriceAlertEntity], int]:
         """Return a paginated list of all price alerts and the total count."""
         raise NotImplementedError
@@ -49,6 +50,11 @@ class PriceAlertRepositoryInterface(ABC):
     @abstractmethod
     def delete(self, price_alert_id: int) -> bool:
         """Delete a price alert by id. Returns True if deleted, False if not found."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def count_active_by_user_id(self, user_id: int) -> int:
+        """Count active, non-deleted price alerts owned by a user."""
         raise NotImplementedError
 
     @abstractmethod
@@ -67,7 +73,7 @@ class PriceAlertRepositoryInterface(ABC):
 
         A match occurs when:
         - alert.is_active is True
-        - alert.search_term appears in product_title (case-insensitive)
+        - alert.search_term appears in product_title (case/accent-insensitive)
         - source_website_id is in alert.source_website_ids
         - current_price <= alert.max_price
 

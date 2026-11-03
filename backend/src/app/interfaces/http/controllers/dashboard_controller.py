@@ -16,8 +16,9 @@ from src.app.infrastructure.database.models.product_model import Product
 from src.app.infrastructure.database.models.search_execution_log_model import (
     SearchExecutionLog,
 )
+from src.app.infrastructure.database.text_match import title_contains
 from src.app.infrastructure.database_config import get_db
-from src.app.security.auth import get_current_staff_user
+from src.app.security.auth import get_current_active_user
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -26,7 +27,7 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 def get_dashboard_summary(
     opportunities_limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     user_id = current_user.id
 
@@ -101,7 +102,7 @@ def get_dashboard_summary(
             )
             .filter(
                 price_alert_source_website.c.price_alert_id == alert.id,
-                Product.title.ilike(f"%{alert.search_term}%"),
+                title_contains(Product.title, alert.search_term),
                 price_sq.c.latest_price.isnot(None),
                 price_sq.c.latest_price <= alert.max_price,
                 Product.is_available.is_(True),

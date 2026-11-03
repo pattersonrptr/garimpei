@@ -19,7 +19,7 @@ from src.app.infrastructure.repositories.source_website_repository import (
     SourceWebsiteRepository,
 )
 from src.app.infrastructure.repositories.user_repository import UserRepository
-from src.app.infrastructure.services.email_service import SendGridEmailService
+from src.app.infrastructure.services.email_service import get_email_service
 from src.app.interfaces.http.presenters.product_presenter import ProductPresenter
 from src.app.interfaces.http.schemas.product_schema import (
     ProductCreateRequest,
@@ -27,7 +27,8 @@ from src.app.interfaces.http.schemas.product_schema import (
     ProductsCollectionResponse,
     ProductUpdateRequest,
 )
-from src.app.security.auth import get_current_staff_user
+from src.app.interfaces.services.email_service import EmailServiceInterface
+from src.app.security.auth import get_current_active_user, get_current_staff_user
 from src.app.use_cases.evaluate_product_alerts_use_case import (
     EvaluateProductAlertsUseCase,
 )
@@ -77,10 +78,6 @@ def get_user_repository(db=Depends(get_db)) -> UserRepository:
 
 def get_source_website_repository(db=Depends(get_db)) -> SourceWebsiteRepository:
     return SourceWebsiteRepository(db)
-
-
-def get_email_service() -> SendGridEmailService:
-    return SendGridEmailService()
 
 
 @router.post("/", response_model=ProductReadResponse, status_code=201)
@@ -152,7 +149,7 @@ def list_products(
     sort_by: str | None = Query(default=None),
     sort_order: str | None = Query(default="desc", pattern="^(asc|desc)$"),
     product_repo: ProductRepository = Depends(get_product_repository),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
     List all products with pagination and sorting. Requires staff or superuser access.
@@ -216,7 +213,7 @@ def get_product_by_url(
 def get_product(
     product_id: int,
     product_repo: ProductRepository = Depends(get_product_repository),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
     Get a single product by ID. Requires staff or superuser access.
@@ -407,7 +404,7 @@ def evaluate_product_alerts(
     source_website_repo: SourceWebsiteRepository = Depends(
         get_source_website_repository
     ),
-    email_service: SendGridEmailService = Depends(get_email_service),
+    email_service: EmailServiceInterface = Depends(get_email_service),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
     """

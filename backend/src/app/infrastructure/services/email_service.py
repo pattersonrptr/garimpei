@@ -1,42 +1,55 @@
-"""Email notification service using SendGrid."""
+"""
+Email notification services.
 
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
+The use cases depend only on ``EmailServiceInterface`` (an interface in
+src/app/interfaces/services/email_service.py). Two implementations:
+
+- ``SendGridEmailService``: SendGrid HTTP API (production).
+- ``SmtpEmailService``: plain SMTP. In development it points at Mailpit, a
+  local inbox (http://localhost:8026 by default) that catches every message, so the
+  whole alert -> email flow can be seen without an external account.
+
+``get_email_service()`` picks one from the ``EMAIL_BACKEND`` setting.
+"""
+
+import smtplib
+from email.message import EmailMessage
+from email.utils import formataddr
 
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Content, Email, Mail, To
 
+from src.app.infrastructure.services.price_alert_email import (
+    PriceAlertEmail,
+    build_price_alert_email,
+)
+from src.app.interfaces.services.email_service import (
+    EmailResult,
+    EmailServiceInterface,
+)
 from src.config import settings
 from src.config.logging_config import get_logger
 
 logger = get_logger(__name__)
 
 
-@dataclass
-class EmailResult:
-    """Result of an email send attempt."""
-
-    success: bool
-    status_code: int | None = None
-    error_message: str | None = None
-
-
-class EmailServiceInterface(ABC):
-    """Abstract interface for email sending."""
-
-    @abstractmethod
-    def send_price_alert_email(
-        self,
-        to_email: str,
-        search_term: str,
-        product_title: str,
-        product_price: float,
-        max_price: float,
-        product_url: str,
-        source_website_name: str,
-    ) -> EmailResult:
-        """Send a price alert notification email."""
-        ...
+def _build_email(
+    search_term: str,
+    product_title: str,
+    product_price: float,
+    max_price: float,
+    product_url: str,
+    source_website_name: str,
+) -> PriceAlertEmail:
+    return build_price_alert_email(
+        search_term=search_term,
+        product_title=product_title,
+        product_price=product_price,
+        max_price=max_price,
+        product_url=product_url,
+        source_website_name=source_website_name,
+        rate_limit_minutes=settings.NOTIFICATION_RATE_LIMIT_MINUTES,
+    )
 
 
 class SendGridEmailService(EmailServiceInterface):
@@ -51,68 +64,6 @@ class SendGridEmailService(EmailServiceInterface):
         self.api_key = api_key or settings.SENDGRID_API_KEY
         self.from_email = from_email or settings.FROM_EMAIL
         self.from_name = from_name or settings.NOTIFICATION_FROM_NAME
-
-    def _build_html_content(
-        self,
-        search_term: str,
-        product_title: str,
-        product_price: float,
-        max_price: float,
-        product_url: str,
-        source_website_name: str,
-    ) -> str:
-        """Build HTML email body for a price alert match."""
-        savings = max_price - product_price
-        return f"""
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <style>
-        body {{ font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; }}
-        .container {{ max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }}
-        .header {{ background: #1976d2; color: #fff; padding: 20px; text-align: center; }}
-        .header h1 {{ margin: 0; font-size: 24px; }}
-        .body {{ padding: 24px; }}
-        .highlight {{ background: #e8f5e9; border-left: 4px solid #4caf50; padding: 16px; margin: 16px 0; border-radius: 4px; }}
-        .price {{ font-size: 28px; color: #2e7d32; font-weight: bold; }}
-        .savings {{ color: #f57c00; font-weight: bold; }}
-        .btn {{ display: inline-block; background: #1976d2; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin-top: 16px; }}
-        .footer {{ background: #f4f4f4; padding: 16px; text-align: center; font-size: 12px; color: #999; }}
-        .details {{ margin: 16px 0; }}
-        .details td {{ padding: 4px 8px; }}
-        .details td:first-child {{ font-weight: bold; color: #555; }}
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🎯 Oportunidade encontrada!</h1>
-        </div>
-        <div class="body">
-            <p>Olá! Encontramos um produto abaixo do seu preço alvo para a busca <strong>"{search_term}"</strong>.</p>
-
-            <div class="highlight">
-                <p style="margin:0 0 8px 0;"><strong>{product_title}</strong></p>
-                <p class="price" style="margin:0;">R$ {product_price:,.2f}</p>
-                <p class="savings" style="margin:8px 0 0 0;">Economia de R$ {savings:,.2f} em relação ao seu alerta (R$ {max_price:,.2f})</p>
-            </div>
-
-            <table class="details">
-                <tr><td>Site:</td><td>{source_website_name}</td></tr>
-                <tr><td>Preço máximo do alerta:</td><td>R$ {max_price:,.2f}</td></tr>
-                <tr><td>Preço encontrado:</td><td>R$ {product_price:,.2f}</td></tr>
-            </table>
-
-            <a href="{product_url}" class="btn">Ver produto →</a>
-        </div>
-        <div class="footer">
-            <p>Você recebeu este e-mail porque configurou um alerta de preço no Garimpei.</p>
-            <p>Limite de envio: 1 e-mail por alerta a cada hora.</p>
-        </div>
-    </div>
-</body>
-</html>"""
 
     def send_price_alert_email(
         self,
@@ -132,25 +83,19 @@ class SendGridEmailService(EmailServiceInterface):
                 error_message="SendGrid API key not configured",
             )
 
-        subject = (
-            f"🎯 Oportunidade! {search_term} por R$ {product_price:,.2f}"
-            f" no {source_website_name}"
+        email = _build_email(
+            search_term,
+            product_title,
+            product_price,
+            max_price,
+            product_url,
+            source_website_name,
         )
-
-        html_content = self._build_html_content(
-            search_term=search_term,
-            product_title=product_title,
-            product_price=product_price,
-            max_price=max_price,
-            product_url=product_url,
-            source_website_name=source_website_name,
-        )
-
         message = Mail(
             from_email=Email(self.from_email, self.from_name),
             to_emails=To(to_email),
-            subject=subject,
-            html_content=Content("text/html", html_content),
+            subject=email.subject,
+            html_content=Content("text/html", email.html),
         )
 
         try:
@@ -168,12 +113,87 @@ class SendGridEmailService(EmailServiceInterface):
                 status_code=response.status_code,
             )
         except Exception as e:
-            logger.error(
-                "Failed to send email to %s: %s",
+            logger.error("Failed to send email to %s: %s", to_email, str(e))
+            return EmailResult(success=False, error_message=str(e))
+
+
+class SmtpEmailService(EmailServiceInterface):
+    """SMTP implementation (Mailpit in development, any SMTP relay otherwise)."""
+
+    def __init__(
+        self,
+        host: str | None = None,
+        port: int | None = None,
+        username: str | None = None,
+        password: str | None = None,
+        use_tls: bool | None = None,
+        from_email: str | None = None,
+        from_name: str | None = None,
+    ):
+        self.host = host or settings.SMTP_HOST
+        self.port = port or settings.SMTP_PORT
+        self.username = username if username is not None else settings.SMTP_USERNAME
+        self.password = password if password is not None else settings.SMTP_PASSWORD
+        self.use_tls = use_tls if use_tls is not None else settings.SMTP_USE_TLS
+        self.from_email = from_email or settings.FROM_EMAIL
+        self.from_name = from_name or settings.NOTIFICATION_FROM_NAME
+
+    def send_price_alert_email(
+        self,
+        to_email: str,
+        search_term: str,
+        product_title: str,
+        product_price: float,
+        max_price: float,
+        product_url: str,
+        source_website_name: str,
+    ) -> EmailResult:
+        """Send a price alert notification email over SMTP."""
+        if not self.host:
+            logger.warning("SMTP host not configured, skipping email send")
+            return EmailResult(success=False, error_message="SMTP host not configured")
+
+        email = _build_email(
+            search_term,
+            product_title,
+            product_price,
+            max_price,
+            product_url,
+            source_website_name,
+        )
+        message = EmailMessage()
+        message["Subject"] = email.subject
+        message["From"] = formataddr((self.from_name, self.from_email))
+        message["To"] = to_email
+        message.set_content(email.text)
+        message.add_alternative(email.html, subtype="html")
+
+        try:
+            with smtplib.SMTP(self.host, self.port, timeout=10) as smtp:
+                if self.use_tls:
+                    smtp.starttls()
+                if self.username:
+                    smtp.login(self.username, self.password)
+                smtp.send_message(message)
+
+            logger.info(
+                "Email sent to %s for alert '%s' via SMTP %s:%s",
                 to_email,
-                str(e),
+                search_term,
+                self.host,
+                self.port,
             )
-            return EmailResult(
-                success=False,
-                error_message=str(e),
-            )
+            return EmailResult(success=True, status_code=250)
+        except (smtplib.SMTPException, OSError) as e:
+            logger.error("Failed to send email to %s: %s", to_email, str(e))
+            return EmailResult(success=False, error_message=str(e))
+
+
+def get_email_service() -> EmailServiceInterface:
+    """Build the email service selected by the EMAIL_BACKEND setting."""
+    backend = settings.EMAIL_BACKEND
+    if backend == "smtp":
+        return SmtpEmailService()
+    if backend == "sendgrid":
+        return SendGridEmailService()
+    raise ValueError(f"Unknown EMAIL_BACKEND {backend!r}; use 'sendgrid' or 'smtp'")

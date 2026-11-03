@@ -8,6 +8,7 @@ import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogContentText from '@mui/material/DialogContentText'
 import DialogTitle from '@mui/material/DialogTitle'
+import { useTranslation } from 'react-i18next'
 
 interface ConfirmationDialogProps {
   open: boolean
@@ -23,11 +24,12 @@ export function ConfirmationDialog({
   open,
   title,
   message,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   onConfirm,
   onCancel,
 }: ConfirmationDialogProps) {
+  const { t } = useTranslation()
   return (
     <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
       <DialogTitle>{title}</DialogTitle>
@@ -35,9 +37,9 @@ export function ConfirmationDialog({
         <DialogContentText>{message}</DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onCancel}>{cancelLabel}</Button>
+        <Button onClick={onCancel}>{cancelLabel ?? t('actions.cancel')}</Button>
         <Button onClick={onConfirm} color="error" variant="contained">
-          {confirmLabel}
+          {confirmLabel ?? t('actions.confirm')}
         </Button>
       </DialogActions>
     </Dialog>

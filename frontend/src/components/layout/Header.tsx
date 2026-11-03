@@ -11,6 +11,8 @@ import Button from '@mui/material/Button'
 import { useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { ConfirmationDialog } from '@/components/common/ConfirmationDialog'
+import { useTranslation } from 'react-i18next'
+import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 
 interface HeaderProps {
   onMenuClick: () => void
@@ -18,6 +20,7 @@ interface HeaderProps {
 }
 
 export function Header({ onMenuClick }: HeaderProps) {
+  const { t } = useTranslation()
   const { logout } = useAuth()
   const [confirmOpen, setConfirmOpen] = useState(false)
 
@@ -30,7 +33,7 @@ export function Header({ onMenuClick }: HeaderProps) {
             edge="start"
             onClick={onMenuClick}
             sx={{ mr: 2 }}
-            aria-label="toggle sidebar"
+            aria-label={t('layout.toggleSidebar')}
           >
             <MenuIcon />
           </IconButton>
@@ -39,18 +42,19 @@ export function Header({ onMenuClick }: HeaderProps) {
             🏴‍☠️ Garimpei
           </Typography>
 
+          <LanguageSwitcher />
           <Button color="inherit" onClick={() => setConfirmOpen(true)}>
-            Logout
+            {t('layout.logout')}
           </Button>
         </Toolbar>
       </AppBar>
 
       <ConfirmationDialog
         open={confirmOpen}
-        title="Sign out"
-        message="Are you sure you want to sign out?"
-        confirmLabel="Sign out"
-        cancelLabel="Stay"
+        title={t('layout.signOutTitle')}
+        message={t('layout.signOutMessage')}
+        confirmLabel={t('layout.signOutConfirm')}
+        cancelLabel={t('layout.signOutCancel')}
         onConfirm={() => { setConfirmOpen(false); logout() }}
         onCancel={() => setConfirmOpen(false)}
       />

@@ -56,6 +56,10 @@ Tracks product prices over time and manages scraping configurations.
 
 ---
 
+### Languages
+
+Portuguese (Brazil, default) and English, with a language menu in the header. Adding a language needs no code changes: see [`src/i18n/README.md`](src/i18n/README.md).
+
 ## Architecture
 
 ```

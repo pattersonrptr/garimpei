@@ -1,25 +1,15 @@
-"""Plan limits enforcement.
+"""Plan limit rules (pure domain logic).
 
-Provides a FastAPI dependency that loads the current user's plan limits
-and helper functions to validate operations against those limits.
+No framework or database here: callers load the data (plan, counts,
+timestamps) and these functions decide whether an operation is allowed.
+The FastAPI dependency and the JSON:API error mapping live in
+src/app/interfaces/http/plan_limits.py.
 """
 
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 
-from fastapi import Depends
-from sqlalchemy.orm import Session
-
-from src.app.entities.user import User as UserEntity
-from src.app.infrastructure.database.models.plan_model import Plan as PlanModel
-from src.app.infrastructure.database.models.price_alert_model import (
-    PriceAlert as PriceAlertModel,
-)
-from src.app.infrastructure.database.models.subscription_model import (
-    Subscription as SubscriptionModel,
-)
-from src.app.infrastructure.database_config import get_db
-from src.app.security.auth import get_current_active_user
-from src.common.jsonapi import JsonApiError
+from src.app.entities.plan import Plan
 
 # Default limits for users without a subscription (free tier)
 FREE_PLAN_DEFAULTS = {
@@ -39,107 +29,109 @@ class PlanLimits:
     max_sources: int | None  # None = all
 
 
-def get_user_plan_limits(
-    db: Session = Depends(get_db),
-    current_user: UserEntity = Depends(get_current_active_user),
-) -> PlanLimits:
-    """FastAPI dependency that returns the current user's plan limits."""
-    sub = (
-        db.query(SubscriptionModel)
-        .filter(
-            SubscriptionModel.user_id == current_user.id,
-            SubscriptionModel.status == "active",
+@dataclass(frozen=True)
+class PlanLimitViolation:
+    """Why an operation exceeds the user's plan (mapped to an API error)."""
+
+    title: str
+    detail: str
+    pointer: str | None = None
+
+
+def limits_for_plan(plan: Plan | None) -> PlanLimits:
+    """Limits of the user's plan, or the free defaults if there is none."""
+    if plan is None:
+        return PlanLimits(
+            plan_name="free",
+            max_active_alerts=FREE_PLAN_DEFAULTS["max_active_alerts"],
+            min_frequency_minutes=FREE_PLAN_DEFAULTS["min_frequency_minutes"],
+            price_history_days=FREE_PLAN_DEFAULTS["price_history_days"],
+            max_sources=FREE_PLAN_DEFAULTS["max_sources"],
         )
-        .first()
-    )
-
-    if sub:
-        plan = db.query(PlanModel).filter(PlanModel.id == sub.plan_id).first()
-        if plan:
-            return PlanLimits(
-                plan_name=plan.name,
-                max_active_alerts=plan.max_active_alerts,
-                min_frequency_minutes=plan.min_frequency_minutes,
-                price_history_days=plan.price_history_days,
-                max_sources=plan.max_sources,
-            )
-
-    # No subscription or plan not found → free defaults
     return PlanLimits(
-        plan_name="free",
-        max_active_alerts=FREE_PLAN_DEFAULTS["max_active_alerts"],
-        min_frequency_minutes=FREE_PLAN_DEFAULTS["min_frequency_minutes"],
-        price_history_days=FREE_PLAN_DEFAULTS["price_history_days"],
-        max_sources=FREE_PLAN_DEFAULTS["max_sources"],
+        plan_name=plan.name,
+        max_active_alerts=plan.max_active_alerts,
+        min_frequency_minutes=plan.min_frequency_minutes,
+        price_history_days=plan.price_history_days,
+        max_sources=plan.max_sources,
     )
 
 
-def check_alert_limit(
-    db: Session, user_id: int, limits: PlanLimits
-) -> JsonApiError | None:
-    """Check if user can create a new active alert."""
+def alert_limit_violation(
+    active_alert_count: int, limits: PlanLimits
+) -> PlanLimitViolation | None:
+    """Can the user create one more active alert?"""
     if limits.max_active_alerts is None:
         return None  # unlimited
-
-    active_count = (
-        db.query(PriceAlertModel)
-        .filter(
-            PriceAlertModel.user_id == user_id,
-            PriceAlertModel.is_active.is_(True),
-            PriceAlertModel.deleted_at.is_(None),
-        )
-        .count()
-    )
-
-    if active_count >= limits.max_active_alerts:
-        return JsonApiError(
-            status="403",
-            code="PLAN_LIMIT_REACHED",
+    if active_alert_count >= limits.max_active_alerts:
+        return PlanLimitViolation(
             title="Alert limit reached",
             detail=(
                 f"Your {limits.plan_name} plan allows up to "
                 f"{limits.max_active_alerts} active alerts. "
                 f"Upgrade your plan for more."
             ),
-            source={"pointer": "/data/attributes/is_active"},
+            pointer="/data/attributes/is_active",
         )
     return None
 
 
-def check_frequency_limit(
+def frequency_limit_violation(
     frequency_minutes: int, limits: PlanLimits
-) -> JsonApiError | None:
-    """Check if the requested frequency is allowed by the user's plan."""
+) -> PlanLimitViolation | None:
+    """Is the requested check frequency allowed by the plan?"""
     if frequency_minutes < limits.min_frequency_minutes:
-        return JsonApiError(
-            status="403",
-            code="PLAN_LIMIT_REACHED",
+        return PlanLimitViolation(
             title="Frequency too high for your plan",
             detail=(
                 f"Your {limits.plan_name} plan allows minimum frequency of "
                 f"{limits.min_frequency_minutes} minutes. "
                 f"Upgrade your plan for faster checks."
             ),
-            source={"pointer": "/data/attributes/frequency_minutes"},
+            pointer="/data/attributes/frequency_minutes",
         )
     return None
 
 
-def check_source_limit(source_count: int, limits: PlanLimits) -> JsonApiError | None:
-    """Check if the number of sources is allowed by the user's plan."""
+def source_limit_violation(
+    source_count: int, limits: PlanLimits
+) -> PlanLimitViolation | None:
+    """Is the number of sources per alert allowed by the plan?"""
     if limits.max_sources is None:
         return None  # unlimited
-
     if source_count > limits.max_sources:
-        return JsonApiError(
-            status="403",
-            code="PLAN_LIMIT_REACHED",
+        return PlanLimitViolation(
             title="Source limit reached",
             detail=(
                 f"Your {limits.plan_name} plan allows up to "
                 f"{limits.max_sources} sources per alert. "
                 f"Upgrade your plan for more."
             ),
-            source={"pointer": "/data/attributes/source_website_ids"},
+            pointer="/data/attributes/source_website_ids",
+        )
+    return None
+
+
+def manual_run_violation(
+    last_run_started_at: datetime | None, now: datetime, limits: PlanLimits
+) -> PlanLimitViolation | None:
+    """
+    A manual "Run Now" must respect the plan's minimum check interval,
+    otherwise it would be a way around min_frequency_minutes.
+    """
+    if last_run_started_at is None:
+        return None
+    if last_run_started_at.tzinfo is None:  # stored as naive UTC
+        last_run_started_at = last_run_started_at.replace(tzinfo=UTC)
+    next_allowed = last_run_started_at + timedelta(minutes=limits.min_frequency_minutes)
+    if now < next_allowed:
+        wait_minutes = int((next_allowed - now).total_seconds() // 60) + 1
+        return PlanLimitViolation(
+            title="Search ran recently",
+            detail=(
+                f"Your {limits.plan_name} plan allows one check every "
+                f"{limits.min_frequency_minutes} minutes. "
+                f"Try again in {wait_minutes} minutes."
+            ),
         )
     return None

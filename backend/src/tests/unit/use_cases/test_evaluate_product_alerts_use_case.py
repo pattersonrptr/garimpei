@@ -19,7 +19,7 @@ from src.app.entities.price_history import PriceHistory as PriceHistoryEntity
 from src.app.entities.product import Product as ProductEntity
 from src.app.entities.source_website import SourceWebsite as SourceWebsiteEntity
 from src.app.entities.user import User as UserEntity
-from src.app.infrastructure.services.email_service import EmailResult
+from src.app.interfaces.services.email_service import EmailResult
 from src.app.use_cases.evaluate_product_alerts_use_case import (
     EvaluateProductAlertsUseCase,
 )

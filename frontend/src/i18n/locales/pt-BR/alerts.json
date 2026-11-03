@@ -1,0 +1,58 @@
+{
+  "title": "Meus alertas",
+  "new": "Novo alerta",
+  "fields": {
+    "searchTerm": "Termo de busca (palavra-chave)",
+    "maxPrice": "Preço máximo",
+    "frequency": "Frequência de verificação (minutos)",
+    "sources": "Sites de origem",
+    "active": "Ativo"
+  },
+  "columns": {
+    "keyword": "Palavra-chave",
+    "maxPrice": "Preço máximo",
+    "status": "Status",
+    "sources": "Sites",
+    "frequency": "Frequência",
+    "lastCheck": "Última verificação",
+    "actions": "Ações"
+  },
+  "runNow": {
+    "run": "Buscar agora",
+    "running": "Buscando…",
+    "inactive": "Ative o alerta primeiro",
+    "noConfig": "Este alerta não tem busca vinculada",
+    "triggered": "Busca iniciada! Garimpando…",
+    "done_one": "Busca concluída — {{count}} resultado",
+    "done_other": "Busca concluída — {{count}} resultados",
+    "failed": "A busca falhou: {{error}}",
+    "alreadyRunning": "A busca já está em andamento",
+    "triggerFailed": "Não foi possível iniciar a busca"
+  },
+  "toast": {
+    "created": "Alerta criado!",
+    "createFailed": "Não foi possível criar o alerta",
+    "updated": "Alerta atualizado!",
+    "updateFailed": "Não foi possível atualizar o alerta",
+    "paused": "Alerta pausado",
+    "resumed": "Alerta retomado",
+    "deleted": "Alerta excluído",
+    "deleteFailed": "Não foi possível excluir o alerta",
+    "bulkDeleted_one": "{{count}} alerta excluído",
+    "bulkDeleted_other": "{{count}} alertas excluídos",
+    "bulkDeleteFailed": "Algumas exclusões falharam"
+  },
+  "empty": {
+    "title": "Nenhum alerta ainda",
+    "body": "Crie seu primeiro alerta clicando em \"{{button}}\" acima."
+  },
+  "dialogs": {
+    "createTitle": "Criar alerta",
+    "editTitle": "Editar alerta",
+    "deleteTitle": "Excluir alerta",
+    "deleteMessage": "Tem certeza de que quer excluir este alerta?",
+    "bulkDeleteTitle": "Excluir alertas selecionados",
+    "bulkDeleteMessage_one": "Excluir {{count}} alerta?",
+    "bulkDeleteMessage_other": "Excluir {{count}} alertas?"
+  }
+}

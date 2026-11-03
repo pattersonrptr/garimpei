@@ -18,7 +18,9 @@ import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { useCallback, useEffect, useState } from 'react'
 import { useSnackbar } from 'notistack'
+import { Trans, useTranslation } from 'react-i18next'
 import { PageHeader } from '@/components/common/PageHeader'
+import { formatCurrency } from '@/lib/formatters'
 import { logger } from '@/lib/logger'
 import { getPlans } from '@/services/planService'
 import {
@@ -28,20 +30,6 @@ import {
 } from '@/services/subscriptionService'
 import type { Plan, Subscription } from '@/types/plan'
 
-function formatPrice(cents: number): string {
-  if (cents === 0) return 'Grátis'
-  return `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`
-}
-
-function formatLimit(value: number | null, suffix = ''): string {
-  if (value === null) return 'Ilimitado'
-  return `${value}${suffix}`
-}
-
-function formatFrequency(minutes: number): string {
-  if (minutes < 60) return `${minutes} min`
-  return `${minutes / 60}h`
-}
 
 interface FeatureRowProps {
   label: string
@@ -77,6 +65,18 @@ export function PlansPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const { enqueueSnackbar } = useSnackbar()
+  const { t } = useTranslation(['plans', 'common'])
+
+  const formatPrice = (cents: number) =>
+    cents === 0 ? t('free') : formatCurrency(cents / 100)
+  const formatLimit = (value: number | null) =>
+    value === null ? t('unlimited') : String(value)
+  const formatDays = (value: number | null) =>
+    value === null ? t('unlimited') : t('days', { count: value })
+  const formatFrequency = (minutes: number) =>
+    minutes < 60
+      ? t('common:units.minutes', { count: minutes })
+      : t('hours', { count: minutes / 60 })
 
   const fetchData = useCallback(async () => {
     try {
@@ -90,11 +90,11 @@ export function PlansPage() {
       setSubscription(subData)
     } catch (err) {
       logger.error('Failed to load plans', {}, err)
-      setError('Erro ao carregar planos. Tente novamente.')
+      setError(t('loadFailed'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     fetchData()
@@ -105,10 +105,10 @@ export function PlansPage() {
       setActionLoading(planId)
       const newSub = await subscribeToPlan(planId)
       setSubscription(newSub)
-      enqueueSnackbar('Plano atualizado com sucesso!', { variant: 'success' })
+      enqueueSnackbar(t('toast.subscribed'), { variant: 'success' })
     } catch (err) {
       logger.error('Failed to subscribe', {}, err)
-      enqueueSnackbar('Erro ao assinar plano. Tente novamente.', {
+      enqueueSnackbar(t('toast.subscribeFailed'), {
         variant: 'error',
       })
     } finally {
@@ -121,10 +121,10 @@ export function PlansPage() {
       setActionLoading('cancel')
       const updated = await cancelSubscription()
       setSubscription(updated)
-      enqueueSnackbar('Assinatura cancelada.', { variant: 'info' })
+      enqueueSnackbar(t('toast.canceled'), { variant: 'info' })
     } catch (err) {
       logger.error('Failed to cancel subscription', {}, err)
-      enqueueSnackbar('Erro ao cancelar assinatura. Tente novamente.', {
+      enqueueSnackbar(t('toast.cancelFailed'), {
         variant: 'error',
       })
     } finally {
@@ -148,20 +148,28 @@ export function PlansPage() {
     )
   }
 
-  const currentPlanName = subscription?.planName ?? 'free'
+  // Match by id: the API's planName is the display name ("Free"), not the slug
+  const currentPlan =
+    plans.find((p) => String(p.id) === String(subscription?.planId)) ??
+    plans.find((p) => p.priceCents === 0)
 
   return (
     <Box p={3}>
       <PageHeader
-        title="Planos"
-        subtitle="Escolha o plano ideal para monitorar seus preços"
+        title={t('title')}
+        subtitle={t('subtitle')}
       />
 
-      {subscription && subscription.planName !== 'free' && (
+      {subscription && currentPlan && currentPlan.priceCents > 0 && (
         <Alert severity="info" sx={{ mb: 3 }}>
-          Você está no plano <strong>{subscription.planName.charAt(0).toUpperCase() + subscription.planName.slice(1)}</strong>
-          {subscription.status === 'active' && ' (ativo)'}
-          {subscription.status === 'canceled' && ' (cancelado)'}
+          <Trans
+            t={t}
+            i18nKey="currentInfo"
+            values={{ plan: currentPlan.displayName }}
+            components={{ strong: <strong /> }}
+          />
+          {subscription.status === 'active' && t('status.active')}
+          {subscription.status === 'canceled' && t('status.canceled')}
         </Alert>
       )}
 
@@ -172,7 +180,7 @@ export function PlansPage() {
         alignItems={{ xs: 'center', md: 'stretch' }}
       >
         {plans.map((plan) => {
-          const isCurrent = currentPlanName === plan.name
+          const isCurrent = currentPlan?.id === plan.id
           const isPopular = plan.name === 'pro'
 
           return (
@@ -186,13 +194,14 @@ export function PlansPage() {
                 borderColor: isPopular ? 'primary.main' : undefined,
                 display: 'flex',
                 flexDirection: 'column',
+                overflow: 'visible', // keep the "most popular" badge uncut
               }}
               elevation={isPopular ? 8 : 1}
             >
               {isPopular && (
                 <Chip
                   icon={<StarIcon />}
-                  label="Mais popular"
+                  label={t('popular')}
                   color="primary"
                   size="small"
                   sx={{
@@ -213,38 +222,38 @@ export function PlansPage() {
                   {formatPrice(plan.priceCents)}
                   {plan.priceCents > 0 && (
                     <Typography component="span" variant="body2" color="text.secondary">
-                      /mês
+                      {t('perMonth')}
                     </Typography>
                   )}
                 </Typography>
 
                 <Stack spacing={0.5} mt={2}>
                   <FeatureRow
-                    label="Alertas ativos"
+                    label={t('features.activeAlerts')}
                     value={formatLimit(plan.maxActiveAlerts)}
                   />
                   <FeatureRow
-                    label="Frequência mínima"
+                    label={t('features.minFrequency')}
                     value={formatFrequency(plan.minFrequencyMinutes)}
                   />
                   <FeatureRow
-                    label="Histórico de preços"
-                    value={formatLimit(plan.priceHistoryDays, ' dias')}
+                    label={t('features.priceHistory')}
+                    value={formatDays(plan.priceHistoryDays)}
                   />
                   <FeatureRow
-                    label="Fontes de pesquisa"
+                    label={t('features.sources')}
                     value={formatLimit(plan.maxSources)}
                   />
                   <FeatureRow
-                    label="Notificações push"
+                    label={t('features.push')}
                     value={plan.hasPushNotifications}
                   />
                   <FeatureRow
-                    label="WhatsApp"
+                    label={t('features.whatsapp')}
                     value={plan.hasWhatsappNotifications}
                   />
                   <FeatureRow
-                    label="Acesso à API"
+                    label={t('features.api')}
                     value={plan.hasApiAccess}
                   />
                 </Stack>
@@ -254,7 +263,7 @@ export function PlansPage() {
                 {isCurrent ? (
                   <Stack width="100%" spacing={1}>
                     <Button variant="outlined" disabled fullWidth>
-                      Plano atual
+                      {t('actions.current')}
                     </Button>
                     {plan.name !== 'free' && (
                       <Button
@@ -268,7 +277,7 @@ export function PlansPage() {
                         {actionLoading === 'cancel' ? (
                           <CircularProgress size={20} />
                         ) : (
-                          'Cancelar assinatura'
+                          t('actions.cancel')
                         )}
                       </Button>
                     )}
@@ -283,9 +292,9 @@ export function PlansPage() {
                     {actionLoading === plan.id ? (
                       <CircularProgress size={20} />
                     ) : plan.priceCents === 0 ? (
-                      'Usar grátis'
+                      t('actions.useFree')
                     ) : (
-                      'Assinar'
+                      t('actions.subscribe')
                     )}
                   </Button>
                 )}

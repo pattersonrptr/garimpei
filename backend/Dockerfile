@@ -6,7 +6,7 @@ COPY install_system_requirements.sh .
 RUN bash ./install_system_requirements.sh
 
 # Install Poetry
-RUN pip install --break-system-packages poetry==2.2.1
+RUN pip install --break-system-packages --ignore-installed poetry==2.2.1
 
 # Configure Poetry: no venv inside container, no interaction
 ENV POETRY_VIRTUALENVS_CREATE=false \

@@ -1,0 +1,37 @@
+{
+  "title": "Plans",
+  "subtitle": "Pick the right plan to track your prices",
+  "loadFailed": "Failed to load plans. Please try again.",
+  "currentInfo": "You are on the <strong>{{plan}}</strong> plan",
+  "status": {
+    "active": " (active)",
+    "canceled": " (canceled)"
+  },
+  "popular": "Most popular",
+  "free": "R$ 0",
+  "perMonth": "/month",
+  "unlimited": "Unlimited",
+  "days": "{{count}} days",
+  "hours": "{{count}}h",
+  "features": {
+    "activeAlerts": "Active alerts",
+    "minFrequency": "Minimum frequency",
+    "priceHistory": "Price history",
+    "sources": "Search sources",
+    "push": "Push notifications",
+    "whatsapp": "WhatsApp",
+    "api": "API access"
+  },
+  "actions": {
+    "current": "Current plan",
+    "cancel": "Cancel subscription",
+    "useFree": "Use for free",
+    "subscribe": "Subscribe"
+  },
+  "toast": {
+    "subscribed": "Plan updated!",
+    "subscribeFailed": "Failed to subscribe. Please try again.",
+    "canceled": "Subscription canceled.",
+    "cancelFailed": "Failed to cancel subscription. Please try again."
+  }
+}

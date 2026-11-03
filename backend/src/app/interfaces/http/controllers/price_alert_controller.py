@@ -1,14 +1,8 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from src.app.domain.plan_limits import (
-    PlanLimits,
-    check_alert_limit,
-    check_frequency_limit,
-    check_source_limit,
-    get_user_plan_limits,
-)
+from src.app.domain.plan_limits import PlanLimits
 from src.app.domain.validators.price_alert_validator import PriceAlertValidator
 from src.app.entities.price_alert import PriceAlert as PriceAlertEntity
 from src.app.entities.user import User as UserEntity
@@ -27,7 +21,13 @@ from src.app.infrastructure.repositories.source_website_repository import (
     SourceWebsiteRepository,
 )
 from src.app.infrastructure.repositories.user_repository import UserRepository
-from src.app.infrastructure.services.email_service import SendGridEmailService
+from src.app.infrastructure.services.email_service import get_email_service
+from src.app.interfaces.http.plan_limits import (
+    check_alert_limit,
+    check_frequency_limit,
+    check_source_limit,
+    get_user_plan_limits,
+)
 from src.app.interfaces.http.presenters.price_alert_presenter import (
     PriceAlertPresenter,
 )
@@ -39,7 +39,13 @@ from src.app.interfaces.http.schemas.price_alert_schema import (
     PriceAlertUpdateRequest,
 )
 from src.app.interfaces.http.schemas.product_schema import ProductsCollectionResponse
-from src.app.security.auth import get_current_staff_user
+from src.app.interfaces.services.email_service import EmailServiceInterface
+from src.app.security.auth import (
+    can_access_owned_resource,
+    get_current_active_user,
+    get_current_staff_user,
+    is_staff_or_superuser,
+)
 from src.app.use_cases.notification_log_use_cases import (
     SendPriceAlertNotificationUseCase,
 )
@@ -92,11 +98,6 @@ def get_notification_log_repository(
     return NotificationLogRepository(db)
 
 
-def get_email_service() -> SendGridEmailService:
-    """Dependency injection for SendGridEmailService."""
-    return SendGridEmailService()
-
-
 def get_price_alert_validator(
     price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
     source_website_repo: SourceWebsiteRepository = Depends(
@@ -113,12 +114,12 @@ def create_price_alert(
     price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
     search_config_repo: SearchConfigRepository = Depends(get_search_config_repository),
     price_alert_validator: PriceAlertValidator = Depends(get_price_alert_validator),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
     plan_limits: PlanLimits = Depends(get_user_plan_limits),
     db: Session = Depends(get_db),
 ):
     """
-    Create a new price alert. Requires staff or superuser access.
+    Create a new price alert. Regular users can only access their own alerts; staff can access all.
 
     Automatically creates or reuses a SearchConfig matching the alert's
     search_term and source_website_ids for the same user.
@@ -167,7 +168,11 @@ def create_price_alert(
         max_price=attrs.max_price,
         is_active=attrs.is_active,
         frequency_minutes=attrs.frequency_minutes,
-        user_id=attrs.user_id,
+        # Regular users always own the alerts they create; staff may create
+        # alerts on behalf of another user.
+        user_id=attrs.user_id
+        if is_staff_or_superuser(current_user)
+        else current_user.id,
         source_website_ids=attrs.source_website_ids,
     )
 
@@ -192,10 +197,13 @@ def list_price_alerts(
     sort_by: str | None = Query(default=None),
     sort_order: str | None = Query(default="desc", pattern="^(asc|desc)$"),
     price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
-    List all price alerts with pagination. Requires staff or superuser access.
+    List price alerts with pagination.
+
+    Regular users get their own alerts. Staff get every user's alerts: the
+    Celery service user relies on this to find the active alerts to check.
 
     Returns:
         - 200: Collection of price alerts with pagination meta
@@ -212,6 +220,7 @@ def list_price_alerts(
         offset=offset,
         sort_by=sort_by,
         sort_order=sort_order,
+        user_id=None if is_staff_or_superuser(current_user) else current_user.id,
     )
     return PriceAlertPresenter.handle_collection_success(price_alerts, total)
 
@@ -220,10 +229,10 @@ def list_price_alerts(
 def get_price_alerts_by_user(
     user_id: int,
     price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
-    Get all price alerts for a specific user. Requires staff or superuser access.
+    Get all price alerts for a specific user. Regular users can only access their own alerts; staff can access all.
 
     Returns:
         - 200: Collection of price alerts for the user
@@ -238,6 +247,12 @@ def get_price_alerts_by_user(
         },
     )
 
+    if not can_access_owned_resource(user_id, current_user):
+        raise HTTPException(
+            status_code=403,
+            detail="You can only list your own price alerts.",
+        )
+
     use_case = GetPriceAlertsByUserIdUseCase(price_alert_repo)
     price_alerts = use_case.execute(user_id)
     return PriceAlertPresenter.handle_collection_success(
@@ -249,10 +264,10 @@ def get_price_alerts_by_user(
 def get_price_alert(
     price_alert_id: int,
     price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
-    Get a single price alert by ID. Requires staff or superuser access.
+    Get a single price alert by ID. Regular users can only access their own alerts; staff can access all.
 
     Returns:
         - 200: Price alert found
@@ -271,7 +286,9 @@ def get_price_alert(
     use_case = GetPriceAlertByIdUseCase(price_alert_repo)
     price_alert = use_case.execute(price_alert_id)
 
-    if not price_alert:
+    if not price_alert or not can_access_owned_resource(
+        price_alert.user_id, current_user
+    ):
         return PriceAlertPresenter.handle_not_found(f"id {price_alert_id}", "/data/id")
 
     return PriceAlertPresenter.handle_success(price_alert)
@@ -288,7 +305,7 @@ def get_products_by_price_alert(
     ),
     price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
     product_repo: ProductRepository = Depends(get_product_repository),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
     Get products matching a price alert's criteria, sorted by price ascending.
@@ -310,6 +327,10 @@ def get_products_by_price_alert(
             "user_id": current_user.id,
         },
     )
+
+    owned = GetPriceAlertByIdUseCase(price_alert_repo).execute(price_alert_id)
+    if not owned or not can_access_owned_resource(owned.user_id, current_user):
+        return PriceAlertPresenter.handle_not_found(f"id {price_alert_id}", "/data/id")
 
     use_case = GetProductsByPriceAlertUseCase(price_alert_repo, product_repo)
     alert, products, total = use_case.execute(
@@ -334,7 +355,7 @@ def get_opportunities_by_price_alert(
     offset: int = Query(default=0, ge=0),
     price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
     product_repo: ProductRepository = Depends(get_product_repository),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
     Get opportunity products for a price alert (always filtered by max_price).
@@ -355,6 +376,10 @@ def get_opportunities_by_price_alert(
             "user_id": current_user.id,
         },
     )
+
+    owned = GetPriceAlertByIdUseCase(price_alert_repo).execute(price_alert_id)
+    if not owned or not can_access_owned_resource(owned.user_id, current_user):
+        return PriceAlertPresenter.handle_not_found(f"id {price_alert_id}", "/data/id")
 
     use_case = GetProductsByPriceAlertUseCase(price_alert_repo, product_repo)
     alert, products, total = use_case.execute(
@@ -377,10 +402,10 @@ def update_price_alert(
     price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
     search_config_repo: SearchConfigRepository = Depends(get_search_config_repository),
     price_alert_validator: PriceAlertValidator = Depends(get_price_alert_validator),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
-    Update an existing price alert. Requires staff or superuser access.
+    Update an existing price alert. Regular users can only access their own alerts; staff can access all.
 
     If search_term or source_website_ids change, the linked SearchConfig is
     updated accordingly.  Deactivating an alert will deactivate its
@@ -406,7 +431,7 @@ def update_price_alert(
     get_uc = GetPriceAlertByIdUseCase(price_alert_repo)
     existing = get_uc.execute(price_alert_id)
 
-    if not existing:
+    if not existing or not can_access_owned_resource(existing.user_id, current_user):
         return PriceAlertPresenter.handle_not_found(f"id {price_alert_id}", "/data/id")
 
     validation_errors = price_alert_validator.validate_update_request(
@@ -464,10 +489,10 @@ def delete_price_alert(
     price_alert_id: int,
     price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
     search_config_repo: SearchConfigRepository = Depends(get_search_config_repository),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
-    Delete a price alert. Requires staff or superuser access.
+    Delete a price alert. Regular users can only access their own alerts; staff can access all.
 
     If the associated SearchConfig is no longer used by any other active
     alert, it will be deactivated automatically.
@@ -489,7 +514,9 @@ def delete_price_alert(
     get_uc = GetPriceAlertByIdUseCase(price_alert_repo)
     price_alert = get_uc.execute(price_alert_id)
 
-    if not price_alert:
+    if not price_alert or not can_access_owned_resource(
+        price_alert.user_id, current_user
+    ):
         return PriceAlertPresenter.handle_not_found(f"id {price_alert_id}", "/data/id")
 
     delete_uc = DeletePriceAlertUseCase(price_alert_repo, search_config_repo)
@@ -521,11 +548,11 @@ def trigger_price_alert_notification(
     notification_log_repo: NotificationLogRepository = Depends(
         get_notification_log_repository
     ),
-    email_service: SendGridEmailService = Depends(get_email_service),
+    email_service: EmailServiceInterface = Depends(get_email_service),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
     """
-    Trigger email notification for a price alert. Requires staff or superuser access.
+    Trigger email notification for a price alert. Regular users can only access their own alerts; staff can access all.
 
     Searches for matching products below the alert's max_price and sends
     an email to the alert's owner with the best match.

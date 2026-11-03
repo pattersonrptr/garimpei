@@ -2,13 +2,19 @@
  * Tests for lib/formatters.ts
  */
 
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
+import i18n from '@/i18n'
 import {
   formatChartDateLabel,
   formatCurrency,
   formatDate,
   formatDateTime,
 } from '@/lib/formatters'
+
+// These expectations are for the pt-BR formats (the unit tests default to en)
+beforeAll(async () => {
+  await i18n.changeLanguage('pt-BR')
+})
 
 describe('formatCurrency', () => {
   it('formats a number as BRL currency', () => {

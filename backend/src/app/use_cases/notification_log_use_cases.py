@@ -1,7 +1,6 @@
 from datetime import UTC, datetime, timedelta
 
 from src.app.entities.notification_log import NotificationLog as NotificationLogEntity
-from src.app.infrastructure.services.email_service import EmailServiceInterface
 from src.app.interfaces.repositories.notification_log_repository import (
     NotificationLogRepositoryInterface,
 )
@@ -15,6 +14,7 @@ from src.app.interfaces.repositories.source_website_repository import (
     SourceWebsiteRepositoryInterface,
 )
 from src.app.interfaces.repositories.user_repository import UserRepositoryInterface
+from src.app.interfaces.services.email_service import EmailServiceInterface
 from src.config import settings
 
 

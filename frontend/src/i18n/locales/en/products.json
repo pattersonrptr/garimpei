@@ -1,0 +1,52 @@
+{
+  "title": "Products",
+  "opportunity": "🎯 Opportunity",
+  "fields": {
+    "title": "Title",
+    "url": "URL",
+    "condition": "Condition",
+    "available": "Available",
+    "seller": "Seller",
+    "description": "Description",
+    "currentPrice": "Current Price"
+  },
+  "condition": {
+    "new": "New",
+    "used": "Used",
+    "refurbished": "Refurbished",
+    "undetermined": "Unspecified"
+  },
+  "deleteSelected": "Delete selected ({{count}})",
+  "empty": {
+    "title": "No products found",
+    "body": "Products show up here when your alerts find results on the marketplaces."
+  },
+  "toast": {
+    "deleted": "Product deleted",
+    "deleteFailed": "Failed to delete product",
+    "bulkDeleted_one": "{{count}} product deleted",
+    "bulkDeleted_other": "{{count}} products deleted",
+    "bulkDeleteFailed": "Failed to delete some products",
+    "updated": "Product updated",
+    "updateFailed": "Failed to update product"
+  },
+  "dialogs": {
+    "editTitle": "Edit Product — {{title}}",
+    "deleteTitle": "Delete Product",
+    "deleteMessage": "Are you sure you want to delete this product?",
+    "bulkDeleteTitle": "Delete Products",
+    "bulkDeleteMessage_one": "Are you sure you want to delete {{count}} product?",
+    "bulkDeleteMessage_other": "Are you sure you want to delete {{count}} products?"
+  },
+  "detail": {
+    "back": "Back to Products",
+    "notFound": "Product not found.",
+    "availability": "Availability",
+    "available": "Available",
+    "unavailable": "Unavailable",
+    "sourceUrl": "Source URL",
+    "priceHistory": "Price History",
+    "price": "Price",
+    "noHistory": "No price history available for this product."
+  }
+}

@@ -31,6 +31,7 @@ import Paper from '@mui/material/Paper'
 import Stack from '@mui/material/Stack'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { PageHeader } from '@/components/common/PageHeader'
 import { useAuth } from '@/context/AuthContext'
@@ -44,6 +45,7 @@ import type { OpportunityProduct, AlertNextCheck } from '@/services/dashboardSer
 
 function OnboardingCard() {
   const navigate = useNavigate()
+  const { t } = useTranslation('dashboard')
 
   return (
     <Paper
@@ -60,12 +62,10 @@ function OnboardingCard() {
     >
       <AddAlertIcon sx={{ fontSize: 48, color: 'primary.main', mb: 1 }} />
       <Typography variant="h5" fontWeight={700} gutterBottom>
-        Bem-vindo ao Garimpei! 🎉
+        {t('onboarding.title')}
       </Typography>
       <Typography color="text.secondary" sx={{ mb: 3, maxWidth: 480, mx: 'auto' }}>
-        Crie seu primeiro alerta de preço para começar a monitorar os
-        marketplaces automaticamente. Você será notificado quando encontrarmos
-        produtos abaixo do preço desejado.
+        {t('onboarding.body')}
       </Typography>
       <Button
         variant="contained"
@@ -74,7 +74,7 @@ function OnboardingCard() {
         onClick={() => navigate('/alerts')}
         sx={{ fontWeight: 700, px: 4 }}
       >
-        Criar primeiro alerta
+        {t('onboarding.button')}
       </Button>
     </Paper>
   )
@@ -88,6 +88,7 @@ function ActiveAlertsCard({
   total: number
 }) {
   const navigate = useNavigate()
+  const { t } = useTranslation('dashboard')
 
   return (
     <Card
@@ -101,13 +102,13 @@ function ActiveAlertsCard({
       <CardContent>
         <Stack direction="row" alignItems="center" spacing={1} mb={1}>
           <NotificationsActiveIcon color="primary" />
-          <Typography variant="h6">Active Alerts</Typography>
+          <Typography variant="h6">{t('activeAlerts.title')}</Typography>
         </Stack>
         <Typography variant="h3" fontWeight="bold" color="primary">
           {active}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {total} total alert{total !== 1 ? 's' : ''} configured
+          {t('activeAlerts.total', { count: total })}
         </Typography>
       </CardContent>
     </Card>
@@ -119,12 +120,14 @@ function OpportunitiesCard({
 }: {
   opportunities: OpportunityProduct[]
 }) {
+  const { t } = useTranslation('dashboard')
+
   return (
     <Card>
       <CardContent>
         <Stack direction="row" alignItems="center" spacing={1} mb={1}>
           <TrendingDownIcon color="success" />
-          <Typography variant="h6">Recent Opportunities</Typography>
+          <Typography variant="h6">{t('opportunities.title')}</Typography>
           <Chip
             size="small"
             label={opportunities.length}
@@ -135,7 +138,7 @@ function OpportunitiesCard({
 
         {opportunities.length === 0 ? (
           <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            No opportunities found yet. Create alerts to start tracking prices!
+            {t('opportunities.empty')}
           </Typography>
         ) : (
           <List dense disablePadding>
@@ -144,7 +147,7 @@ function OpportunitiesCard({
                 key={`${op.alertId}-${op.id}`}
                 disableGutters
                 secondaryAction={
-                  <Tooltip title="Open product">
+                  <Tooltip title={t('opportunities.openProduct')}>
                     <IconButton
                       edge="end"
                       size="small"
@@ -182,7 +185,7 @@ function OpportunitiesCard({
                         variant="caption"
                         color="text.secondary"
                       >
-                        (max: {formatCurrency(op.alertMaxPrice)})
+                        {t('opportunities.max', { price: formatCurrency(op.alertMaxPrice) })}
                       </Typography>
                       <Chip
                         size="small"
@@ -203,17 +206,19 @@ function OpportunitiesCard({
 }
 
 function NextChecksCard({ checks }: { checks: AlertNextCheck[] }) {
+  const { t } = useTranslation('dashboard')
+
   return (
     <Card>
       <CardContent>
         <Stack direction="row" alignItems="center" spacing={1} mb={1}>
           <AccessTimeIcon color="info" />
-          <Typography variant="h6">Next Checks</Typography>
+          <Typography variant="h6">{t('nextChecks.title')}</Typography>
         </Stack>
 
         {checks.length === 0 ? (
           <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            No active alerts scheduled.
+            {t('nextChecks.empty')}
           </Typography>
         ) : (
           <List dense disablePadding>
@@ -231,12 +236,14 @@ function NextChecksCard({ checks }: { checks: AlertNextCheck[] }) {
                   secondary={
                     check.nextCheckAt ? (
                       <Typography variant="caption" color="text.secondary">
-                        Next: {formatDateTime(check.nextCheckAt)} (every{' '}
-                        {check.frequencyMinutes} min)
+                        {t('nextChecks.next', {
+                          date: formatDateTime(check.nextCheckAt),
+                          minutes: check.frequencyMinutes,
+                        })}
                       </Typography>
                     ) : (
                       <Typography variant="caption" color="text.secondary">
-                        Every {check.frequencyMinutes} min — not yet triggered
+                        {t('nextChecks.notYet', { minutes: check.frequencyMinutes })}
                       </Typography>
                     )
                   }
@@ -257,6 +264,7 @@ function NextChecksCard({ checks }: { checks: AlertNextCheck[] }) {
 export function DashboardPage() {
   const { userId } = useAuth()
   const { summary, loading, error } = useDashboardSummary(userId)
+  const { t } = useTranslation('dashboard')
 
   if (loading) {
     return (
@@ -269,7 +277,7 @@ export function DashboardPage() {
   if (error) {
     return (
       <Box>
-        <PageHeader title="Dashboard" />
+        <PageHeader title={t('title')} />
         <Alert severity="error" sx={{ mt: 2 }}>
           {error}
         </Alert>
@@ -280,8 +288,8 @@ export function DashboardPage() {
   if (!summary) {
     return (
       <Box>
-        <PageHeader title="Dashboard" />
-        <Typography color="text.secondary">No data available.</Typography>
+        <PageHeader title={t('title')} />
+        <Typography color="text.secondary">{t('noData')}</Typography>
       </Box>
     )
   }
@@ -290,9 +298,9 @@ export function DashboardPage() {
 
   return (
     <Box>
-      <PageHeader title="Dashboard" />
+      <PageHeader title={t('title')} />
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2, mt: -2 }}>
-        Seu painel de monitoramento de preços
+        {t('subtitle')}
       </Typography>
 
       {isNewUser ? (
@@ -329,11 +337,11 @@ export function DashboardPage() {
       <Divider sx={{ my: 4 }} />
 
       <Typography variant="body2" color="text.secondary">
-        Tip: Create{' '}
+        {t('tip.before')}
         <Link href="/alerts" variant="body2">
-          price alerts
-        </Link>{' '}
-        to get notified when products drop below your target price.
+          {t('tip.link')}
+        </Link>
+        {t('tip.after')}
       </Typography>
     </Box>
   )

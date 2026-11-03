@@ -9,11 +9,12 @@ import Typography from '@mui/material/Typography'
 
 interface PageHeaderProps {
   title: string
+  subtitle?: string
   actionLabel?: string
   onAction?: () => void
 }
 
-export function PageHeader({ title, actionLabel, onAction }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, actionLabel, onAction }: PageHeaderProps) {
   return (
     <Box
       sx={{
@@ -23,9 +24,16 @@ export function PageHeader({ title, actionLabel, onAction }: PageHeaderProps) {
         mb: 3,
       }}
     >
-      <Typography variant="h5" component="h1" fontWeight={600}>
-        {title}
-      </Typography>
+      <Box>
+        <Typography variant="h5" component="h1" fontWeight={600}>
+          {title}
+        </Typography>
+        {subtitle && (
+          <Typography variant="body2" color="text.secondary" mt={0.5}>
+            {subtitle}
+          </Typography>
+        )}
+      </Box>
 
       {actionLabel && onAction && (
         <Button
