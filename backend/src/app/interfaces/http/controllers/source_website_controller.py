@@ -16,7 +16,7 @@ from src.app.interfaces.http.schemas.source_website_schema import (
     SourceWebsitesCollectionResponse,
     SourceWebsiteUpdateRequest,
 )
-from src.app.security.auth import get_current_staff_user
+from src.app.security.auth import get_current_active_user, get_current_staff_user
 from src.app.use_cases.source_website_use_cases import (
     CreateSourceWebsiteUseCase,
     DeleteSourceWebsiteUseCase,
@@ -115,7 +115,7 @@ def list_source_websites(
     source_website_repo: SourceWebsiteRepository = Depends(
         get_source_website_repository
     ),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
     List all source websites with pagination and sorting. Requires staff or superuser access.
@@ -145,7 +145,7 @@ def get_source_website_by_name(
     source_website_repo: SourceWebsiteRepository = Depends(
         get_source_website_repository
     ),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
     Get a source website by its name. Requires staff or superuser access.
@@ -175,7 +175,7 @@ def get_source_website(
     source_website_repo: SourceWebsiteRepository = Depends(
         get_source_website_repository
     ),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
     Get a single source website by ID. Requires staff or superuser access.

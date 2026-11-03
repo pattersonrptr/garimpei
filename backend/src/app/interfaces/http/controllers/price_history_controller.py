@@ -16,7 +16,7 @@ from src.app.interfaces.http.schemas.price_history_schema import (
     PriceHistoryCreateRequest,
     PriceHistoryReadResponse,
 )
-from src.app.security.auth import get_current_staff_user
+from src.app.security.auth import get_current_active_user, get_current_staff_user
 from src.app.use_cases.price_history_use_cases import (
     CreatePriceHistoryUseCase,
     DeletePriceHistoryUseCase,
@@ -114,7 +114,7 @@ def list_price_histories(
     sort_by: str | None = Query(default=None),
     sort_order: str | None = Query(default="desc", pattern="^(asc|desc)$"),
     price_history_repo: PriceHistoryRepository = Depends(get_price_history_repository),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
     List all price history records with pagination. Requires staff or superuser access.
@@ -139,7 +139,7 @@ def list_price_histories(
 def get_latest_price_by_product(
     product_id: int,
     price_history_repo: PriceHistoryRepository = Depends(get_price_history_repository),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
     Get the most recent price record for a product. Requires staff or superuser access.
@@ -169,7 +169,7 @@ def get_latest_price_by_product(
 def get_price_history_by_product(
     product_id: int,
     price_history_repo: PriceHistoryRepository = Depends(get_price_history_repository),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
     Get all price records for a product. Requires staff or superuser access.
@@ -192,7 +192,7 @@ def get_price_history_by_product(
 def get_price_history(
     price_history_id: int,
     price_history_repo: PriceHistoryRepository = Depends(get_price_history_repository),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
     Get a single price history record by ID. Requires staff or superuser access.

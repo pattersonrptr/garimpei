@@ -121,6 +121,7 @@ class PriceAlertRepository(PriceAlertRepositoryInterface):
         offset: int = 0,
         sort_by: str | None = None,
         sort_order: str | None = None,
+        user_id: int | None = None,
     ) -> tuple[list[PriceAlertEntity], int]:
         """Return a paginated list of all price alerts and the total count."""
         query = (
@@ -128,6 +129,8 @@ class PriceAlertRepository(PriceAlertRepositoryInterface):
             .options(joinedload(PriceAlertModel.source_websites))
             .filter(PriceAlertModel.deleted_at.is_(None))
         )
+        if user_id is not None:
+            query = query.filter(PriceAlertModel.user_id == user_id)
 
         total = query.count()
 

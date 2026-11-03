@@ -106,11 +106,14 @@ class SearchConfigRepository(SearchConfigRepositoryInterface):
         offset: int = 0,
         sort_by: str | None = None,
         sort_order: str | None = None,
+        user_id: int | None = None,
     ) -> tuple[list[SearchConfigEntity], int]:
         """Return a paginated list of all search configs and the total count."""
         query = self.db.query(SearchConfigModel).options(
             joinedload(SearchConfigModel.source_websites)
         )
+        if user_id is not None:
+            query = query.filter(SearchConfigModel.user_id == user_id)
 
         total = query.count()
 

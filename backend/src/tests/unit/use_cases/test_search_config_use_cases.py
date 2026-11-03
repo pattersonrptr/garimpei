@@ -150,7 +150,7 @@ class TestListSearchConfigsUseCase:
         result, total = ListSearchConfigsUseCase(mock_repo).execute(limit=10, offset=0)
 
         mock_repo.get_all.assert_called_once_with(
-            limit=10, offset=0, sort_by=None, sort_order=None
+            limit=10, offset=0, sort_by=None, sort_order=None, user_id=None
         )
         assert total == 1
         assert result == [sample_entity]
@@ -164,11 +164,11 @@ class TestListSearchConfigsUseCase:
         mock_repo.get_all.return_value = ([], 0)
 
         ListSearchConfigsUseCase(mock_repo).execute(
-            limit=5, offset=0, sort_by="created_at", sort_order="desc"
+            limit=5, offset=0, sort_by="created_at", sort_order="desc", user_id=None
         )
 
         mock_repo.get_all.assert_called_once_with(
-            limit=5, offset=0, sort_by="created_at", sort_order="desc"
+            limit=5, offset=0, sort_by="created_at", sort_order="desc", user_id=None
         )
 
 

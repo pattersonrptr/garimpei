@@ -66,3 +66,19 @@ async def get_current_superuser(current_user=Depends(get_current_active_user)):
             detail="You don't have permission to access this resource. Superuser access required.",
         )
     return current_user
+
+
+def is_staff_or_superuser(user) -> bool:
+    """True for users allowed to see and manage every user's resources."""
+    return bool(user.is_staff or user.is_superuser)
+
+
+def can_access_owned_resource(owner_id: int | None, user) -> bool:
+    """
+    Ownership rule for per-user resources (price alerts, search configs).
+
+    Staff and superusers can access any resource; regular users only their own.
+    Controllers answer 404 (not 403) when this is False, so a regular user
+    can't probe which IDs exist.
+    """
+    return is_staff_or_superuser(user) or owner_id == user.id

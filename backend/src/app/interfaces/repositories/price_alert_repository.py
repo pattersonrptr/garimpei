@@ -35,6 +35,7 @@ class PriceAlertRepositoryInterface(ABC):
         offset: int = 0,
         sort_by: str | None = None,
         sort_order: str | None = None,
+        user_id: int | None = None,
     ) -> tuple[list[PriceAlertEntity], int]:
         """Return a paginated list of all price alerts and the total count."""
         raise NotImplementedError

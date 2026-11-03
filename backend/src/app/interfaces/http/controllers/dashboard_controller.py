@@ -17,7 +17,7 @@ from src.app.infrastructure.database.models.search_execution_log_model import (
     SearchExecutionLog,
 )
 from src.app.infrastructure.database_config import get_db
-from src.app.security.auth import get_current_staff_user
+from src.app.security.auth import get_current_active_user
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -26,7 +26,7 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 def get_dashboard_summary(
     opportunities_limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     user_id = current_user.id
 

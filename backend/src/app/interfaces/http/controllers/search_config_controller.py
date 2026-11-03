@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 
 from src.app.domain.validators.search_config_validator import SearchConfigValidator
@@ -24,7 +24,11 @@ from src.app.interfaces.http.schemas.search_config_schema import (
     SearchConfigsCollectionResponse,
     SearchConfigUpdateRequest,
 )
-from src.app.security.auth import get_current_staff_user
+from src.app.security.auth import (
+    can_access_owned_resource,
+    get_current_active_user,
+    is_staff_or_superuser,
+)
 from src.app.use_cases.search_config_use_cases import (
     CreateSearchConfigUseCase,
     DeleteSearchConfigUseCase,
@@ -74,10 +78,10 @@ def create_search_config(
     search_config_validator: SearchConfigValidator = Depends(
         get_search_config_validator
     ),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
-    Create a new search configuration. Requires staff or superuser access.
+    Create a new search configuration. Regular users can only access their own search configs; staff can access all.
 
     Returns:
         - 201: Search config created successfully
@@ -112,7 +116,9 @@ def create_search_config(
         frequency_days=attrs.frequency_days,
         preferred_time=attrs.preferred_time,
         search_metadata=attrs.search_metadata,
-        user_id=attrs.user_id,
+        user_id=attrs.user_id
+        if is_staff_or_superuser(current_user)
+        else current_user.id,
         source_website_ids=attrs.source_website_ids,
     )
 
@@ -137,10 +143,10 @@ def list_search_configs(
     sort_by: str | None = Query(default=None),
     sort_order: str | None = Query(default="desc", pattern="^(asc|desc)$"),
     search_config_repo: SearchConfigRepository = Depends(get_search_config_repository),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
-    List all search configs with pagination. Requires staff or superuser access.
+    List all search configs with pagination. Regular users can only access their own search configs; staff can access all.
 
     Returns:
         - 200: Collection of search configs with pagination meta
@@ -157,6 +163,8 @@ def list_search_configs(
         offset=offset,
         sort_by=sort_by,
         sort_order=sort_order,
+        # Staff (incl. the Celery worker) see every config; users see their own.
+        user_id=None if is_staff_or_superuser(current_user) else current_user.id,
     )
     return SearchConfigPresenter.handle_collection_success(search_configs, total)
 
@@ -165,10 +173,10 @@ def list_search_configs(
 def get_search_configs_by_user(
     user_id: int,
     search_config_repo: SearchConfigRepository = Depends(get_search_config_repository),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
-    Get all search configs for a specific user. Requires staff or superuser access.
+    Get all search configs for a specific user. Regular users can only access their own search configs; staff can access all.
 
     Returns:
         - 200: Collection of search configs for the user
@@ -184,6 +192,12 @@ def get_search_configs_by_user(
     )
 
     use_case = GetSearchConfigsByUserIdUseCase(search_config_repo)
+    if not can_access_owned_resource(user_id, current_user):
+        raise HTTPException(
+            status_code=403,
+            detail="You can only list your own search configs.",
+        )
+
     search_configs = use_case.execute(user_id)
     return SearchConfigPresenter.handle_collection_success(
         search_configs, len(search_configs)
@@ -194,10 +208,10 @@ def get_search_configs_by_user(
 def get_search_config(
     search_config_id: int,
     search_config_repo: SearchConfigRepository = Depends(get_search_config_repository),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
-    Get a single search config by ID. Requires staff or superuser access.
+    Get a single search config by ID. Regular users can only access their own search configs; staff can access all.
 
     Returns:
         - 200: Search config found
@@ -216,7 +230,9 @@ def get_search_config(
     use_case = GetSearchConfigByIdUseCase(search_config_repo)
     search_config = use_case.execute(search_config_id)
 
-    if not search_config:
+    if not search_config or not can_access_owned_resource(
+        search_config.user_id, current_user
+    ):
         return SearchConfigPresenter.handle_not_found(
             f"id {search_config_id}", "/data/id"
         )
@@ -232,10 +248,10 @@ def update_search_config(
     search_config_validator: SearchConfigValidator = Depends(
         get_search_config_validator
     ),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
-    Update an existing search config. Requires staff or superuser access.
+    Update an existing search config. Regular users can only access their own search configs; staff can access all.
 
     Returns:
         - 200: Search config updated successfully
@@ -257,7 +273,7 @@ def update_search_config(
     get_uc = GetSearchConfigByIdUseCase(search_config_repo)
     existing = get_uc.execute(search_config_id)
 
-    if not existing:
+    if not existing or not can_access_owned_resource(existing.user_id, current_user):
         return SearchConfigPresenter.handle_not_found(
             f"id {search_config_id}", "/data/id"
         )
@@ -317,10 +333,10 @@ def update_search_config(
 def delete_search_config(
     search_config_id: int,
     search_config_repo: SearchConfigRepository = Depends(get_search_config_repository),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
-    Delete a search config. Requires staff or superuser access.
+    Delete a search config. Regular users can only access their own search configs; staff can access all.
 
     Returns:
         - 204: Deleted successfully (no content)
@@ -339,7 +355,9 @@ def delete_search_config(
     get_uc = GetSearchConfigByIdUseCase(search_config_repo)
     search_config = get_uc.execute(search_config_id)
 
-    if not search_config:
+    if not search_config or not can_access_owned_resource(
+        search_config.user_id, current_user
+    ):
         return SearchConfigPresenter.handle_not_found(
             f"id {search_config_id}", "/data/id"
         )
@@ -375,7 +393,7 @@ def trigger_search_config(
     log_repo: SearchExecutionLogRepository = Depends(
         get_search_execution_log_repository
     ),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
     Manually trigger a scraper search for a search config.
@@ -392,7 +410,9 @@ def trigger_search_config(
     get_uc = GetSearchConfigByIdUseCase(search_config_repo)
     search_config = get_uc.execute(search_config_id)
 
-    if not search_config:
+    if not search_config or not can_access_owned_resource(
+        search_config.user_id, current_user
+    ):
         return SearchConfigPresenter.handle_not_found(
             f"id {search_config_id}", "/data/id"
         )
@@ -457,7 +477,7 @@ def get_execution_status(
     log_repo: SearchExecutionLogRepository = Depends(
         get_search_execution_log_repository
     ),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
     Get the latest execution status for a search config.
@@ -471,7 +491,9 @@ def get_execution_status(
     get_uc = GetSearchConfigByIdUseCase(search_config_repo)
     search_config = get_uc.execute(search_config_id)
 
-    if not search_config:
+    if not search_config or not can_access_owned_resource(
+        search_config.user_id, current_user
+    ):
         return SearchConfigPresenter.handle_not_found(
             f"id {search_config_id}", "/data/id"
         )

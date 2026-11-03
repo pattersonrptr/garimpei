@@ -118,9 +118,14 @@ class ListPriceAlertsUseCase:
         offset: int = 0,
         sort_by: str | None = None,
         sort_order: str | None = None,
+        user_id: int | None = None,
     ) -> tuple[list[PriceAlertEntity], int]:
         return self.price_alert_repo.get_all(
-            limit=limit, offset=offset, sort_by=sort_by, sort_order=sort_order
+            limit=limit,
+            offset=offset,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            user_id=user_id,
         )
 
 

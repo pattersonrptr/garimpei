@@ -27,7 +27,7 @@ from src.app.interfaces.http.schemas.product_schema import (
     ProductsCollectionResponse,
     ProductUpdateRequest,
 )
-from src.app.security.auth import get_current_staff_user
+from src.app.security.auth import get_current_active_user, get_current_staff_user
 from src.app.use_cases.evaluate_product_alerts_use_case import (
     EvaluateProductAlertsUseCase,
 )
@@ -152,7 +152,7 @@ def list_products(
     sort_by: str | None = Query(default=None),
     sort_order: str | None = Query(default="desc", pattern="^(asc|desc)$"),
     product_repo: ProductRepository = Depends(get_product_repository),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
     List all products with pagination and sorting. Requires staff or superuser access.
@@ -216,7 +216,7 @@ def get_product_by_url(
 def get_product(
     product_id: int,
     product_repo: ProductRepository = Depends(get_product_repository),
-    current_user: UserEntity = Depends(get_current_staff_user),
+    current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
     Get a single product by ID. Requires staff or superuser access.
