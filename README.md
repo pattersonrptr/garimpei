@@ -7,7 +7,7 @@ It tracks product prices across OLX, Mercado Livre, Enjoei and Estante Virtual,
 keeps the price history, sends email alerts when a product drops below a target
 price, and provides a dashboard to manage alerts and spot opportunities.
 
-<!-- Demo GIF goes here -->
+![Garimpei dashboard: active alerts, recent opportunities below the target price, next scheduled checks](docs/screenshots/en-03-dashboard.png)
 
 | Service | Tech | Directory |
 |---|---|---|
@@ -43,6 +43,49 @@ system stays the same.
 - 💳 **Freemium model**: plans, subscriptions and usage limits
 - 🌐 **Bilingual UI**: Portuguese (default) and English, type-checked keys; a new language is one folder of JSON files ([how](frontend/src/i18n/README.md))
 - 🧪 **Tested**: 900+ backend and scraper tests, frontend unit tests and Playwright E2E, CI on GitHub Actions
+
+---
+
+## How it works, in screenshots
+
+**1. Set what you're hunting and the most you'll pay.** Each alert has a
+keyword, a maximum price, the marketplaces to search and how often to check.
+
+![My Alerts: keyword, max price, sources, check frequency and actions](docs/screenshots/en-04-alerts.png)
+
+**2. Scrapers run in the background.** Celery Beat schedules each alert; one
+search fans out into tasks per marketplace, then into batches of product pages.
+
+![Flower: run_search per marketplace, then process_urls_list and scrape_batch](docs/screenshots/tool-flower-tasks.png)
+
+**3. When a product shows up below your price, you get an email**, at most one
+per alert per hour.
+
+![Alert email: product, price found, savings against the alert, link to the listing](docs/screenshots/tool-mailpit-email.png)
+
+**4. Every check feeds the price history**, so you can see if a deal is really
+a deal.
+
+![Price history chart of a book dropping from R$ 89,90 to R$ 69,90 over a week](docs/screenshots/en-07b-price-chart.png)
+
+<sub>The chart above uses sample prices: real collection had only started when
+it was taken.</sub>
+
+**5. Plans set the limits, and the backend enforces them.** A Free user who
+clicks *Run now* too soon gets the plan's rule back, not a silent failure.
+
+![Run now blocked by the Free plan: one check every 360 minutes](docs/screenshots/en-09-run-now.png)
+
+![Plans: Free, Pro and Business with their limits](docs/screenshots/en-08-plans.png)
+
+**6. Every endpoint follows JSON:API**, documented with OpenAPI.
+
+![Swagger UI listing the API endpoints](docs/screenshots/tool-swagger.png)
+
+![One endpoint in Swagger: ownership rule and a JSON:API response with type, id, attributes and relationships](docs/screenshots/tool-swagger-endpoint.png)
+
+The UI is also in Portuguese (the default); screenshots in
+[`docs/screenshots/`](docs/screenshots/).
 
 ---
 

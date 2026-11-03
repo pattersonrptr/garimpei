@@ -81,7 +81,6 @@ export function AppRouter() {
         }
       >
         {/* User pages */}
-        <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/alerts" element={<AlertsPage />} />
         <Route path="/products" element={<ProductsPage />} />
