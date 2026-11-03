@@ -23,6 +23,7 @@ import {
 } from '@mui/x-data-grid'
 import { useCallback, useState } from 'react'
 import { useSnackbar } from 'notistack'
+import { useTranslation } from 'react-i18next'
 import { ConfirmationDialog } from '@/components/common/ConfirmationDialog'
 import { GenericFormModal } from '@/components/common/GenericFormModal'
 import { PageHeader } from '@/components/common/PageHeader'
@@ -58,6 +59,8 @@ const defaultForm: FormState = { name: '', baseUrl: '', isActive: true }
 
 export function SourceWebsitesPage() {
   const { enqueueSnackbar } = useSnackbar()
+  const { t } = useTranslation('admin', { keyPrefix: 'sourceWebsites' })
+  const { t: tc } = useTranslation()
 
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
     page: 0,
@@ -119,7 +122,7 @@ export function SourceWebsitesPage() {
 
   async function handleCreate() {
     if (!createForm.name || !createForm.baseUrl) {
-      enqueueSnackbar('Name and Base URL are required', { variant: 'warning' })
+      enqueueSnackbar(t('toast.required'), { variant: 'warning' })
       return
     }
     setCreating(true)
@@ -130,13 +133,13 @@ export function SourceWebsitesPage() {
         isActive: createForm.isActive,
       }
       await createSourceWebsite(payload)
-      enqueueSnackbar('Source website created', { variant: 'success' })
+      enqueueSnackbar(t('toast.created'), { variant: 'success' })
       setCreateOpen(false)
       setCreateForm(defaultForm)
       reload()
     } catch (err) {
       logger.error('Failed to create source website', { name: createForm.name }, err)
-      enqueueSnackbar('Failed to create source website', { variant: 'error' })
+      enqueueSnackbar(t('toast.createFailed'), { variant: 'error' })
     } finally {
       setCreating(false)
     }
@@ -152,12 +155,12 @@ export function SourceWebsitesPage() {
         isActive: editForm.isActive,
       }
       await updateSourceWebsite(editSite.id, payload)
-      enqueueSnackbar('Source website updated', { variant: 'success' })
+      enqueueSnackbar(t('toast.updated'), { variant: 'success' })
       setEditSite(null)
       reload()
     } catch (err) {
       logger.error('Failed to update source website', { id: editSite.id }, err)
-      enqueueSnackbar('Failed to update source website', { variant: 'error' })
+      enqueueSnackbar(t('toast.updateFailed'), { variant: 'error' })
     } finally {
       setSaving(false)
     }
@@ -167,11 +170,11 @@ export function SourceWebsitesPage() {
     if (!deleteId) return
     try {
       await deleteSourceWebsite(deleteId)
-      enqueueSnackbar('Source website deleted', { variant: 'success' })
+      enqueueSnackbar(t('toast.deleted'), { variant: 'success' })
       reload()
     } catch (err) {
       logger.error('Failed to delete source website', { id: deleteId }, err)
-      enqueueSnackbar('Failed to delete source website', { variant: 'error' })
+      enqueueSnackbar(t('toast.deleteFailed'), { variant: 'error' })
     } finally {
       setDeleteId(null)
     }
@@ -182,12 +185,12 @@ export function SourceWebsitesPage() {
     const ids = selectedIds()
     try {
       await Promise.all(ids.map(deleteSourceWebsite))
-      enqueueSnackbar(`${ids.length} website(s) deleted`, { variant: 'success' })
+      enqueueSnackbar(t('toast.bulkDeleted', { count: ids.length }), { variant: 'success' })
       setRowSelection({ type: 'include', ids: new Set() })
       reload()
     } catch (err) {
       logger.error('Failed to bulk delete source websites', { ids }, err)
-      enqueueSnackbar('Failed to delete some websites', { variant: 'error' })
+      enqueueSnackbar(t('toast.bulkDeleteFailed'), { variant: 'error' })
     }
   }
 
@@ -199,7 +202,7 @@ export function SourceWebsitesPage() {
     return (
       <Stack spacing={2} sx={{ pt: 1 }}>
         <TextField
-          label="Name"
+          label={t('fields.name')}
           value={form.name}
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
           required
@@ -207,7 +210,7 @@ export function SourceWebsitesPage() {
           size="small"
         />
         <TextField
-          label="Base URL"
+          label={t('fields.baseUrl')}
           value={form.baseUrl}
           onChange={(e) => setForm((f) => ({ ...f, baseUrl: e.target.value }))}
           required
@@ -222,7 +225,7 @@ export function SourceWebsitesPage() {
               onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
             />
           }
-          label="Active"
+          label={t('fields.active')}
         />
       </Stack>
     )
@@ -233,10 +236,10 @@ export function SourceWebsitesPage() {
   // ---------------------------------------------------------------------------
 
   const columns: GridColDef<SourceWebsite>[] = [
-    { field: 'name', headerName: 'Name', flex: 1, minWidth: 150 },
+    { field: 'name', headerName: t('fields.name'), flex: 1, minWidth: 150 },
     {
       field: 'baseUrl',
-      headerName: 'Base URL',
+      headerName: t('fields.baseUrl'),
       flex: 2,
       minWidth: 200,
       renderCell: ({ value }) => (
@@ -247,11 +250,11 @@ export function SourceWebsitesPage() {
     },
     {
       field: 'isActive',
-      headerName: 'Active',
+      headerName: t('fields.active'),
       width: 100,
       renderCell: ({ value }) => (
         <Chip
-          label={value ? 'Yes' : 'No'}
+          label={value ? tc('yesNo.yes') : tc('yesNo.no')}
           color={value ? 'success' : 'default'}
           size="small"
         />
@@ -260,15 +263,15 @@ export function SourceWebsitesPage() {
     {
       field: 'actions',
       type: 'actions',
-      headerName: 'Actions',
+      headerName: tc('columns.actions'),
       width: 100,
       getActions: ({ row }) => [
-        <Tooltip title="Edit" key="edit">
+        <Tooltip title={tc('actions.edit')} key="edit">
           <IconButton size="small" onClick={() => openEdit(row)}>
             <EditIcon fontSize="small" />
           </IconButton>
         </Tooltip>,
-        <Tooltip title="Delete" key="delete">
+        <Tooltip title={tc('actions.delete')} key="delete">
           <IconButton
             size="small"
             color="error"
@@ -288,14 +291,14 @@ export function SourceWebsitesPage() {
   return (
     <Box>
       <PageHeader
-        title="Source Websites"
-        actionLabel="Add Website"
+        title={t('title')}
+        actionLabel={t('new')}
         onAction={() => setCreateOpen(true)}
       />
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
-          Failed to load source websites.
+          {t('loadFailed')}
         </Alert>
       )}
 
@@ -308,7 +311,7 @@ export function SourceWebsitesPage() {
             size="small"
             onClick={() => setBulkDeleteOpen(true)}
           >
-            Delete selected ({selectionCount()})
+            {tc('actions.deleteSelected')} ({selectionCount()})
           </Button>
         </Box>
       )}
@@ -332,14 +335,14 @@ export function SourceWebsitesPage() {
       {/* ── Create modal ─────────────────────────────────────────────── */}
       <GenericFormModal
         open={createOpen}
-        title="New Source Website"
+        title={t('newTitle')}
         onClose={() => {
           setCreateOpen(false)
           setCreateForm(defaultForm)
         }}
         onSave={handleCreate}
         saving={creating}
-        saveLabel="Create"
+        saveLabel={tc('actions.create')}
       >
         {renderFormFields(createForm, setCreateForm)}
       </GenericFormModal>
@@ -347,7 +350,7 @@ export function SourceWebsitesPage() {
       {/* ── Edit modal ───────────────────────────────────────────────── */}
       <GenericFormModal
         open={editSite !== null}
-        title={`Edit Website — ${editSite?.name ?? ''}`}
+        title={t('editTitle', { name: editSite?.name ?? '' })}
         onClose={() => setEditSite(null)}
         onSave={handleEdit}
         saving={saving}
@@ -358,9 +361,9 @@ export function SourceWebsitesPage() {
       {/* ── Single delete confirmation ────────────────────────────────── */}
       <ConfirmationDialog
         open={deleteId !== null}
-        title="Delete Source Website"
-        message="Are you sure you want to delete this source website?"
-        confirmLabel="Delete"
+        title={t('dialogs.deleteTitle')}
+        message={t('dialogs.deleteMessage')}
+        confirmLabel={tc('actions.delete')}
         onConfirm={handleDelete}
         onCancel={() => setDeleteId(null)}
       />
@@ -368,9 +371,9 @@ export function SourceWebsitesPage() {
       {/* ── Bulk delete confirmation ──────────────────────────────────── */}
       <ConfirmationDialog
         open={bulkDeleteOpen}
-        title="Delete Source Websites"
-        message={`Are you sure you want to delete ${selectionCount()} website(s)?`}
-        confirmLabel="Delete"
+        title={t('dialogs.bulkDeleteTitle')}
+        message={t('dialogs.bulkDeleteMessage', { count: selectionCount() })}
+        confirmLabel={tc('actions.delete')}
         onConfirm={handleBulkDelete}
         onCancel={() => setBulkDeleteOpen(false)}
       />

@@ -23,11 +23,13 @@ import {
 } from '@mui/x-data-grid'
 import { useCallback, useState } from 'react'
 import { useSnackbar } from 'notistack'
+import { useTranslation } from 'react-i18next'
 import { ConfirmationDialog } from '@/components/common/ConfirmationDialog'
 import { GenericFormModal } from '@/components/common/GenericFormModal'
 import { PageHeader } from '@/components/common/PageHeader'
 import { useAuth } from '@/context/AuthContext'
 import { usePaginatedResource } from '@/hooks/usePaginatedResource'
+import { formatDateTime } from '@/lib/formatters'
 import { logger } from '@/lib/logger'
 import {
   createUser,
@@ -73,6 +75,8 @@ const defaultEdit: EditFormState = {
 export function UsersPage() {
   const { enqueueSnackbar } = useSnackbar()
   const { isSuperuser } = useAuth()
+  const { t } = useTranslation('admin', { keyPrefix: 'users' })
+  const { t: tc } = useTranslation()
 
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
     page: 0,
@@ -144,7 +148,7 @@ export function UsersPage() {
 
   async function handleCreate() {
     if (!createForm.username || !createForm.email || !createForm.password) {
-      enqueueSnackbar('All fields are required', { variant: 'warning' })
+      enqueueSnackbar(t('toast.required'), { variant: 'warning' })
       return
     }
     setCreating(true)
@@ -155,13 +159,13 @@ export function UsersPage() {
         password: createForm.password,
       }
       await createUser(payload)
-      enqueueSnackbar('User created', { variant: 'success' })
+      enqueueSnackbar(t('toast.created'), { variant: 'success' })
       setCreateOpen(false)
       setCreateForm(defaultCreate)
       reload()
     } catch (err) {
       logger.error('Failed to create user', { username: createForm.username }, err)
-      enqueueSnackbar('Failed to create user', { variant: 'error' })
+      enqueueSnackbar(t('toast.createFailed'), { variant: 'error' })
     } finally {
       setCreating(false)
     }
@@ -179,12 +183,12 @@ export function UsersPage() {
         isSuperuser: editForm.isSuperuser,
       }
       await updateUser(editUser.id, payload)
-      enqueueSnackbar('User updated', { variant: 'success' })
+      enqueueSnackbar(t('toast.updated'), { variant: 'success' })
       setEditUser(null)
       reload()
     } catch (err) {
       logger.error('Failed to update user', { id: editUser.id }, err)
-      enqueueSnackbar('Failed to update user', { variant: 'error' })
+      enqueueSnackbar(t('toast.updateFailed'), { variant: 'error' })
     } finally {
       setSaving(false)
     }
@@ -194,11 +198,11 @@ export function UsersPage() {
     if (!deleteId) return
     try {
       await deleteUser(deleteId)
-      enqueueSnackbar('User deleted', { variant: 'success' })
+      enqueueSnackbar(t('toast.deleted'), { variant: 'success' })
       reload()
     } catch (err) {
       logger.error('Failed to delete user', { id: deleteId }, err)
-      enqueueSnackbar('Failed to delete user', { variant: 'error' })
+      enqueueSnackbar(t('toast.deleteFailed'), { variant: 'error' })
     } finally {
       setDeleteId(null)
     }
@@ -209,12 +213,12 @@ export function UsersPage() {
     const ids = selectedIds()
     try {
       await Promise.all(ids.map(deleteUser))
-      enqueueSnackbar(`${ids.length} user(s) deleted`, { variant: 'success' })
+      enqueueSnackbar(t('toast.bulkDeleted', { count: ids.length }), { variant: 'success' })
       setRowSelection({ type: 'include', ids: new Set() })
       reload()
     } catch (err) {
       logger.error('Failed to bulk delete users', { ids }, err)
-      enqueueSnackbar('Failed to delete some users', { variant: 'error' })
+      enqueueSnackbar(t('toast.bulkDeleteFailed'), { variant: 'error' })
     }
   }
 
@@ -223,53 +227,53 @@ export function UsersPage() {
   // ---------------------------------------------------------------------------
 
   const columns: GridColDef<User>[] = [
-    { field: 'username', headerName: 'Username', flex: 1, minWidth: 140 },
-    { field: 'email', headerName: 'Email', flex: 2, minWidth: 200 },
+    { field: 'username', headerName: t('fields.username'), flex: 1, minWidth: 140 },
+    { field: 'email', headerName: t('fields.email'), flex: 2, minWidth: 200 },
     {
       field: 'isActive',
-      headerName: 'Active',
+      headerName: t('fields.active'),
       width: 90,
       renderCell: ({ value }) => (
-        <Chip label={value ? 'Yes' : 'No'} color={value ? 'success' : 'default'} size="small" />
+        <Chip label={value ? tc('yesNo.yes') : tc('yesNo.no')} color={value ? 'success' : 'default'} size="small" />
       ),
     },
     {
       field: 'isStaff',
-      headerName: 'Staff',
+      headerName: t('fields.staff'),
       width: 90,
       renderCell: ({ value }) => (
-        <Chip label={value ? 'Yes' : 'No'} color={value ? 'info' : 'default'} size="small" />
+        <Chip label={value ? tc('yesNo.yes') : tc('yesNo.no')} color={value ? 'info' : 'default'} size="small" />
       ),
     },
     {
       field: 'isSuperuser',
-      headerName: 'Superuser',
+      headerName: t('fields.superuser'),
       width: 110,
       renderCell: ({ value }) => (
-        <Chip label={value ? 'Yes' : 'No'} color={value ? 'warning' : 'default'} size="small" />
+        <Chip label={value ? tc('yesNo.yes') : tc('yesNo.no')} color={value ? 'warning' : 'default'} size="small" />
       ),
     },
     {
       field: 'createdAt',
-      headerName: 'Created',
+      headerName: t('fields.created'),
       width: 170,
       valueFormatter: (value?: string) =>
-        value ? new Date(value).toLocaleString() : '—',
+        value ? formatDateTime(value) : '—',
     },
     ...(isSuperuser
       ? [
           {
             field: 'actions',
             type: 'actions' as const,
-            headerName: 'Actions',
+            headerName: tc('columns.actions'),
             width: 100,
             getActions: ({ row }: { row: User }) => [
-              <Tooltip title="Edit" key="edit">
+              <Tooltip title={tc('actions.edit')} key="edit">
                 <IconButton size="small" onClick={() => openEdit(row)}>
                   <EditIcon fontSize="small" />
                 </IconButton>
               </Tooltip>,
-              <Tooltip title="Delete" key="delete">
+              <Tooltip title={tc('actions.delete')} key="delete">
                 <IconButton size="small" color="error" onClick={() => setDeleteId(row.id)}>
                   <DeleteIcon fontSize="small" />
                 </IconButton>
@@ -287,14 +291,14 @@ export function UsersPage() {
   return (
     <Box>
       <PageHeader
-        title="Users"
-        actionLabel={isSuperuser ? 'New User' : undefined}
+        title={t('title')}
+        actionLabel={isSuperuser ? t('new') : undefined}
         onAction={isSuperuser ? () => setCreateOpen(true) : undefined}
       />
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
-          Failed to load users.
+          {t('loadFailed')}
         </Alert>
       )}
 
@@ -306,7 +310,7 @@ export function UsersPage() {
             startIcon={<DeleteIcon />}
             onClick={() => setBulkDeleteOpen(true)}
           >
-            Delete selected ({selectionCount()})
+            {tc('actions.deleteSelected')} ({selectionCount()})
           </Button>
         </Box>
       )}
@@ -330,18 +334,18 @@ export function UsersPage() {
       {/* ── Create modal ─────────────────────────────────────────────── */}
       <GenericFormModal
         open={createOpen}
-        title="New User"
+        title={t('new')}
         onClose={() => {
           setCreateOpen(false)
           setCreateForm(defaultCreate)
         }}
         onSave={handleCreate}
         saving={creating}
-        saveLabel="Create"
+        saveLabel={tc('actions.create')}
       >
         <Stack spacing={2} sx={{ pt: 1 }}>
           <TextField
-            label="Username"
+            label={t('fields.username')}
             value={createForm.username}
             onChange={(e) => setCreateForm((f) => ({ ...f, username: e.target.value }))}
             required
@@ -349,7 +353,7 @@ export function UsersPage() {
             size="small"
           />
           <TextField
-            label="Email"
+            label={t('fields.email')}
             type="email"
             value={createForm.email}
             onChange={(e) => setCreateForm((f) => ({ ...f, email: e.target.value }))}
@@ -358,7 +362,7 @@ export function UsersPage() {
             size="small"
           />
           <TextField
-            label="Password"
+            label={t('fields.password')}
             type="password"
             value={createForm.password}
             onChange={(e) => setCreateForm((f) => ({ ...f, password: e.target.value }))}
@@ -372,21 +376,21 @@ export function UsersPage() {
       {/* ── Edit modal ───────────────────────────────────────────────── */}
       <GenericFormModal
         open={editUser !== null}
-        title={`Edit User — ${editUser?.username ?? ''}`}
+        title={t('editTitle', { name: editUser?.username ?? '' })}
         onClose={() => setEditUser(null)}
         onSave={handleEdit}
         saving={saving}
       >
         <Stack spacing={2} sx={{ pt: 1 }}>
           <TextField
-            label="Username"
+            label={t('fields.username')}
             value={editForm.username}
             onChange={(e) => setEditForm((f) => ({ ...f, username: e.target.value }))}
             fullWidth
             size="small"
           />
           <TextField
-            label="Email"
+            label={t('fields.email')}
             type="email"
             value={editForm.email}
             onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
@@ -400,7 +404,7 @@ export function UsersPage() {
                 onChange={(e) => setEditForm((f) => ({ ...f, isActive: e.target.checked }))}
               />
             }
-            label="Active"
+            label={t('fields.active')}
           />
           <FormControlLabel
             control={
@@ -409,7 +413,7 @@ export function UsersPage() {
                 onChange={(e) => setEditForm((f) => ({ ...f, isStaff: e.target.checked }))}
               />
             }
-            label="Staff"
+            label={t('fields.staff')}
           />
           <FormControlLabel
             control={
@@ -418,7 +422,7 @@ export function UsersPage() {
                 onChange={(e) => setEditForm((f) => ({ ...f, isSuperuser: e.target.checked }))}
               />
             }
-            label="Superuser"
+            label={t('fields.superuser')}
           />
         </Stack>
       </GenericFormModal>
@@ -426,9 +430,9 @@ export function UsersPage() {
       {/* ── Single delete confirmation ────────────────────────────────── */}
       <ConfirmationDialog
         open={deleteId !== null}
-        title="Delete User"
-        message="Are you sure you want to delete this user? This action cannot be undone."
-        confirmLabel="Delete"
+        title={t('dialogs.deleteTitle')}
+        message={`${t('dialogs.deleteMessage')} ${tc('irreversible')}`}
+        confirmLabel={tc('actions.delete')}
         onConfirm={handleDelete}
         onCancel={() => setDeleteId(null)}
       />
@@ -436,9 +440,9 @@ export function UsersPage() {
       {/* ── Bulk delete confirmation ──────────────────────────────────── */}
       <ConfirmationDialog
         open={bulkDeleteOpen}
-        title="Delete Users"
-        message={`Are you sure you want to delete ${selectionCount()} user(s)? This action cannot be undone.`}
-        confirmLabel="Delete"
+        title={t('dialogs.bulkDeleteTitle')}
+        message={`${t('dialogs.bulkDeleteMessage', { count: selectionCount() })} ${tc('irreversible')}`}
+        confirmLabel={tc('actions.delete')}
         onConfirm={handleBulkDelete}
         onCancel={() => setBulkDeleteOpen(false)}
       />

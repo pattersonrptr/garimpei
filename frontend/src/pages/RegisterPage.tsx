@@ -17,11 +17,14 @@ import Typography from '@mui/material/Typography'
 import { useState } from 'react'
 import { Link as RouterLink, useNavigate } from 'react-router-dom'
 import { useSnackbar } from 'notistack'
+import { useTranslation } from 'react-i18next'
+import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 import { register } from '@/services/userService'
 import { logger } from '@/lib/logger'
 
 export function RegisterPage() {
   const navigate = useNavigate()
+  const { t } = useTranslation('auth')
   const { enqueueSnackbar } = useSnackbar()
 
   const [username, setUsername] = useState('')
@@ -35,24 +38,24 @@ export function RegisterPage() {
     e.preventDefault()
 
     if (!username || !email || !password || !confirmPassword) {
-      enqueueSnackbar('Please fill in all fields.', { variant: 'warning' })
+      enqueueSnackbar(t('register.missingFields'), { variant: 'warning' })
       return
     }
 
     if (password !== confirmPassword) {
-      enqueueSnackbar('Passwords do not match.', { variant: 'warning' })
+      enqueueSnackbar(t('register.passwordMismatch'), { variant: 'warning' })
       return
     }
 
     if (password.length < 8) {
-      enqueueSnackbar('Password must be at least 8 characters.', { variant: 'warning' })
+      enqueueSnackbar(t('register.passwordTooShort'), { variant: 'warning' })
       return
     }
 
     setLoading(true)
     try {
       await register({ username, email, password })
-      enqueueSnackbar('Account created! Please sign in.', { variant: 'success' })
+      enqueueSnackbar(t('register.success'), { variant: 'success' })
       navigate('/login')
     } catch (err: unknown) {
       logger.error('Registration failed', { username }, err)
@@ -60,7 +63,7 @@ export function RegisterPage() {
       // Extract JSON:API error detail if available
       const axiosErr = err as { response?: { data?: { errors?: { detail?: string }[] } } }
       const detail = axiosErr?.response?.data?.errors?.[0]?.detail
-      enqueueSnackbar(detail ?? 'Registration failed. Please try again.', {
+      enqueueSnackbar(detail ?? t('register.failed'), {
         variant: 'error',
       })
     } finally {
@@ -76,8 +79,12 @@ export function RegisterPage() {
         alignItems: 'center',
         justifyContent: 'center',
         bgcolor: 'background.default',
+        position: 'relative',
       }}
     >
+      <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
+        <LanguageSwitcher color="primary" />
+      </Box>
       <Paper sx={{ p: 4, width: '100%', maxWidth: 440 }}>
         <Typography variant="h5" fontWeight={700} gutterBottom textAlign="center">
           🏴‍☠️ Garimpei
@@ -88,12 +95,12 @@ export function RegisterPage() {
           textAlign="center"
           mb={3}
         >
-          Crie sua conta e comece a monitorar preços
+          {t('register.subtitle')}
         </Typography>
 
         <Box component="form" onSubmit={handleSubmit} noValidate>
           <TextField
-            label="Username"
+            label={t('fields.username')}
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             fullWidth
@@ -104,7 +111,7 @@ export function RegisterPage() {
           />
 
           <TextField
-            label="Email"
+            label={t('fields.email')}
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -115,7 +122,7 @@ export function RegisterPage() {
           />
 
           <TextField
-            label="Password"
+            label={t('fields.password')}
             type={showPassword ? 'text' : 'password'}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -123,14 +130,14 @@ export function RegisterPage() {
             margin="normal"
             autoComplete="new-password"
             disabled={loading}
-            helperText="Minimum 8 characters"
+            helperText={t('register.passwordHelp')}
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
                     onClick={() => setShowPassword((v) => !v)}
                     edge="end"
-                    aria-label="toggle password visibility"
+                    aria-label={t('fields.togglePassword')}
                   >
                     {showPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
@@ -140,7 +147,7 @@ export function RegisterPage() {
           />
 
           <TextField
-            label="Confirm Password"
+            label={t('fields.confirmPassword')}
             type={showPassword ? 'text' : 'password'}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
@@ -151,7 +158,7 @@ export function RegisterPage() {
             error={confirmPassword.length > 0 && password !== confirmPassword}
             helperText={
               confirmPassword.length > 0 && password !== confirmPassword
-                ? 'Passwords do not match'
+                ? t('register.passwordMismatchShort')
                 : undefined
             }
           />
@@ -163,13 +170,13 @@ export function RegisterPage() {
             sx={{ mt: 2 }}
             disabled={loading}
           >
-            {loading ? <CircularProgress size={22} color="inherit" /> : 'Create Account'}
+            {loading ? <CircularProgress size={22} color="inherit" /> : t('register.submit')}
           </Button>
 
           <Typography variant="body2" textAlign="center" color="text.secondary" mt={2}>
-            Already have an account?{' '}
+            {t('register.hasAccount')}{' '}
             <Link component={RouterLink} to="/login">
-              Sign in
+              {t('register.signIn')}
             </Link>
           </Typography>
         </Box>

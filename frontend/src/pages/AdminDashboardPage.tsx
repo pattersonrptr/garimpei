@@ -23,7 +23,8 @@ import TableContainer from '@mui/material/TableContainer'
 import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import Typography from '@mui/material/Typography'
-
+import { useTranslation } from 'react-i18next'
+import { formatShortDateTime } from '@/lib/formatters'
 import {
   getAdminSummary,
   type AdminSummary,
@@ -66,6 +67,7 @@ function StatCard({
 }
 
 function StatusChip({ status }: { status: string }) {
+  const { t } = useTranslation('admin')
   const color =
     status === 'success'
       ? 'success'
@@ -74,20 +76,16 @@ function StatusChip({ status }: { status: string }) {
         : status === 'running'
           ? 'info'
           : 'default'
-  return <Chip label={status} color={color} size="small" variant="outlined" />
+  return <Chip label={t(`dashboard.executionStatus.${status}`, { defaultValue: status })} color={color} size="small" variant="outlined" />
 }
 
 function formatDate(iso: string | null) {
   if (!iso) return '—'
-  return new Date(iso).toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  return formatShortDateTime(iso)
 }
 
 export function AdminDashboardPage() {
+  const { t } = useTranslation('admin')
   const [summary, setSummary] = useState<AdminSummary | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -108,7 +106,7 @@ export function AdminDashboardPage() {
   if (!summary) {
     return (
       <Typography color="error" mt={4}>
-        Erro ao carregar painel administrativo.
+        {t('dashboard.loadFailed')}
       </Typography>
     )
   }
@@ -118,39 +116,39 @@ export function AdminDashboardPage() {
   return (
     <Box>
       <Typography variant="h4" fontWeight={700} gutterBottom>
-        Painel Administrativo
+        {t('dashboard.title')}
       </Typography>
 
       {/* ── Summary cards ──────────────────────────────────────────── */}
       <Grid container spacing={3} mb={4}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
-            title="Usuários"
+            title={t('dashboard.cards.users')}
             value={summary.totalUsers}
-            subtitle={`${summary.activeUsers} ativos`}
+            subtitle={t('dashboard.cards.active', { count: summary.activeUsers })}
             icon={<GroupIcon fontSize="large" />}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
-            title="Alertas"
+            title={t('dashboard.cards.alerts')}
             value={summary.totalAlerts}
-            subtitle={`${summary.activeAlerts} ativos`}
+            subtitle={t('dashboard.cards.active', { count: summary.activeAlerts })}
             icon={<NotificationsActiveIcon fontSize="large" />}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
-            title="Produtos"
+            title={t('dashboard.cards.products')}
             value={summary.totalProducts}
             icon={<InventoryIcon fontSize="large" />}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
-            title="Websites"
+            title={t('dashboard.cards.websites')}
             value={summary.totalSourceWebsites}
-            subtitle={`${summary.activeSourceWebsites} ativos`}
+            subtitle={t('dashboard.cards.active', { count: summary.activeSourceWebsites })}
             icon={<WebIcon fontSize="large" />}
           />
         </Grid>
@@ -161,7 +159,7 @@ export function AdminDashboardPage() {
         <Grid size={{ xs: 12, md: 6 }}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
-              Status dos Scrapers
+              {t('dashboard.scrapers.title')}
             </Typography>
             <Stack direction="row" spacing={4} alignItems="center">
               <Stack alignItems="center">
@@ -171,7 +169,7 @@ export function AdminDashboardPage() {
                 <Stack direction="row" alignItems="center" spacing={0.5}>
                   <CheckCircleIcon fontSize="small" color="success" />
                   <Typography variant="body2" color="text.secondary">
-                    Sucesso
+                    {t('dashboard.scrapers.success')}
                   </Typography>
                 </Stack>
               </Stack>
@@ -182,7 +180,7 @@ export function AdminDashboardPage() {
                 <Stack direction="row" alignItems="center" spacing={0.5}>
                   <ErrorIcon fontSize="small" color="error" />
                   <Typography variant="body2" color="text.secondary">
-                    Falhas
+                    {t('dashboard.scrapers.failed')}
                   </Typography>
                 </Stack>
               </Stack>
@@ -191,7 +189,7 @@ export function AdminDashboardPage() {
                   {scraperStats.recentTotal}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Total (20 últimas)
+                  {t('dashboard.scrapers.total')}
                 </Typography>
               </Stack>
             </Stack>
@@ -201,10 +199,10 @@ export function AdminDashboardPage() {
         <Grid size={{ xs: 12, md: 6 }}>
           <Paper sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <Typography variant="h6" gutterBottom>
-              Monitoramento
+              {t('dashboard.monitoring.title')}
             </Typography>
             <Typography variant="body2" color="text.secondary" mb={2}>
-              Acompanhe workers e filas do Celery em tempo real no Flower.
+              {t('dashboard.monitoring.body')}
             </Typography>
             <Button
               variant="outlined"
@@ -213,7 +211,7 @@ export function AdminDashboardPage() {
               target="_blank"
               rel="noopener"
             >
-              Abrir Flower
+              {t('dashboard.monitoring.open')}
             </Button>
           </Paper>
         </Grid>
@@ -222,18 +220,18 @@ export function AdminDashboardPage() {
       {/* ── Recent executions table ────────────────────────────────── */}
       <Paper sx={{ p: 3 }}>
         <Typography variant="h6" gutterBottom>
-          Últimas Execuções
+          {t('dashboard.executions.title')}
         </Typography>
         <TableContainer>
           <Table size="small">
             <TableHead>
               <TableRow>
                 <TableCell>ID</TableCell>
-                <TableCell>Config ID</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell align="right">Resultados</TableCell>
-                <TableCell>Início</TableCell>
-                <TableCell>Erro</TableCell>
+                <TableCell>{t('dashboard.executions.configId')}</TableCell>
+                <TableCell>{t('dashboard.executions.status')}</TableCell>
+                <TableCell align="right">{t('dashboard.executions.results')}</TableCell>
+                <TableCell>{t('dashboard.executions.started')}</TableCell>
+                <TableCell>{t('dashboard.executions.error')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>

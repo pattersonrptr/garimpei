@@ -30,6 +30,7 @@ import {
   type GridRowSelectionModel,
 } from '@mui/x-data-grid'
 import { useCallback, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useSnackbar } from 'notistack'
 import { ConfirmationDialog } from '@/components/common/ConfirmationDialog'
@@ -78,6 +79,7 @@ const CONDITIONS: ProductCondition[] = ['new', 'used', 'refurbished', 'undetermi
 export function ProductsPage() {
   const navigate = useNavigate()
   const { enqueueSnackbar } = useSnackbar()
+  const { t } = useTranslation(['products', 'common'])
   const { userId } = useAuth()
 
   // Price alerts for opportunity tagging
@@ -188,11 +190,11 @@ export function ProductsPage() {
     if (!deleteId) return
     try {
       await deleteProduct(deleteId)
-      enqueueSnackbar('Product deleted', { variant: 'success' })
+      enqueueSnackbar(t('toast.deleted'), { variant: 'success' })
       reload()
     } catch (err) {
       logger.error('Failed to delete product', { id: deleteId }, err)
-      enqueueSnackbar('Failed to delete product', { variant: 'error' })
+      enqueueSnackbar(t('toast.deleteFailed'), { variant: 'error' })
     } finally {
       setDeleteId(null)
     }
@@ -203,12 +205,12 @@ export function ProductsPage() {
     const ids = selectedIds()
     try {
       await Promise.all(ids.map(deleteProduct))
-      enqueueSnackbar(`${ids.length} product(s) deleted`, { variant: 'success' })
+      enqueueSnackbar(t('toast.bulkDeleted', { count: ids.length }), { variant: 'success' })
       setRowSelection({ type: 'include', ids: new Set() })
       reload()
     } catch (err) {
       logger.error('Failed to bulk delete products', { ids }, err)
-      enqueueSnackbar('Failed to delete some products', { variant: 'error' })
+      enqueueSnackbar(t('toast.bulkDeleteFailed'), { variant: 'error' })
     }
   }
 
@@ -225,12 +227,12 @@ export function ProductsPage() {
         sellerName: editForm.sellerName || undefined,
       }
       await updateProduct(editProduct.id, payload)
-      enqueueSnackbar('Product updated', { variant: 'success' })
+      enqueueSnackbar(t('toast.updated'), { variant: 'success' })
       setEditProduct(null)
       reload()
     } catch (err) {
       logger.error('Failed to update product', { id: editProduct.id }, err)
-      enqueueSnackbar('Failed to update product', { variant: 'error' })
+      enqueueSnackbar(t('toast.updateFailed'), { variant: 'error' })
     } finally {
       setSaving(false)
     }
@@ -243,7 +245,7 @@ export function ProductsPage() {
   const columns: GridColDef<Product>[] = [
     {
       field: 'title',
-      headerName: 'Title',
+      headerName: t('fields.title'),
       flex: 2,
       minWidth: 200,
       renderCell: ({ row }) => (
@@ -252,7 +254,7 @@ export function ProductsPage() {
           {isOpportunity(row) && (
             <Chip
               size="small"
-              label="🎯 Opportunity"
+              label={t('opportunity')}
               color="success"
               variant="outlined"
               sx={{ height: 22, fontSize: '0.7rem' }}
@@ -263,19 +265,24 @@ export function ProductsPage() {
     },
     {
       field: 'currentPrice',
-      headerName: 'Current Price',
+      headerName: t('fields.currentPrice'),
       width: 140,
       valueFormatter: (value: number | undefined) =>
         value != null ? formatCurrency(value) : '—',
     },
-    { field: 'condition', headerName: 'Condition', width: 130 },
+    {
+      field: 'condition',
+      headerName: t('fields.condition'),
+      width: 140,
+      valueFormatter: (value: ProductCondition) => t(`condition.${value}`),
+    },
     {
       field: 'isAvailable',
-      headerName: 'Available',
+      headerName: t('fields.available'),
       width: 110,
       renderCell: ({ value }) => (
         <Chip
-          label={value ? 'Yes' : 'No'}
+          label={value ? t('common:yesNo.yes') : t('common:yesNo.no')}
           color={value ? 'success' : 'default'}
           size="small"
         />
@@ -284,20 +291,20 @@ export function ProductsPage() {
     {
       field: 'actions',
       type: 'actions',
-      headerName: 'Actions',
+      headerName: t('common:columns.actions'),
       width: 120,
       getActions: ({ row }) => [
-        <Tooltip title="View details" key="view">
+        <Tooltip title={t('common:actions.viewDetails')} key="view">
           <IconButton size="small" onClick={() => navigate(`/products/${row.id}`)}>
             <VisibilityIcon fontSize="small" />
           </IconButton>
         </Tooltip>,
-        <Tooltip title="Edit" key="edit">
+        <Tooltip title={t('common:actions.edit')} key="edit">
           <IconButton size="small" onClick={() => openEdit(row)}>
             <EditIcon fontSize="small" />
           </IconButton>
         </Tooltip>,
-        <Tooltip title="Delete" key="delete">
+        <Tooltip title={t('common:actions.delete')} key="delete">
           <IconButton size="small" color="error" onClick={() => setDeleteId(row.id)}>
             <DeleteIcon fontSize="small" />
           </IconButton>
@@ -312,7 +319,7 @@ export function ProductsPage() {
 
   return (
     <Box>
-      <PageHeader title="Products" />
+      <PageHeader title={t('title')} />
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -328,7 +335,7 @@ export function ProductsPage() {
           onClick={() => setShowFilters((v) => !v)}
           size="small"
         >
-          Filters
+          {t('common:filters.title')}
         </Button>
         {selectionCount() > 0 && (
           <Button
@@ -338,7 +345,7 @@ export function ProductsPage() {
             size="small"
             onClick={() => setBulkDeleteOpen(true)}
           >
-            Delete selected ({selectionCount()})
+            {t('deleteSelected', { count: selectionCount() })}
           </Button>
         )}
       </Stack>
@@ -347,37 +354,37 @@ export function ProductsPage() {
       <Collapse in={showFilters}>
         <Stack direction="row" spacing={2} sx={{ mb: 2 }} flexWrap="wrap">
           <TextField
-            label="Title"
+            label={t('fields.title')}
             size="small"
             value={filters.title}
             onChange={(e) => applyFilters({ title: e.target.value })}
             sx={{ minWidth: 200 }}
           />
           <FormControl size="small" sx={{ minWidth: 160 }}>
-            <InputLabel>Condition</InputLabel>
+            <InputLabel>{t('fields.condition')}</InputLabel>
             <Select
-              label="Condition"
+              label={t('fields.condition')}
               value={filters.condition}
               onChange={(e) => applyFilters({ condition: e.target.value })}
             >
-              <MenuItem value="">All</MenuItem>
+              <MenuItem value="">{t('common:filters.all')}</MenuItem>
               {CONDITIONS.map((c) => (
                 <MenuItem key={c} value={c}>
-                  {c.charAt(0).toUpperCase() + c.slice(1)}
+                  {t(`condition.${c}`)}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
           <FormControl size="small" sx={{ minWidth: 140 }}>
-            <InputLabel>Available</InputLabel>
+            <InputLabel>{t('fields.available')}</InputLabel>
             <Select
-              label="Available"
+              label={t('fields.available')}
               value={filters.isAvailable}
               onChange={(e) => applyFilters({ isAvailable: e.target.value })}
             >
-              <MenuItem value="">All</MenuItem>
-              <MenuItem value="true">Yes</MenuItem>
-              <MenuItem value="false">No</MenuItem>
+              <MenuItem value="">{t('common:filters.all')}</MenuItem>
+              <MenuItem value="true">{t('common:yesNo.yes')}</MenuItem>
+              <MenuItem value="false">{t('common:yesNo.no')}</MenuItem>
             </Select>
           </FormControl>
           <Button
@@ -387,7 +394,7 @@ export function ProductsPage() {
               setPaginationModel((prev) => ({ ...prev, page: 0 }))
             }}
           >
-            Clear
+            {t('common:actions.clear')}
           </Button>
         </Stack>
       </Collapse>
@@ -421,11 +428,10 @@ export function ProductsPage() {
                 sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }}
               />
               <Typography variant="h6" color="text.secondary" gutterBottom>
-                Nenhum produto encontrado
+                {t('empty.title')}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Produtos aparecerão aqui quando seus alertas encontrarem
-                resultados nos marketplaces.
+                {t('empty.body')}
               </Typography>
             </Stack>
           ),
@@ -435,30 +441,30 @@ export function ProductsPage() {
       {/* ── Edit modal ───────────────────────────────────────────────── */}
       <GenericFormModal
         open={editProduct !== null}
-        title={`Edit Product — ${editProduct?.title ?? ''}`}
+        title={t('dialogs.editTitle', { title: editProduct?.title ?? '' })}
         onClose={() => setEditProduct(null)}
         onSave={handleEdit}
         saving={saving}
       >
         <Stack spacing={2} sx={{ pt: 1 }}>
           <TextField
-            label="Title"
+            label={t('fields.title')}
             value={editForm.title}
             onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
             fullWidth
             size="small"
           />
           <TextField
-            label="URL"
+            label={t('fields.url')}
             value={editForm.url}
             onChange={(e) => setEditForm((f) => ({ ...f, url: e.target.value }))}
             fullWidth
             size="small"
           />
           <FormControl size="small" fullWidth>
-            <InputLabel>Condition</InputLabel>
+            <InputLabel>{t('fields.condition')}</InputLabel>
             <Select
-              label="Condition"
+              label={t('fields.condition')}
               value={editForm.condition}
               onChange={(e) =>
                 setEditForm((f) => ({ ...f, condition: e.target.value as ProductCondition }))
@@ -466,33 +472,33 @@ export function ProductsPage() {
             >
               {CONDITIONS.map((c) => (
                 <MenuItem key={c} value={c}>
-                  {c.charAt(0).toUpperCase() + c.slice(1)}
+                  {t(`condition.${c}`)}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
           <FormControl size="small" fullWidth>
-            <InputLabel>Available</InputLabel>
+            <InputLabel>{t('fields.available')}</InputLabel>
             <Select
-              label="Available"
+              label={t('fields.available')}
               value={editForm.isAvailable ? 'true' : 'false'}
               onChange={(e) =>
                 setEditForm((f) => ({ ...f, isAvailable: e.target.value === 'true' }))
               }
             >
-              <MenuItem value="true">Yes</MenuItem>
-              <MenuItem value="false">No</MenuItem>
+              <MenuItem value="true">{t('common:yesNo.yes')}</MenuItem>
+              <MenuItem value="false">{t('common:yesNo.no')}</MenuItem>
             </Select>
           </FormControl>
           <TextField
-            label="Seller Name"
+            label={t('fields.seller')}
             value={editForm.sellerName}
             onChange={(e) => setEditForm((f) => ({ ...f, sellerName: e.target.value }))}
             fullWidth
             size="small"
           />
           <TextField
-            label="Description"
+            label={t('fields.description')}
             value={editForm.description}
             onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
             fullWidth
@@ -506,9 +512,9 @@ export function ProductsPage() {
       {/* ── Single delete confirmation ────────────────────────────────── */}
       <ConfirmationDialog
         open={!!deleteId}
-        title="Delete Product"
-        message="Are you sure you want to delete this product? This action cannot be undone."
-        confirmLabel="Delete"
+        title={t('dialogs.deleteTitle')}
+        message={`${t('dialogs.deleteMessage')} ${t('common:irreversible')}`}
+        confirmLabel={t('common:actions.delete')}
         onConfirm={handleDelete}
         onCancel={() => setDeleteId(null)}
       />
@@ -516,9 +522,9 @@ export function ProductsPage() {
       {/* ── Bulk delete confirmation ──────────────────────────────────── */}
       <ConfirmationDialog
         open={bulkDeleteOpen}
-        title="Delete Products"
-        message={`Are you sure you want to delete ${selectionCount()} product(s)? This action cannot be undone.`}
-        confirmLabel="Delete"
+        title={t('dialogs.bulkDeleteTitle')}
+        message={`${t('dialogs.bulkDeleteMessage', { count: selectionCount() })} ${t('common:irreversible')}`}
+        confirmLabel={t('common:actions.delete')}
         onConfirm={handleBulkDelete}
         onCancel={() => setBulkDeleteOpen(false)}
       />

@@ -1,0 +1,32 @@
+{
+  "title": "Dashboard",
+  "subtitle": "Seu painel de monitoramento de preços",
+  "noData": "Nenhum dado disponível.",
+  "onboarding": {
+    "title": "Bem-vindo ao Garimpei! 🎉",
+    "body": "Crie seu primeiro alerta de preço para começar a monitorar os marketplaces automaticamente. Você será notificado quando encontrarmos produtos abaixo do preço desejado.",
+    "button": "Criar primeiro alerta"
+  },
+  "activeAlerts": {
+    "title": "Alertas ativos",
+    "total_one": "{{count}} alerta configurado",
+    "total_other": "{{count}} alertas configurados"
+  },
+  "opportunities": {
+    "title": "Oportunidades recentes",
+    "empty": "Nenhuma oportunidade ainda. Crie alertas para começar a acompanhar preços!",
+    "openProduct": "Abrir produto",
+    "max": "(máx.: {{price}})"
+  },
+  "nextChecks": {
+    "title": "Próximas verificações",
+    "empty": "Nenhum alerta ativo agendado.",
+    "next": "Próxima: {{date}} (a cada {{minutes}} min)",
+    "notYet": "A cada {{minutes}} min — ainda não executado"
+  },
+  "tip": {
+    "before": "Dica: crie ",
+    "link": "alertas de preço",
+    "after": " para ser avisado quando os produtos ficarem abaixo do preço desejado."
+  }
+}

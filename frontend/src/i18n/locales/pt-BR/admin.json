@@ -1,0 +1,137 @@
+{
+  "dashboard": {
+    "title": "Painel administrativo",
+    "loadFailed": "Erro ao carregar o painel administrativo.",
+    "cards": {
+      "users": "Usuários",
+      "alerts": "Alertas",
+      "products": "Produtos",
+      "websites": "Sites",
+      "active_one": "{{count}} ativo",
+      "active_other": "{{count}} ativos"
+    },
+    "scrapers": {
+      "title": "Status dos scrapers",
+      "success": "Sucesso",
+      "failed": "Falhas",
+      "total": "Total (últimas 20)"
+    },
+    "monitoring": {
+      "title": "Monitoramento",
+      "body": "Acompanhe workers e filas do Celery em tempo real no Flower.",
+      "open": "Abrir Flower"
+    },
+    "executions": {
+      "title": "Últimas execuções",
+      "configId": "ID da busca",
+      "status": "Status",
+      "results": "Resultados",
+      "started": "Início",
+      "error": "Erro"
+    },
+    "executionStatus": {
+      "success": "sucesso",
+      "failed": "falhou",
+      "running": "rodando",
+      "pending": "pendente"
+    }
+  },
+  "users": {
+    "title": "Usuários",
+    "new": "Novo usuário",
+    "loadFailed": "Não foi possível carregar os usuários.",
+    "fields": {
+      "username": "Usuário",
+      "email": "E-mail",
+      "password": "Senha",
+      "active": "Ativo",
+      "staff": "Staff",
+      "superuser": "Superusuário",
+      "created": "Criado em"
+    },
+    "editTitle": "Editar usuário — {{name}}",
+    "toast": {
+      "required": "Preencha todos os campos",
+      "created": "Usuário criado",
+      "createFailed": "Não foi possível criar o usuário",
+      "updated": "Usuário atualizado",
+      "updateFailed": "Não foi possível atualizar o usuário",
+      "deleted": "Usuário excluído",
+      "deleteFailed": "Não foi possível excluir o usuário",
+      "bulkDeleted_one": "{{count}} usuário excluído",
+      "bulkDeleted_other": "{{count}} usuários excluídos",
+      "bulkDeleteFailed": "Não foi possível excluir alguns usuários"
+    },
+    "dialogs": {
+      "deleteTitle": "Excluir usuário",
+      "deleteMessage": "Tem certeza de que quer excluir este usuário?",
+      "bulkDeleteTitle": "Excluir usuários",
+      "bulkDeleteMessage_one": "Tem certeza de que quer excluir {{count}} usuário?",
+      "bulkDeleteMessage_other": "Tem certeza de que quer excluir {{count}} usuários?"
+    }
+  },
+  "searchConfigs": {
+    "title": "Configurações de busca",
+    "new": "Nova busca",
+    "newTitle": "Nova configuração de busca",
+    "loadFailed": "Não foi possível carregar as configurações de busca.",
+    "fields": {
+      "searchTerm": "Termo de busca",
+      "frequencyDays": "Frequência (dias)",
+      "preferredTime": "Horário preferido",
+      "sources": "Sites de origem",
+      "active": "Ativa"
+    },
+    "editTitle": "Editar busca — {{name}}",
+    "toast": {
+      "required": "Informe o termo de busca",
+      "created": "Busca criada",
+      "createFailed": "Não foi possível criar a busca",
+      "updated": "Busca atualizada",
+      "updateFailed": "Não foi possível atualizar a busca",
+      "deleted": "Busca excluída",
+      "deleteFailed": "Não foi possível excluir a busca",
+      "bulkDeleted_one": "{{count}} busca excluída",
+      "bulkDeleted_other": "{{count}} buscas excluídas",
+      "bulkDeleteFailed": "Não foi possível excluir algumas buscas"
+    },
+    "dialogs": {
+      "deleteTitle": "Excluir busca",
+      "deleteMessage": "Tem certeza de que quer excluir esta configuração de busca?",
+      "bulkDeleteTitle": "Excluir buscas",
+      "bulkDeleteMessage_one": "Tem certeza de que quer excluir {{count}} busca?",
+      "bulkDeleteMessage_other": "Tem certeza de que quer excluir {{count}} buscas?"
+    }
+  },
+  "sourceWebsites": {
+    "title": "Sites de origem",
+    "new": "Adicionar site",
+    "newTitle": "Novo site de origem",
+    "loadFailed": "Não foi possível carregar os sites de origem.",
+    "fields": {
+      "name": "Nome",
+      "baseUrl": "URL base",
+      "active": "Ativo"
+    },
+    "editTitle": "Editar site — {{name}}",
+    "toast": {
+      "required": "Nome e URL base são obrigatórios",
+      "created": "Site criado",
+      "createFailed": "Não foi possível criar o site",
+      "updated": "Site atualizado",
+      "updateFailed": "Não foi possível atualizar o site",
+      "deleted": "Site excluído",
+      "deleteFailed": "Não foi possível excluir o site",
+      "bulkDeleted_one": "{{count}} site excluído",
+      "bulkDeleted_other": "{{count}} sites excluídos",
+      "bulkDeleteFailed": "Não foi possível excluir alguns sites"
+    },
+    "dialogs": {
+      "deleteTitle": "Excluir site",
+      "deleteMessage": "Tem certeza de que quer excluir este site de origem?",
+      "bulkDeleteTitle": "Excluir sites",
+      "bulkDeleteMessage_one": "Tem certeza de que quer excluir {{count}} site?",
+      "bulkDeleteMessage_other": "Tem certeza de que quer excluir {{count}} sites?"
+    }
+  }
+}

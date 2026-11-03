@@ -1,0 +1,69 @@
+{
+  "languageName": "Português (Brasil)",
+  "language": {
+    "change": "Mudar idioma"
+  },
+  "layout": {
+    "toggleSidebar": "Abrir ou fechar menu",
+    "logout": "Sair",
+    "signOutTitle": "Sair da conta",
+    "signOutMessage": "Tem certeza de que quer sair?",
+    "signOutConfirm": "Sair",
+    "signOutCancel": "Ficar"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "alerts": "Meus alertas",
+    "products": "Produtos",
+    "plans": "Planos",
+    "admin": "Admin",
+    "adminDashboard": "Painel admin",
+    "users": "Usuários",
+    "searchConfigs": "Buscas",
+    "sourceWebsites": "Sites"
+  },
+  "actions": {
+    "confirm": "Confirmar",
+    "cancel": "Cancelar",
+    "save": "Salvar",
+    "saving": "Salvando…",
+    "create": "Criar",
+    "edit": "Editar",
+    "delete": "Excluir",
+    "deleteSelected": "Excluir selecionados",
+    "pause": "Pausar",
+    "resume": "Retomar",
+    "close": "Fechar",
+    "search": "Buscar",
+    "clear": "Limpar",
+    "back": "Voltar",
+    "viewDetails": "Ver detalhes"
+  },
+  "status": {
+    "active": "Ativo",
+    "paused": "Pausado",
+    "inactive": "Inativo",
+    "never": "Nunca",
+    "unknownError": "erro desconhecido"
+  },
+  "selection": {
+    "selected_one": "{{count}} selecionado",
+    "selected_other": "{{count}} selecionados"
+  },
+  "units": {
+    "minutes": "{{count}} min"
+  },
+  "irreversible": "Essa ação não pode ser desfeita.",
+  "filters": {
+    "title": "Filtros",
+    "all": "Todos"
+  },
+  "yesNo": {
+    "yes": "Sim",
+    "no": "Não"
+  },
+  "columns": {
+    "actions": "Ações"
+  },
+  "loadFailed": "Não foi possível carregar os dados."
+}

@@ -9,6 +9,7 @@ import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import IconButton from '@mui/material/IconButton'
+import { useTranslation } from 'react-i18next'
 
 interface GenericFormModalProps {
   open: boolean
@@ -26,14 +27,15 @@ export function GenericFormModal({
   onClose,
   onSave,
   saving = false,
-  saveLabel = 'Save',
+  saveLabel,
   children,
 }: GenericFormModalProps) {
+  const { t } = useTranslation()
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         {title}
-        <IconButton onClick={onClose} size="small" aria-label="close">
+        <IconButton onClick={onClose} size="small" aria-label={t('actions.close')}>
           <CloseIcon />
         </IconButton>
       </DialogTitle>
@@ -42,14 +44,14 @@ export function GenericFormModal({
 
       <DialogActions>
         <Button onClick={onClose} disabled={saving}>
-          Cancel
+          {t('actions.cancel')}
         </Button>
         <Button
           onClick={onSave}
           variant="contained"
           disabled={saving}
         >
-          {saving ? 'Saving…' : saveLabel}
+          {saving ? t('actions.saving') : (saveLabel ?? t('actions.save'))}
         </Button>
       </DialogActions>
     </Dialog>

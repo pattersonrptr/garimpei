@@ -35,6 +35,7 @@ import {
 } from '@mui/x-data-grid'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSnackbar } from 'notistack'
+import { useTranslation } from 'react-i18next'
 import { ConfirmationDialog } from '@/components/common/ConfirmationDialog'
 import { GenericFormModal } from '@/components/common/GenericFormModal'
 import { PageHeader } from '@/components/common/PageHeader'
@@ -83,6 +84,7 @@ const defaultForm: FormState = {
 export function AlertsPage() {
   const { enqueueSnackbar } = useSnackbar()
   const { userId } = useAuth()
+  const { t } = useTranslation(['alerts', 'common'])
 
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
     page: 0,
@@ -196,14 +198,14 @@ export function AlertsPage() {
         sourceWebsiteIds: form.sourceWebsiteIds,
       }
       await createPriceAlert(payload)
-      enqueueSnackbar('Alert created!', { variant: 'success' })
+      enqueueSnackbar(t('toast.created'), { variant: 'success' })
       setCreateOpen(false)
       reload()
     } catch (err) {
       logger.error('Failed to create alert', {}, err)
-      enqueueSnackbar('Failed to create alert', { variant: 'error' })
+      enqueueSnackbar(t('toast.createFailed'), { variant: 'error' })
     }
-  }, [form, userId, enqueueSnackbar, reload])
+  }, [form, userId, enqueueSnackbar, reload, t])
 
   // Update
   const handleUpdate = useCallback(async () => {
@@ -216,14 +218,14 @@ export function AlertsPage() {
         frequencyMinutes: form.frequencyMinutes,
         sourceWebsiteIds: form.sourceWebsiteIds,
       })
-      enqueueSnackbar('Alert updated!', { variant: 'success' })
+      enqueueSnackbar(t('toast.updated'), { variant: 'success' })
       setEditAlert(null)
       reload()
     } catch (err) {
       logger.error('Failed to update alert', {}, err)
-      enqueueSnackbar('Failed to update alert', { variant: 'error' })
+      enqueueSnackbar(t('toast.updateFailed'), { variant: 'error' })
     }
-  }, [editAlert, form, enqueueSnackbar, reload])
+  }, [editAlert, form, enqueueSnackbar, reload, t])
 
   // Toggle pause/active
   const handleToggleActive = useCallback(
@@ -231,16 +233,16 @@ export function AlertsPage() {
       try {
         await updatePriceAlert(alert.id, { isActive: !alert.isActive })
         enqueueSnackbar(
-          alert.isActive ? 'Alert paused' : 'Alert resumed',
+          alert.isActive ? t('toast.paused') : t('toast.resumed'),
           { variant: 'info' },
         )
         reload()
       } catch (err) {
         logger.error('Failed to toggle alert', {}, err)
-        enqueueSnackbar('Failed to update alert', { variant: 'error' })
+        enqueueSnackbar(t('toast.updateFailed'), { variant: 'error' })
       }
     },
-    [enqueueSnackbar, reload],
+    [enqueueSnackbar, reload, t],
   )
 
   // Delete
@@ -248,14 +250,14 @@ export function AlertsPage() {
     if (!deleteId) return
     try {
       await deletePriceAlert(deleteId)
-      enqueueSnackbar('Alert deleted', { variant: 'success' })
+      enqueueSnackbar(t('toast.deleted'), { variant: 'success' })
       setDeleteId(null)
       reload()
     } catch (err) {
       logger.error('Failed to delete alert', {}, err)
-      enqueueSnackbar('Failed to delete alert', { variant: 'error' })
+      enqueueSnackbar(t('toast.deleteFailed'), { variant: 'error' })
     }
-  }, [deleteId, enqueueSnackbar, reload])
+  }, [deleteId, enqueueSnackbar, reload, t])
 
   // Bulk delete
   const handleBulkDelete = useCallback(async () => {
@@ -265,22 +267,22 @@ export function AlertsPage() {
         : []
     try {
       await Promise.all(ids.map(deletePriceAlert))
-      enqueueSnackbar(`${ids.length} alert(s) deleted`, { variant: 'success' })
+      enqueueSnackbar(t('toast.bulkDeleted', { count: ids.length }), { variant: 'success' })
       setBulkDeleteOpen(false)
       setRowSelection({ type: 'include', ids: new Set() })
       reload()
     } catch (err) {
       logger.error('Bulk delete failed', {}, err)
-      enqueueSnackbar('Some deletions failed', { variant: 'error' })
+      enqueueSnackbar(t('toast.bulkDeleteFailed'), { variant: 'error' })
     }
-  }, [rowSelection, enqueueSnackbar, reload])
+  }, [rowSelection, enqueueSnackbar, reload, t])
 
   // Run Now — trigger scraper search and poll for completion
   const handleRunNow = useCallback(
     async (alert: PriceAlert) => {
       const scId = alert.searchConfigId
       if (!scId) {
-        enqueueSnackbar('No search config linked to this alert', {
+        enqueueSnackbar(t('runNow.noConfig'), {
           variant: 'warning',
         })
         return
@@ -292,7 +294,7 @@ export function AlertsPage() {
 
       try {
         await triggerSearchConfig(scIdStr)
-        enqueueSnackbar('Search triggered! Scraping in progress…', {
+        enqueueSnackbar(t('runNow.triggered'), {
           variant: 'info',
         })
         setRunningConfigs((prev) => ({ ...prev, [scIdStr]: 'running' }))
@@ -322,8 +324,10 @@ export function AlertsPage() {
               reload()
               enqueueSnackbar(
                 execStatus.status === 'success'
-                  ? `Search complete — ${execStatus.resultsCount ?? 0} result(s)`
-                  : `Search failed: ${execStatus.errorMessage ?? 'unknown error'}`,
+                  ? t('runNow.done', { count: execStatus.resultsCount ?? 0 })
+                  : t('runNow.failed', {
+                      error: execStatus.errorMessage ?? t('common:status.unknownError'),
+                    }),
                 {
                   variant:
                     execStatus.status === 'success' ? 'success' : 'error',
@@ -342,18 +346,30 @@ export function AlertsPage() {
           delete next[scIdStr]
           return next
         })
-        const is409 =
-          err instanceof Error &&
-          'response' in err &&
-          (err as unknown as { response: { status: number } }).response
-            ?.status === 409
+        const response =
+          err instanceof Error && 'response' in err
+            ? (
+                err as unknown as {
+                  response?: {
+                    status?: number
+                    data?: { errors?: { detail?: string }[] }
+                  }
+                }
+              ).response
+            : undefined
+        const is409 = response?.status === 409
+        // 403 = plan limit (e.g. ran recently): show the API's explanation
+        const planLimitDetail =
+          response?.status === 403 ? response.data?.errors?.[0]?.detail : undefined
         enqueueSnackbar(
-          is409 ? 'Search is already running' : 'Failed to trigger search',
-          { variant: is409 ? 'warning' : 'error' },
+          is409
+            ? t('runNow.alreadyRunning')
+            : (planLimitDetail ?? t('runNow.triggerFailed')),
+          { variant: is409 || planLimitDetail ? 'warning' : 'error' },
         )
       }
     },
-    [enqueueSnackbar, reload],
+    [enqueueSnackbar, reload, t],
   )
 
   // Helper: source name by ID
@@ -366,14 +382,14 @@ export function AlertsPage() {
   const formFields = (
     <Stack spacing={2} sx={{ mt: 1 }}>
       <TextField
-        label="Search Term (keyword)"
+        label={t('fields.searchTerm')}
         fullWidth
         required
         value={form.searchTerm}
         onChange={(e) => setForm((f) => ({ ...f, searchTerm: e.target.value }))}
       />
       <TextField
-        label="Max Price"
+        label={t('fields.maxPrice')}
         fullWidth
         required
         type="number"
@@ -388,7 +404,7 @@ export function AlertsPage() {
         onChange={(e) => setForm((f) => ({ ...f, maxPrice: e.target.value }))}
       />
       <TextField
-        label="Check Frequency (minutes)"
+        label={t('fields.frequency')}
         fullWidth
         type="number"
         value={form.frequencyMinutes}
@@ -400,7 +416,7 @@ export function AlertsPage() {
         }
       />
       <FormControl fullWidth>
-        <InputLabel>Source Websites</InputLabel>
+        <InputLabel>{t('fields.sources')}</InputLabel>
         <Select
           multiple
           value={form.sourceWebsiteIds}
@@ -414,7 +430,7 @@ export function AlertsPage() {
                   : (val as number[]),
             }))
           }}
-          input={<OutlinedInput label="Source Websites" />}
+          input={<OutlinedInput label={t('fields.sources')} />}
           renderValue={(selected) =>
             selected.map((id) => sourceName(id)).join(', ')
           }
@@ -437,7 +453,7 @@ export function AlertsPage() {
             }
           />
         }
-        label="Active"
+        label={t('fields.active')}
       />
     </Stack>
   )
@@ -446,31 +462,31 @@ export function AlertsPage() {
   const columns: GridColDef<PriceAlert>[] = [
     {
       field: 'searchTerm',
-      headerName: 'Keyword',
+      headerName: t('columns.keyword'),
       flex: 1,
       minWidth: 150,
     },
     {
       field: 'maxPrice',
-      headerName: 'Max Price',
+      headerName: t('columns.maxPrice'),
       width: 120,
       renderCell: ({ value }) => formatCurrency(value as number),
     },
     {
       field: 'isActive',
-      headerName: 'Status',
+      headerName: t('columns.status'),
       width: 110,
       renderCell: ({ value }) => (
         <Chip
           size="small"
-          label={value ? 'Active' : 'Paused'}
+          label={value ? t('common:status.active') : t('common:status.paused')}
           color={value ? 'success' : 'default'}
         />
       ),
     },
     {
       field: 'sourceWebsiteIds',
-      headerName: 'Sources',
+      headerName: t('columns.sources'),
       width: 180,
       renderCell: ({ value }) => {
         const ids = value as number[]
@@ -492,23 +508,23 @@ export function AlertsPage() {
     },
     {
       field: 'frequencyMinutes',
-      headerName: 'Frequency',
+      headerName: t('columns.frequency'),
       width: 110,
-      renderCell: ({ value }) => `${value} min`,
+      renderCell: ({ value }) => t('common:units.minutes', { count: value }),
     },
     {
       field: 'lastTriggeredAt',
-      headerName: 'Last Check',
+      headerName: t('columns.lastCheck'),
       width: 170,
       renderCell: ({ row }) => {
         const scId = row.searchConfigId ? String(row.searchConfigId) : null
         const ts = scId ? lastCheckMap[scId] : null
-        return ts ? formatDateTime(ts) : 'Never'
+        return ts ? formatDateTime(ts) : t('common:status.never')
       },
     },
     {
       field: 'actions',
-      headerName: 'Actions',
+      headerName: t('columns.actions'),
       width: 190,
       sortable: false,
       filterable: false,
@@ -520,10 +536,10 @@ export function AlertsPage() {
             <Tooltip
               title={
                 isRunning
-                  ? 'Searching…'
+                  ? t('runNow.running')
                   : !row.isActive
-                    ? 'Activate alert first'
-                    : 'Run Now'
+                    ? t('runNow.inactive')
+                    : t('runNow.run')
               }
             >
               <span>
@@ -541,7 +557,7 @@ export function AlertsPage() {
                 </IconButton>
               </span>
             </Tooltip>
-            <Tooltip title={row.isActive ? 'Pause' : 'Resume'}>
+            <Tooltip title={row.isActive ? t('common:actions.pause') : t('common:actions.resume')}>
               <IconButton
                 size="small"
                 onClick={() => handleToggleActive(row)}
@@ -550,12 +566,12 @@ export function AlertsPage() {
                 {row.isActive ? <PauseIcon /> : <PlayArrowIcon />}
               </IconButton>
             </Tooltip>
-            <Tooltip title="Edit">
+            <Tooltip title={t('common:actions.edit')}>
               <IconButton size="small" onClick={() => handleOpenEdit(row)}>
                 <EditIcon />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Delete">
+            <Tooltip title={t('common:actions.delete')}>
               <IconButton
                 size="small"
                 color="error"
@@ -576,22 +592,22 @@ export function AlertsPage() {
   return (
     <Box>
       <PageHeader
-        title="My Alerts"
-        actionLabel="New Alert"
+        title={t('title')}
+        actionLabel={t('new')}
         onAction={handleOpenCreate}
       />
 
       {selectedCount > 0 && (
         <Box sx={{ mb: 2 }}>
           <Chip
-            label={`${selectedCount} selected`}
+            label={t('common:selection.selected', { count: selectedCount })}
             onDelete={() =>
               setRowSelection({ type: 'include', ids: new Set() })
             }
             sx={{ mr: 1 }}
           />
           <Chip
-            label="Delete selected"
+            label={t('common:actions.deleteSelected')}
             color="error"
             variant="outlined"
             onClick={() => setBulkDeleteOpen(true)}
@@ -632,14 +648,14 @@ export function AlertsPage() {
                 sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }}
               />
               <Typography variant="h6" color="text.secondary" gutterBottom>
-                Nenhum alerta ainda
+                {t('empty.title')}
               </Typography>
               <Typography
                 variant="body2"
                 color="text.secondary"
                 sx={{ mb: 2 }}
               >
-                Crie seu primeiro alerta clicando em &quot;New Alert&quot; acima.
+                {t('empty.body', { button: t('new') })}
               </Typography>
             </Stack>
           ),
@@ -649,10 +665,10 @@ export function AlertsPage() {
       {/* Create modal */}
       <GenericFormModal
         open={createOpen}
-        title="Create Alert"
+        title={t('dialogs.createTitle')}
         onClose={() => setCreateOpen(false)}
         onSave={handleCreate}
-        saveLabel="Create"
+        saveLabel={t('common:actions.create')}
       >
         {formFields}
       </GenericFormModal>
@@ -660,10 +676,10 @@ export function AlertsPage() {
       {/* Edit modal */}
       <GenericFormModal
         open={!!editAlert}
-        title="Edit Alert"
+        title={t('dialogs.editTitle')}
         onClose={() => setEditAlert(null)}
         onSave={handleUpdate}
-        saveLabel="Save"
+        saveLabel={t('common:actions.save')}
       >
         {formFields}
       </GenericFormModal>
@@ -671,8 +687,8 @@ export function AlertsPage() {
       {/* Single delete */}
       <ConfirmationDialog
         open={!!deleteId}
-        title="Delete Alert"
-        message="Are you sure you want to delete this alert? This cannot be undone."
+        title={t('dialogs.deleteTitle')}
+        message={`${t('dialogs.deleteMessage')} ${t('common:irreversible')}`}
         onConfirm={handleDelete}
         onCancel={() => setDeleteId(null)}
       />
@@ -680,8 +696,8 @@ export function AlertsPage() {
       {/* Bulk delete */}
       <ConfirmationDialog
         open={bulkDeleteOpen}
-        title="Delete Selected Alerts"
-        message={`Delete ${selectedCount} alert(s)? This cannot be undone.`}
+        title={t('dialogs.bulkDeleteTitle')}
+        message={`${t('dialogs.bulkDeleteMessage', { count: selectedCount })} ${t('common:irreversible')}`}
         onConfirm={handleBulkDelete}
         onCancel={() => setBulkDeleteOpen(false)}
       />

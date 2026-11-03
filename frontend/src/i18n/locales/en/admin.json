@@ -1,0 +1,137 @@
+{
+  "dashboard": {
+    "title": "Admin Dashboard",
+    "loadFailed": "Failed to load the admin dashboard.",
+    "cards": {
+      "users": "Users",
+      "alerts": "Alerts",
+      "products": "Products",
+      "websites": "Websites",
+      "active_one": "{{count}} active",
+      "active_other": "{{count}} active"
+    },
+    "scrapers": {
+      "title": "Scraper status",
+      "success": "Success",
+      "failed": "Failed",
+      "total": "Total (last 20)"
+    },
+    "monitoring": {
+      "title": "Monitoring",
+      "body": "Watch Celery workers and queues in real time in Flower.",
+      "open": "Open Flower"
+    },
+    "executions": {
+      "title": "Recent executions",
+      "configId": "Config ID",
+      "status": "Status",
+      "results": "Results",
+      "started": "Started",
+      "error": "Error"
+    },
+    "executionStatus": {
+      "success": "success",
+      "failed": "failed",
+      "running": "running",
+      "pending": "pending"
+    }
+  },
+  "users": {
+    "title": "Users",
+    "new": "New User",
+    "loadFailed": "Failed to load users.",
+    "fields": {
+      "username": "Username",
+      "email": "Email",
+      "password": "Password",
+      "active": "Active",
+      "staff": "Staff",
+      "superuser": "Superuser",
+      "created": "Created"
+    },
+    "editTitle": "Edit User — {{name}}",
+    "toast": {
+      "required": "All fields are required",
+      "created": "User created",
+      "createFailed": "Failed to create user",
+      "updated": "User updated",
+      "updateFailed": "Failed to update user",
+      "deleted": "User deleted",
+      "deleteFailed": "Failed to delete user",
+      "bulkDeleted_one": "{{count}} user deleted",
+      "bulkDeleted_other": "{{count}} users deleted",
+      "bulkDeleteFailed": "Failed to delete some users"
+    },
+    "dialogs": {
+      "deleteTitle": "Delete User",
+      "deleteMessage": "Are you sure you want to delete this user?",
+      "bulkDeleteTitle": "Delete Users",
+      "bulkDeleteMessage_one": "Are you sure you want to delete {{count}} user?",
+      "bulkDeleteMessage_other": "Are you sure you want to delete {{count}} users?"
+    }
+  },
+  "searchConfigs": {
+    "title": "Search Configurations",
+    "new": "Add Config",
+    "newTitle": "New Search Configuration",
+    "loadFailed": "Failed to load search configurations.",
+    "fields": {
+      "searchTerm": "Search Term",
+      "frequencyDays": "Frequency (days)",
+      "preferredTime": "Preferred Time",
+      "sources": "Source Websites",
+      "active": "Active"
+    },
+    "editTitle": "Edit Config — {{name}}",
+    "toast": {
+      "required": "Search term is required",
+      "created": "Search config created",
+      "createFailed": "Failed to create search config",
+      "updated": "Search config updated",
+      "updateFailed": "Failed to update search config",
+      "deleted": "Search config deleted",
+      "deleteFailed": "Failed to delete search config",
+      "bulkDeleted_one": "{{count}} config deleted",
+      "bulkDeleted_other": "{{count}} configs deleted",
+      "bulkDeleteFailed": "Failed to delete some configs"
+    },
+    "dialogs": {
+      "deleteTitle": "Delete Search Config",
+      "deleteMessage": "Are you sure you want to delete this search configuration?",
+      "bulkDeleteTitle": "Delete Search Configs",
+      "bulkDeleteMessage_one": "Are you sure you want to delete {{count}} configuration?",
+      "bulkDeleteMessage_other": "Are you sure you want to delete {{count}} configurations?"
+    }
+  },
+  "sourceWebsites": {
+    "title": "Source Websites",
+    "new": "Add Website",
+    "newTitle": "New Source Website",
+    "loadFailed": "Failed to load source websites.",
+    "fields": {
+      "name": "Name",
+      "baseUrl": "Base URL",
+      "active": "Active"
+    },
+    "editTitle": "Edit Website — {{name}}",
+    "toast": {
+      "required": "Name and Base URL are required",
+      "created": "Source website created",
+      "createFailed": "Failed to create source website",
+      "updated": "Source website updated",
+      "updateFailed": "Failed to update source website",
+      "deleted": "Source website deleted",
+      "deleteFailed": "Failed to delete source website",
+      "bulkDeleted_one": "{{count}} website deleted",
+      "bulkDeleted_other": "{{count}} websites deleted",
+      "bulkDeleteFailed": "Failed to delete some websites"
+    },
+    "dialogs": {
+      "deleteTitle": "Delete Source Website",
+      "deleteMessage": "Are you sure you want to delete this source website?",
+      "bulkDeleteTitle": "Delete Source Websites",
+      "bulkDeleteMessage_one": "Are you sure you want to delete {{count}} website?",
+      "bulkDeleteMessage_other": "Are you sure you want to delete {{count}} websites?"
+    }
+  }
+}

@@ -12,6 +12,7 @@ import Divider from '@mui/material/Divider'
 import Link from '@mui/material/Link'
 import Paper from '@mui/material/Paper'
 import Typography from '@mui/material/Typography'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   CartesianGrid,
@@ -28,6 +29,7 @@ import { formatCurrency } from '@/lib/formatters'
 export function ProductDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { t } = useTranslation(['products', 'common'])
   const { product, chartData, loading, error } = useProductDetails(id ?? '')
 
   if (loading) {
@@ -46,9 +48,9 @@ export function ProductDetailPage() {
           onClick={() => navigate(-1)}
           sx={{ mb: 2 }}
         >
-          Back
+          {t('common:actions.back')}
         </Button>
-        <Alert severity="error">{error ?? 'Product not found.'}</Alert>
+        <Alert severity="error">{error ?? t('detail.notFound')}</Alert>
       </Box>
     )
   }
@@ -60,7 +62,7 @@ export function ProductDetailPage() {
         onClick={() => navigate(-1)}
         sx={{ mb: 2 }}
       >
-        Back to Products
+        {t('detail.back')}
       </Button>
 
       {/* ── Product info ── */}
@@ -74,7 +76,7 @@ export function ProductDetailPage() {
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
           <Box>
             <Typography variant="body2" color="text.secondary">
-              Current Price
+              {t('fields.currentPrice')}
             </Typography>
             <Typography variant="h6" color="primary.main">
               {product.currentPrice != null
@@ -85,17 +87,17 @@ export function ProductDetailPage() {
 
           <Box>
             <Typography variant="body2" color="text.secondary">
-              Condition
+              {t('fields.condition')}
             </Typography>
-            <Typography>{product.condition}</Typography>
+            <Typography>{t(`condition.${product.condition}`)}</Typography>
           </Box>
 
           <Box>
             <Typography variant="body2" color="text.secondary">
-              Availability
+              {t('detail.availability')}
             </Typography>
             <Chip
-              label={product.isAvailable ? 'Available' : 'Unavailable'}
+              label={product.isAvailable ? t('detail.available') : t('detail.unavailable')}
               color={product.isAvailable ? 'success' : 'default'}
               size="small"
             />
@@ -104,7 +106,7 @@ export function ProductDetailPage() {
           {product.sellerName && (
             <Box>
               <Typography variant="body2" color="text.secondary">
-                Seller
+                {t('fields.seller')}
               </Typography>
               <Typography>{product.sellerName}</Typography>
             </Box>
@@ -113,7 +115,7 @@ export function ProductDetailPage() {
           {product.url && (
             <Box sx={{ gridColumn: '1 / -1' }}>
               <Typography variant="body2" color="text.secondary">
-                Source URL
+                {t('detail.sourceUrl')}
               </Typography>
               <Link
                 href={product.url}
@@ -136,7 +138,7 @@ export function ProductDetailPage() {
           <>
             <Divider sx={{ my: 2 }} />
             <Typography variant="body2" color="text.secondary" gutterBottom>
-              Description
+              {t('fields.description')}
             </Typography>
             <Typography>{product.description}</Typography>
           </>
@@ -156,7 +158,7 @@ export function ProductDetailPage() {
       {/* ── Price history chart ── */}
       <Paper sx={{ p: 3 }}>
         <Typography variant="h6" fontWeight={600} gutterBottom>
-          Price History
+          {t('detail.priceHistory')}
         </Typography>
 
         {chartData.length > 0 ? (
@@ -174,7 +176,7 @@ export function ProductDetailPage() {
                   width={100}
                 />
                 <Tooltip
-                  formatter={(v: number | undefined) => [v != null ? formatCurrency(v) : '—', 'Price']}
+                  formatter={(v: number | undefined) => [v != null ? formatCurrency(v) : '—', t('detail.price')]}
                   labelFormatter={(_, payload) =>
                     payload?.[0]?.payload?.dateTime ?? ''
                   }
@@ -192,7 +194,7 @@ export function ProductDetailPage() {
           </Box>
         ) : (
           <Typography variant="body2" color="text.secondary">
-            No price history available for this product.
+            {t('detail.noHistory')}
           </Typography>
         )}
       </Paper>

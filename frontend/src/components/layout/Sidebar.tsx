@@ -25,6 +25,7 @@ import useMediaQuery from '@mui/material/useMediaQuery'
 import { useTheme } from '@mui/material/styles'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
+import { useTranslation } from 'react-i18next'
 
 export const SIDEBAR_WIDTH_EXPANDED = 220
 export const SIDEBAR_WIDTH_COLLAPSED = 60
@@ -35,20 +36,21 @@ interface SidebarProps {
 }
 
 const USER_ITEMS = [
-  { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
-  { label: 'My Alerts', path: '/alerts', icon: <NotificationsActiveIcon /> },
-  { label: 'Products', path: '/products', icon: <InventoryIcon /> },
-  { label: 'Plans', path: '/plans', icon: <WorkspacePremiumIcon /> },
+  { label: 'nav.dashboard', path: '/dashboard', icon: <DashboardIcon /> },
+  { label: 'nav.alerts', path: '/alerts', icon: <NotificationsActiveIcon /> },
+  { label: 'nav.products', path: '/products', icon: <InventoryIcon /> },
+  { label: 'nav.plans', path: '/plans', icon: <WorkspacePremiumIcon /> },
 ] as const
 
 const ADMIN_ITEMS = [
-  { label: 'Admin Dashboard', path: '/admin', icon: <AdminPanelSettingsIcon /> },
-  { label: 'Users', path: '/admin/users', icon: <PeopleIcon /> },
-  { label: 'Search Configs', path: '/admin/search-configs', icon: <ManageSearchIcon /> },
-  { label: 'Source Websites', path: '/admin/source-websites', icon: <PublicIcon /> },
+  { label: 'nav.adminDashboard', path: '/admin', icon: <AdminPanelSettingsIcon /> },
+  { label: 'nav.users', path: '/admin/users', icon: <PeopleIcon /> },
+  { label: 'nav.searchConfigs', path: '/admin/search-configs', icon: <ManageSearchIcon /> },
+  { label: 'nav.sourceWebsites', path: '/admin/source-websites', icon: <PublicIcon /> },
 ] as const
 
 export function Sidebar({ open, onClose }: SidebarProps) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
   const { isStaff, isSuperuser } = useAuth()
@@ -57,7 +59,12 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   const width = open ? SIDEBAR_WIDTH_EXPANDED : SIDEBAR_WIDTH_COLLAPSED
   const isAdmin = isStaff || isSuperuser
 
-  function renderItem(label: string, path: string, icon: React.ReactNode) {
+  function renderItem(
+    labelKey: (typeof USER_ITEMS | typeof ADMIN_ITEMS)[number]['label'],
+    path: string,
+    icon: React.ReactNode,
+  ) {
+    const label = t(labelKey)
     const active =
       path === '/admin'
         ? location.pathname === path
@@ -101,7 +108,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             subheader={
               open ? (
                 <ListSubheader component="div" sx={{ lineHeight: '36px' }}>
-                  Admin
+                  {t('nav.admin')}
                 </ListSubheader>
               ) : undefined
             }

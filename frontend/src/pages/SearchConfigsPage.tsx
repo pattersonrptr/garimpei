@@ -28,6 +28,7 @@ import {
 } from '@mui/x-data-grid'
 import { useCallback, useEffect, useState } from 'react'
 import { useSnackbar } from 'notistack'
+import { useTranslation } from 'react-i18next'
 import { ConfirmationDialog } from '@/components/common/ConfirmationDialog'
 import { GenericFormModal } from '@/components/common/GenericFormModal'
 import { PageHeader } from '@/components/common/PageHeader'
@@ -71,6 +72,8 @@ const defaultForm: FormState = {
 export function SearchConfigsPage() {
   const { enqueueSnackbar } = useSnackbar()
   const { userId } = useAuth()
+  const { t } = useTranslation('admin', { keyPrefix: 'searchConfigs' })
+  const { t: tc } = useTranslation()
 
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
     page: 0,
@@ -151,7 +154,7 @@ export function SearchConfigsPage() {
 
   async function handleCreate() {
     if (!createForm.searchTerm) {
-      enqueueSnackbar('Search term is required', { variant: 'warning' })
+      enqueueSnackbar(t('toast.required'), { variant: 'warning' })
       return
     }
     setCreating(true)
@@ -161,13 +164,13 @@ export function SearchConfigsPage() {
         userId: userId!,
       }
       await createSearchConfig(payload)
-      enqueueSnackbar('Search config created', { variant: 'success' })
+      enqueueSnackbar(t('toast.created'), { variant: 'success' })
       setCreateOpen(false)
       setCreateForm(defaultForm)
       reload()
     } catch (err) {
       logger.error('Failed to create search config', { searchTerm: createForm.searchTerm }, err)
-      enqueueSnackbar('Failed to create search config', { variant: 'error' })
+      enqueueSnackbar(t('toast.createFailed'), { variant: 'error' })
     } finally {
       setCreating(false)
     }
@@ -178,12 +181,12 @@ export function SearchConfigsPage() {
     setSaving(true)
     try {
       await updateSearchConfig(editConfig.id, editForm)
-      enqueueSnackbar('Search config updated', { variant: 'success' })
+      enqueueSnackbar(t('toast.updated'), { variant: 'success' })
       setEditConfig(null)
       reload()
     } catch (err) {
       logger.error('Failed to update search config', { id: editConfig.id }, err)
-      enqueueSnackbar('Failed to update search config', { variant: 'error' })
+      enqueueSnackbar(t('toast.updateFailed'), { variant: 'error' })
     } finally {
       setSaving(false)
     }
@@ -193,11 +196,11 @@ export function SearchConfigsPage() {
     if (!deleteId) return
     try {
       await deleteSearchConfig(deleteId)
-      enqueueSnackbar('Search config deleted', { variant: 'success' })
+      enqueueSnackbar(t('toast.deleted'), { variant: 'success' })
       reload()
     } catch (err) {
       logger.error('Failed to delete search config', { id: deleteId }, err)
-      enqueueSnackbar('Failed to delete search config', { variant: 'error' })
+      enqueueSnackbar(t('toast.deleteFailed'), { variant: 'error' })
     } finally {
       setDeleteId(null)
     }
@@ -208,12 +211,12 @@ export function SearchConfigsPage() {
     const ids = selectedIds()
     try {
       await Promise.all(ids.map(deleteSearchConfig))
-      enqueueSnackbar(`${ids.length} config(s) deleted`, { variant: 'success' })
+      enqueueSnackbar(t('toast.bulkDeleted', { count: ids.length }), { variant: 'success' })
       setRowSelection({ type: 'include', ids: new Set() })
       reload()
     } catch (err) {
       logger.error('Failed to bulk delete search configs', { ids }, err)
-      enqueueSnackbar('Failed to delete some configs', { variant: 'error' })
+      enqueueSnackbar(t('toast.bulkDeleteFailed'), { variant: 'error' })
     }
   }
 
@@ -222,16 +225,16 @@ export function SearchConfigsPage() {
   // ---------------------------------------------------------------------------
 
   const columns: GridColDef<SearchConfig>[] = [
-    { field: 'searchTerm', headerName: 'Search Term', flex: 2, minWidth: 180 },
-    { field: 'frequencyDays', headerName: 'Frequency (days)', width: 160 },
-    { field: 'preferredTime', headerName: 'Preferred Time', width: 150 },
+    { field: 'searchTerm', headerName: t('fields.searchTerm'), flex: 2, minWidth: 180 },
+    { field: 'frequencyDays', headerName: t('fields.frequencyDays'), width: 160 },
+    { field: 'preferredTime', headerName: t('fields.preferredTime'), width: 150 },
     {
       field: 'isActive',
-      headerName: 'Active',
+      headerName: t('fields.active'),
       width: 100,
       renderCell: ({ value }) => (
         <Chip
-          label={value ? 'Yes' : 'No'}
+          label={value ? tc('yesNo.yes') : tc('yesNo.no')}
           color={value ? 'success' : 'default'}
           size="small"
         />
@@ -240,15 +243,15 @@ export function SearchConfigsPage() {
     {
       field: 'actions',
       type: 'actions',
-      headerName: 'Actions',
+      headerName: tc('columns.actions'),
       width: 100,
       getActions: ({ row }) => [
-        <Tooltip title="Edit" key="edit">
+        <Tooltip title={tc('actions.edit')} key="edit">
           <IconButton size="small" onClick={() => openEdit(row)}>
             <EditIcon fontSize="small" />
           </IconButton>
         </Tooltip>,
-        <Tooltip title="Delete" key="delete">
+        <Tooltip title={tc('actions.delete')} key="delete">
           <IconButton
             size="small"
             color="error"
@@ -269,7 +272,7 @@ export function SearchConfigsPage() {
     return (
       <Stack spacing={2} sx={{ pt: 1 }}>
         <TextField
-          label="Search Term"
+          label={t('fields.searchTerm')}
           value={form.searchTerm}
           onChange={(e) => setForm((f) => ({ ...f, searchTerm: e.target.value }))}
           required
@@ -277,7 +280,7 @@ export function SearchConfigsPage() {
           size="small"
         />
         <TextField
-          label="Frequency (days)"
+          label={t('fields.frequencyDays')}
           type="number"
           value={form.frequencyDays}
           onChange={(e) =>
@@ -288,7 +291,7 @@ export function SearchConfigsPage() {
           size="small"
         />
         <TextField
-          label="Preferred Time"
+          label={t('fields.preferredTime')}
           type="time"
           value={form.preferredTime}
           onChange={(e) => setForm((f) => ({ ...f, preferredTime: e.target.value }))}
@@ -297,7 +300,7 @@ export function SearchConfigsPage() {
           InputLabelProps={{ shrink: true }}
         />
         <FormControl fullWidth size="small">
-          <InputLabel>Source Websites</InputLabel>
+          <InputLabel>{t('fields.sources')}</InputLabel>
           <Select
             multiple
             value={form.sourceWebsiteIds}
@@ -307,7 +310,7 @@ export function SearchConfigsPage() {
                 sourceWebsiteIds: e.target.value as number[],
               }))
             }
-            input={<OutlinedInput label="Source Websites" />}
+            input={<OutlinedInput label={t('fields.sources')} />}
             renderValue={(selected) =>
               (selected as number[])
                 .map((id) => sourceWebsites.find((s) => Number(s.id) === id)?.name ?? id)
@@ -328,7 +331,7 @@ export function SearchConfigsPage() {
               onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
             />
           }
-          label="Active"
+          label={t('fields.active')}
         />
       </Stack>
     )
@@ -341,14 +344,14 @@ export function SearchConfigsPage() {
   return (
     <Box>
       <PageHeader
-        title="Search Configurations"
-        actionLabel="Add Config"
+        title={t('title')}
+        actionLabel={t('new')}
         onAction={() => setCreateOpen(true)}
       />
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
-          Failed to load search configurations.
+          {t('loadFailed')}
         </Alert>
       )}
 
@@ -361,7 +364,7 @@ export function SearchConfigsPage() {
             size="small"
             onClick={() => setBulkDeleteOpen(true)}
           >
-            Delete selected ({selectionCount()})
+            {tc('actions.deleteSelected')} ({selectionCount()})
           </Button>
         </Box>
       )}
@@ -385,14 +388,14 @@ export function SearchConfigsPage() {
       {/* ── Create modal ─────────────────────────────────────────────── */}
       <GenericFormModal
         open={createOpen}
-        title="New Search Configuration"
+        title={t('newTitle')}
         onClose={() => {
           setCreateOpen(false)
           setCreateForm(defaultForm)
         }}
         onSave={handleCreate}
         saving={creating}
-        saveLabel="Create"
+        saveLabel={tc('actions.create')}
       >
         {renderFormFields(createForm, setCreateForm)}
       </GenericFormModal>
@@ -400,7 +403,7 @@ export function SearchConfigsPage() {
       {/* ── Edit modal ───────────────────────────────────────────────── */}
       <GenericFormModal
         open={editConfig !== null}
-        title={`Edit Config — ${editConfig?.searchTerm ?? ''}`}
+        title={t('editTitle', { name: editConfig?.searchTerm ?? '' })}
         onClose={() => setEditConfig(null)}
         onSave={handleEdit}
         saving={saving}
@@ -411,9 +414,9 @@ export function SearchConfigsPage() {
       {/* ── Single delete confirmation ────────────────────────────────── */}
       <ConfirmationDialog
         open={deleteId !== null}
-        title="Delete Search Config"
-        message="Are you sure you want to delete this search configuration?"
-        confirmLabel="Delete"
+        title={t('dialogs.deleteTitle')}
+        message={t('dialogs.deleteMessage')}
+        confirmLabel={tc('actions.delete')}
         onConfirm={handleDelete}
         onCancel={() => setDeleteId(null)}
       />
@@ -421,9 +424,9 @@ export function SearchConfigsPage() {
       {/* ── Bulk delete confirmation ──────────────────────────────────── */}
       <ConfirmationDialog
         open={bulkDeleteOpen}
-        title="Delete Search Configs"
-        message={`Are you sure you want to delete ${selectionCount()} configuration(s)?`}
-        confirmLabel="Delete"
+        title={t('dialogs.bulkDeleteTitle')}
+        message={t('dialogs.bulkDeleteMessage', { count: selectionCount() })}
+        confirmLabel={tc('actions.delete')}
         onConfirm={handleBulkDelete}
         onCancel={() => setBulkDeleteOpen(false)}
       />
