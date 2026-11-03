@@ -91,25 +91,47 @@ The UI is also in Portuguese (the default); screenshots in
 
 ## Architecture
 
-```
-┌──────────┐    HTTP    ┌───────────┐    SQL     ┌──────────┐
-│ Frontend │ ─────────▶ │  Backend  │ ─────────▶ │ Postgres │
-│ (React)  │            │ (FastAPI) │            │          │
-└──────────┘            └───────────┘            └──────────┘
-                          │       ▲
-   "Run Now" queues task  │       │  HTTP: saves listings and prices,
-                          │       │  reads active alerts and searches
-                          ▼       │
-┌─────────────┐ tasks ┌───────┐   │
-│ Celery Beat │ ────▶ │ Redis │   │
-│ (scheduler) │       │(queue)│   │
-└─────────────┘       └───┬───┘   │
-                          │       │
-                    tasks ▼       │
-                      ┌───────────┴─┐
-                      │  Scrapers   │
-                      │  (Celery)   │
-                      └─────────────┘
+C4 container view: the parts that run separately and how they talk. All four C4 levels (context, containers, backend and scraper components) are in [`docs/architecture`](docs/architecture/README.md).
+
+```mermaid
+flowchart TB
+    user["<b>User or administrator</b><br/>[Person]"]
+
+    subgraph garimpei["Garimpei"]
+        flower["<b>Flower</b><br/>[Container: Flower]<br/>Monitors Celery tasks"]
+        frontend["<b>Frontend</b><br/>[Container: React 19, Vite, MUI, nginx]<br/>Web interface"]
+        beat["<b>Scheduler</b><br/>[Container: Celery Beat]<br/>Builds the schedule from active alerts"]
+        api["<b>Backend API</b><br/>[Container: FastAPI, SQLAlchemy]<br/>Owns the data and business rules:<br/>auth, alerts, plans, notifications"]
+        redis[("<b>Redis</b><br/>[Container: Redis]<br/>Task broker, task results<br/>and search locks")]
+        db[("<b>Database</b><br/>[Container: PostgreSQL 13]<br/>Users, alerts, products,<br/>price history, logs")]
+        worker["<b>Scraper workers</b><br/>[Container: Celery, Playwright]<br/>Search marketplaces and<br/>collect product data"]
+    end
+
+    sendgrid["<b>Email provider</b><br/>[External system]<br/>SendGrid or SMTP"]
+    markets["<b>Marketplaces</b><br/>[External system]"]
+
+    user -.->|"Monitors tasks, HTTP"| flower
+    user -->|"Uses, HTTP"| frontend
+    flower -->|"Reads task events"| redis
+    frontend -->|"Calls, JSON:API over HTTP"| api
+    beat -->|"Reads active alerts, HTTP"| api
+    beat -->|"Queues scheduled runs"| redis
+    api -->|"Queues manual runs"| redis
+    api -->|"Reads and writes, SQL"| db
+    api -->|"Sends email"| sendgrid
+    redis -->|"Delivers tasks"| worker
+    worker -->|"Reads configs and saves<br/>products, HTTP"| api
+    worker -->|"Scrapes, Playwright"| markets
+
+    classDef person fill:#0B3D73,stroke:#082C54,color:#fff
+    classDef container fill:#1F6FBF,stroke:#17578F,color:#fff
+    classDef store fill:#17578F,stroke:#0B3D73,color:#fff
+    classDef external fill:#6B7280,stroke:#4B5563,color:#fff
+    class user person
+    class frontend,api,beat,worker,flower container
+    class db,redis store
+    class markets,sendgrid external
+    style garimpei fill:#F3F7FB,stroke:#1F6FBF,stroke-dasharray:6 4,color:#0B3D73
 ```
 
 **Alert flow:** the user creates a price alert. The search is queued on Redis
