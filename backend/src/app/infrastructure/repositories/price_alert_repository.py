@@ -188,6 +188,18 @@ class PriceAlertRepository(PriceAlertRepositoryInterface):
         self.db.commit()
         return True
 
+    def count_active_by_user_id(self, user_id: int) -> int:
+        """Count active, non-deleted price alerts owned by a user."""
+        return (
+            self.db.query(PriceAlertModel)
+            .filter(
+                PriceAlertModel.user_id == user_id,
+                PriceAlertModel.is_active.is_(True),
+                PriceAlertModel.deleted_at.is_(None),
+            )
+            .count()
+        )
+
     def count_active_by_search_config_id(self, search_config_id: int) -> int:
         """Count active, non-deleted price alerts that reference a given SearchConfig."""
         return (

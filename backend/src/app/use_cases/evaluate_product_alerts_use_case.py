@@ -8,7 +8,6 @@ for which a notification was already sent for the same product (dedup).
 from datetime import UTC, datetime
 
 from src.app.entities.notification_log import NotificationLog as NotificationLogEntity
-from src.app.infrastructure.services.email_service import EmailServiceInterface
 from src.app.interfaces.repositories.notification_log_repository import (
     NotificationLogRepositoryInterface,
 )
@@ -25,6 +24,7 @@ from src.app.interfaces.repositories.source_website_repository import (
     SourceWebsiteRepositoryInterface,
 )
 from src.app.interfaces.repositories.user_repository import UserRepositoryInterface
+from src.app.interfaces.services.email_service import EmailServiceInterface
 from src.config.logging_config import get_logger
 
 logger = get_logger(__name__)

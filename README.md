@@ -36,11 +36,12 @@ system stays the same.
 
 - 🔎 **Multi-marketplace scraping**: OLX, Mercado Livre, Enjoei, Estante Virtual
 - 🎯 **Price alerts**: set a target price; get notified when a product shows up at or below it
-- 📬 **Email notifications**: via SendGrid, with rate limiting and dedup
+- 📬 **Email notifications**: via SendGrid (or any SMTP server; Mailpit locally), with rate limiting and dedup
 - ⏱️ **Scheduled and on-demand checks**: frequency per alert, plus a manual trigger
 - 📊 **Dashboard**: manage alerts, follow price history, see opportunities
 - 👤 **Admin dashboard**: user and system management
 - 💳 **Freemium model**: plans, subscriptions and usage limits
+- 🌐 **Bilingual UI**: Portuguese (default) and English, type-checked keys; a new language is one folder of JSON files ([how](frontend/src/i18n/README.md))
 - 🧪 **Tested**: 900+ backend and scraper tests, frontend unit tests and Playwright E2E, CI on GitHub Actions
 
 ---
@@ -48,21 +49,32 @@ system stays the same.
 ## Architecture
 
 ```
-┌──────────┐       HTTP        ┌──────────┐       SQL        ┌──────────┐
-│ Frontend │ ───────────────▶  │ Backend  │ ───────────────▶  │ Postgres │
-│ (React)  │                   │ (FastAPI)│                   │          │
-└──────────┘                   └────┬─────┘                   └──────────┘
-                                    │ HTTP
-                               ┌────┴─────┐
-                               │ Scrapers │       broker      ┌──────────┐
-                               │ (Celery) │ ◀───────────────  │  Redis   │
-                               └──────────┘                   └──────────┘
+┌──────────┐    HTTP    ┌───────────┐    SQL     ┌──────────┐
+│ Frontend │ ─────────▶ │  Backend  │ ─────────▶ │ Postgres │
+│ (React)  │            │ (FastAPI) │            │          │
+└──────────┘            └───────────┘            └──────────┘
+                          │       ▲
+   "Run Now" queues task  │       │  HTTP: saves listings and prices,
+                          │       │  reads active alerts and searches
+                          ▼       │
+┌─────────────┐ tasks ┌───────┐   │
+│ Celery Beat │ ────▶ │ Redis │   │
+│ (scheduler) │       │(queue)│   │
+└─────────────┘       └───┬───┘   │
+                          │       │
+                    tasks ▼       │
+                      ┌───────────┴─┐
+                      │  Scrapers   │
+                      │  (Celery)   │
+                      └─────────────┘
 ```
 
-**Alert flow:** the user creates a price alert, the scheduler queues the search,
-a scraper collects the listings and sends them to the backend, the backend
-compares each price with the active alerts and emails the user when a price is at
-or below the target, and the opportunity shows up on the dashboard.
+**Alert flow:** the user creates a price alert. The search is queued on Redis
+either by Celery Beat, on the alert's schedule, or by the backend itself when the
+user clicks "Run Now". A scraper worker picks up the task, collects the listings
+and sends them to the backend through its HTTP API; the backend compares each
+price with the active alerts, emails the user when a price is at or below the
+target, and the opportunity shows up on the dashboard.
 
 ### Design decisions
 
@@ -140,6 +152,7 @@ The services will be available at:
 | Backend API | http://localhost:8000 |
 | Frontend | http://localhost |
 | Flower (Celery monitor) | http://localhost:5555 |
+| Mailpit (local email inbox) | http://localhost:8026 |
 | API Docs (Swagger) | http://localhost:8000/docs |
 
 ---

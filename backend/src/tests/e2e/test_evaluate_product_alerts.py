@@ -11,8 +11,8 @@ Email service is mocked to avoid external calls.
 from unittest.mock import MagicMock
 
 from src.app.entities.product import ProductCondition
-from src.app.infrastructure.services.email_service import EmailResult
 from src.app.interfaces.http.controllers.product_controller import get_email_service
+from src.app.interfaces.services.email_service import EmailResult
 from src.main import app
 
 # ---------------------------------------------------------------------------

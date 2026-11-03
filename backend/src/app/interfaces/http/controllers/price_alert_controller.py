@@ -2,13 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from src.app.domain.plan_limits import (
-    PlanLimits,
-    check_alert_limit,
-    check_frequency_limit,
-    check_source_limit,
-    get_user_plan_limits,
-)
+from src.app.domain.plan_limits import PlanLimits
 from src.app.domain.validators.price_alert_validator import PriceAlertValidator
 from src.app.entities.price_alert import PriceAlert as PriceAlertEntity
 from src.app.entities.user import User as UserEntity
@@ -27,7 +21,13 @@ from src.app.infrastructure.repositories.source_website_repository import (
     SourceWebsiteRepository,
 )
 from src.app.infrastructure.repositories.user_repository import UserRepository
-from src.app.infrastructure.services.email_service import SendGridEmailService
+from src.app.infrastructure.services.email_service import get_email_service
+from src.app.interfaces.http.plan_limits import (
+    check_alert_limit,
+    check_frequency_limit,
+    check_source_limit,
+    get_user_plan_limits,
+)
 from src.app.interfaces.http.presenters.price_alert_presenter import (
     PriceAlertPresenter,
 )
@@ -39,6 +39,7 @@ from src.app.interfaces.http.schemas.price_alert_schema import (
     PriceAlertUpdateRequest,
 )
 from src.app.interfaces.http.schemas.product_schema import ProductsCollectionResponse
+from src.app.interfaces.services.email_service import EmailServiceInterface
 from src.app.security.auth import (
     can_access_owned_resource,
     get_current_active_user,
@@ -95,11 +96,6 @@ def get_notification_log_repository(
 ) -> NotificationLogRepository:
     """Dependency injection for NotificationLogRepository."""
     return NotificationLogRepository(db)
-
-
-def get_email_service() -> SendGridEmailService:
-    """Dependency injection for SendGridEmailService."""
-    return SendGridEmailService()
 
 
 def get_price_alert_validator(
@@ -200,15 +196,14 @@ def list_price_alerts(
     offset: int = Query(default=0, ge=0),
     sort_by: str | None = Query(default=None),
     sort_order: str | None = Query(default="desc", pattern="^(asc|desc)$"),
-    all_users: bool = Query(
-        default=False,
-        description="Staff only: list every user's alerts instead of your own",
-    ),
     price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
-    List all price alerts with pagination. Regular users can only access their own alerts; staff can access all.
+    List price alerts with pagination.
+
+    Regular users get their own alerts. Staff get every user's alerts: the
+    Celery service user relies on this to find the active alerts to check.
 
     Returns:
         - 200: Collection of price alerts with pagination meta
@@ -219,14 +214,13 @@ def list_price_alerts(
         extra={"action": "list_price_alerts", "user_id": current_user.id},
     )
 
-    show_all = all_users and is_staff_or_superuser(current_user)
     use_case = ListPriceAlertsUseCase(price_alert_repo)
     price_alerts, total = use_case.execute(
         limit=limit,
         offset=offset,
         sort_by=sort_by,
         sort_order=sort_order,
-        user_id=None if show_all else current_user.id,
+        user_id=None if is_staff_or_superuser(current_user) else current_user.id,
     )
     return PriceAlertPresenter.handle_collection_success(price_alerts, total)
 
@@ -554,7 +548,7 @@ def trigger_price_alert_notification(
     notification_log_repo: NotificationLogRepository = Depends(
         get_notification_log_repository
     ),
-    email_service: SendGridEmailService = Depends(get_email_service),
+    email_service: EmailServiceInterface = Depends(get_email_service),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
     """

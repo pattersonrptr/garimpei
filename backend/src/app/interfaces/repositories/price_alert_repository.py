@@ -53,6 +53,11 @@ class PriceAlertRepositoryInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def count_active_by_user_id(self, user_id: int) -> int:
+        """Count active, non-deleted price alerts owned by a user."""
+        raise NotImplementedError
+
+    @abstractmethod
     def count_active_by_search_config_id(self, search_config_id: int) -> int:
         """Count active price alerts that reference a given SearchConfig."""
         raise NotImplementedError

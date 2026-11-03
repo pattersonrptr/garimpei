@@ -1,11 +1,21 @@
+from datetime import UTC, datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 
+from src.app.domain.plan_limits import (
+    PlanLimits,
+    manual_run_violation,
+    source_limit_violation,
+)
 from src.app.domain.validators.search_config_validator import SearchConfigValidator
 from src.app.entities.search_config import SearchConfig as SearchConfigEntity
 from src.app.entities.user import User as UserEntity
 from src.app.infrastructure.celery_client import dispatch_scraper_search
 from src.app.infrastructure.database_config import get_db
+from src.app.infrastructure.repositories.price_alert_repository import (
+    PriceAlertRepository,
+)
 from src.app.infrastructure.repositories.search_config_repository import (
     SearchConfigRepository,
 )
@@ -15,6 +25,7 @@ from src.app.infrastructure.repositories.search_execution_log_repository import 
 from src.app.infrastructure.repositories.source_website_repository import (
     SourceWebsiteRepository,
 )
+from src.app.interfaces.http.plan_limits import get_user_plan_limits, to_jsonapi_error
 from src.app.interfaces.http.presenters.search_config_presenter import (
     SearchConfigPresenter,
 )
@@ -27,6 +38,7 @@ from src.app.interfaces.http.schemas.search_config_schema import (
 from src.app.security.auth import (
     can_access_owned_resource,
     get_current_active_user,
+    get_current_staff_user,
     is_staff_or_superuser,
 )
 from src.app.use_cases.search_config_use_cases import (
@@ -37,6 +49,7 @@ from src.app.use_cases.search_config_use_cases import (
     ListSearchConfigsUseCase,
     UpdateSearchConfigUseCase,
 )
+from src.common.jsonapi import JsonApiErrorResponse
 from src.config.logging_config import get_logger
 
 router = APIRouter(tags=["search_configs"], prefix="/search-configs")
@@ -54,6 +67,10 @@ def get_search_execution_log_repository(
 ) -> SearchExecutionLogRepository:
     """Dependency injection for SearchExecutionLogRepository."""
     return SearchExecutionLogRepository(db)
+
+
+def get_price_alert_repository(db=Depends(get_db)) -> PriceAlertRepository:
+    return PriceAlertRepository(db)
 
 
 def get_source_website_repository(db=Depends(get_db)) -> SourceWebsiteRepository:
@@ -78,10 +95,10 @@ def create_search_config(
     search_config_validator: SearchConfigValidator = Depends(
         get_search_config_validator
     ),
-    current_user: UserEntity = Depends(get_current_active_user),
+    current_user: UserEntity = Depends(get_current_staff_user),
 ):
     """
-    Create a new search configuration. Regular users can only access their own search configs; staff can access all.
+    Create a new search configuration. Requires staff or superuser access (regular users get search configs through their price alerts).
 
     Returns:
         - 201: Search config created successfully
@@ -116,9 +133,7 @@ def create_search_config(
         frequency_days=attrs.frequency_days,
         preferred_time=attrs.preferred_time,
         search_metadata=attrs.search_metadata,
-        user_id=attrs.user_id
-        if is_staff_or_superuser(current_user)
-        else current_user.id,
+        user_id=attrs.user_id,
         source_website_ids=attrs.source_website_ids,
     )
 
@@ -248,10 +263,10 @@ def update_search_config(
     search_config_validator: SearchConfigValidator = Depends(
         get_search_config_validator
     ),
-    current_user: UserEntity = Depends(get_current_active_user),
+    current_user: UserEntity = Depends(get_current_staff_user),
 ):
     """
-    Update an existing search config. Regular users can only access their own search configs; staff can access all.
+    Update an existing search config. Requires staff or superuser access (regular users get search configs through their price alerts).
 
     Returns:
         - 200: Search config updated successfully
@@ -333,10 +348,10 @@ def update_search_config(
 def delete_search_config(
     search_config_id: int,
     search_config_repo: SearchConfigRepository = Depends(get_search_config_repository),
-    current_user: UserEntity = Depends(get_current_active_user),
+    current_user: UserEntity = Depends(get_current_staff_user),
 ):
     """
-    Delete a search config. Regular users can only access their own search configs; staff can access all.
+    Delete a search config. Requires staff or superuser access (regular users get search configs through their price alerts).
 
     Returns:
         - 204: Deleted successfully (no content)
@@ -393,16 +408,24 @@ def trigger_search_config(
     log_repo: SearchExecutionLogRepository = Depends(
         get_search_execution_log_repository
     ),
+    price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
+    plan_limits: PlanLimits = Depends(get_user_plan_limits),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
-    Manually trigger a scraper search for a search config.
+    Manually trigger a scraper search for a search config ("Run Now").
+
+    Regular users can only trigger searches that back one of their own
+    active price alerts, within their plan: the alert's sources must fit the
+    plan and a manual run can't happen sooner than the plan's minimum check
+    interval since the last run. Staff are not limited.
 
     Dispatches a Celery task if the config is not already running.
 
     Returns:
         - 202: Task dispatched
-        - 404: Search config not found
+        - 403: Plan limit reached (sources or minimum interval)
+        - 404: Search config not found (or not linked to your active alerts)
         - 409: Already running
     """
     from src.app.use_cases.search_config_use_cases import GetSearchConfigByIdUseCase
@@ -419,6 +442,37 @@ def trigger_search_config(
 
     # Prevent concurrent runs: check latest log status
     latest_log = log_repo.get_latest_by_search_config_id(search_config_id)
+
+    if not is_staff_or_superuser(current_user):
+        linked_alerts = [
+            alert
+            for alert in price_alert_repo.get_by_user_id(current_user.id)
+            if alert.search_config_id == search_config_id and alert.is_active
+        ]
+        if not linked_alerts:
+            return SearchConfigPresenter.handle_not_found(
+                f"id {search_config_id}", "/data/id"
+            )
+        violation = source_limit_violation(
+            len(search_config.source_website_ids), plan_limits
+        )
+        if violation is None and not (
+            latest_log and latest_log.status in ("pending", "running")
+        ):
+            violation = manual_run_violation(
+                latest_log.started_at if latest_log else None,
+                datetime.now(UTC),
+                plan_limits,
+            )
+        if violation:
+            return JSONResponse(
+                status_code=403,
+                content=JsonApiErrorResponse(
+                    errors=[to_jsonapi_error(violation)]
+                ).model_dump(),
+                media_type="application/vnd.api+json",
+            )
+
     if latest_log and latest_log.status in ("pending", "running"):
         logger.info(
             "Search config %s already running, skipping trigger",

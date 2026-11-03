@@ -13,7 +13,6 @@ from src.app.infrastructure.repositories.source_website_repository import (
     SourceWebsiteRepository,
 )
 from src.app.infrastructure.repositories.user_repository import UserRepository
-from src.app.infrastructure.services.email_service import SendGridEmailService
 from src.app.interfaces.http.presenters.notification_log_presenter import (
     NotificationLogPresenter,
 )
@@ -61,10 +60,6 @@ def get_user_repository(db=Depends(get_db)) -> UserRepository:
 
 def get_source_website_repository(db=Depends(get_db)) -> SourceWebsiteRepository:
     return SourceWebsiteRepository(db)
-
-
-def get_email_service() -> SendGridEmailService:
-    return SendGridEmailService()
 
 
 # ---------------------------------------------------------------------------
