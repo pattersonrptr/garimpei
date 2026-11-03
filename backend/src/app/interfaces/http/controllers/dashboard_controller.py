@@ -16,6 +16,7 @@ from src.app.infrastructure.database.models.product_model import Product
 from src.app.infrastructure.database.models.search_execution_log_model import (
     SearchExecutionLog,
 )
+from src.app.infrastructure.database.text_match import title_contains
 from src.app.infrastructure.database_config import get_db
 from src.app.security.auth import get_current_active_user
 
@@ -101,7 +102,7 @@ def get_dashboard_summary(
             )
             .filter(
                 price_alert_source_website.c.price_alert_id == alert.id,
-                Product.title.ilike(f"%{alert.search_term}%"),
+                title_contains(Product.title, alert.search_term),
                 price_sq.c.latest_price.isnot(None),
                 price_sq.c.latest_price <= alert.max_price,
                 Product.is_available.is_(True),

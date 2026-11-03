@@ -7,9 +7,9 @@ done
 
 sleep 5
 
-rm -rf alembic/versions
-mkdir -p alembic/versions
-alembic revision --autogenerate -m "First Migration"
+# Migrations are versioned in alembic/versions. Databases created by the old
+# "delete and autogenerate on every boot" flow are stamped onto the baseline.
+python3 src/scripts/adopt_migration_baseline.py
 alembic upgrade head
 
 # Initialize development database with default superuser

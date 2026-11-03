@@ -596,6 +596,10 @@ docker compose up
 
 ### Database Migrations
 
+Migrations are versioned in `alembic/versions/` and applied by `start.sh` on
+every boot (`alembic upgrade head`). Commit each new migration together with the
+model change that needs it.
+
 ```bash
 # Generate migration after model changes
 docker exec -it web alembic revision --autogenerate -m "Add new field"

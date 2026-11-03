@@ -8,6 +8,7 @@ from src.app.infrastructure.database.models.price_history_model import (
     PriceHistory as PriceHistoryModel,
 )
 from src.app.infrastructure.database.models.product_model import Product as ProductModel
+from src.app.infrastructure.database.text_match import title_contains
 from src.app.interfaces.repositories.product_repository import (
     ProductRepositoryInterface,
 )
@@ -207,7 +208,7 @@ class ProductRepository(ProductRepositoryInterface):
         limit: int = 50,
         offset: int = 0,
     ) -> tuple[list[ProductEntity], int]:
-        """Search products by title (ILIKE) + source_website_ids, with latest price."""
+        """Search products by title (case/accent-insensitive) + source_website_ids, with latest price."""
         # Subquery: latest price per product
         latest_price_sq = (
             self.db.query(
@@ -236,7 +237,7 @@ class ProductRepository(ProductRepositoryInterface):
             self.db.query(ProductModel, price_sq.c.price)
             .outerjoin(price_sq, ProductModel.id == price_sq.c.product_id)
             .filter(
-                ProductModel.title.ilike(f"%{search_term}%"),
+                title_contains(ProductModel.title, search_term),
                 ProductModel.source_website_id.in_(source_website_ids),
                 ProductModel.is_available.is_(True),
             )

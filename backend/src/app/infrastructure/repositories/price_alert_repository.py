@@ -13,6 +13,7 @@ from src.app.infrastructure.database.models.price_alert_source_website_model imp
 from src.app.infrastructure.database.models.source_website_model import (
     SourceWebsite as SourceWebsiteModel,
 )
+from src.app.infrastructure.database.text_match import text_contains
 from src.app.interfaces.repositories.price_alert_repository import (
     PriceAlertRepositoryInterface,
 )
@@ -209,7 +210,7 @@ class PriceAlertRepository(PriceAlertRepositoryInterface):
 
         Matches when:
         - alert.is_active is True
-        - alert.search_term appears in product_title (case-insensitive)
+        - alert.search_term appears in product_title (case/accent-insensitive)
         - source_website_id is in alert.source_website_ids (M2M)
         - current_price <= alert.max_price
         """
@@ -229,14 +230,14 @@ class PriceAlertRepository(PriceAlertRepositoryInterface):
             )
             .all()
         )
-        # Post-filter: search_term must appear in product_title (case-insensitive)
+        # Post-filter: search_term must appear in product_title
+        # (case- and accent-insensitive, same rule as title_contains in SQL)
         matched = []
         seen_ids: set[int] = set()
-        title_lower = product_title.lower()
         for record in records:
             if record.id in seen_ids:
                 continue
             seen_ids.add(record.id)
-            if record.search_term.lower() in title_lower:
+            if text_contains(product_title, record.search_term):
                 matched.append(self._to_entity(record))
         return matched

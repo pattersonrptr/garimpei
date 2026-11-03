@@ -68,7 +68,7 @@ class PriceAlertRepositoryInterface(ABC):
 
         A match occurs when:
         - alert.is_active is True
-        - alert.search_term appears in product_title (case-insensitive)
+        - alert.search_term appears in product_title (case/accent-insensitive)
         - source_website_id is in alert.source_website_ids
         - current_price <= alert.max_price
 
