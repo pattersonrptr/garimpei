@@ -78,8 +78,9 @@ question. The loader is idempotent and reports ISBNs it could not load.
    its own track (main plan, track A).
 2. **New-price anchor:** Estante Virtual's `novo` price for now. Revisit when
    there is a better source.
-3. **Second source:** not decided. Mercado Livre and Amazon are on hold. **No
-   scraper is touched without talking to the author first.**
+3. **Second source:** a bookstore with a public catalog API (see the spike
+   results below). **No scraper is touched without talking to the author
+   first.**
 4. **Seed list:** the 50 best-selling books of all time, each ISBN validated
    against BrasilAPI (title must match). Grows later.
 5. **Scraping rule:** store only price, link, condition, availability, store and
@@ -88,8 +89,69 @@ question. The loader is idempotent and reports ISBNs it could not load.
 6. **Affiliate accounts:** none yet, and not needed until the public pages are
    live (Phases 3 and 4).
 
-## Spikes before the collectors (hours, not days)
+7. **Estante Virtual scope:** per book, the cheapest `novo` and the cheapest
+   `usado` (two offers), plus how many sellers there are. Every seller with
+   their city (so freight can be compared) is on the radar; a likely shape is
+   to fetch it on demand, when a visitor opens a book and gives a CEP, instead
+   of collecting it daily.
+8. **Amazon is never scraped.** It is the reference for new prices and must be
+   in the comparator, but only through the official affiliate API: join Amazon
+   Associates (free), show plain "see on Amazon" links built from the ISBN, and
+   the API opens after the first qualifying sales. Check the current rules
+   when that time comes. **Mercado Livre, Shopee and Magalu** are on the radar
+   the same way, each through its affiliate program.
+9. **Posture with stores:**
+   - Respect `robots.txt`.
+   - One fixed, real browser User-Agent per store, no per-page rotation.
+     Rotating from one IP looks more like a bot, not less.
+   - One tab, cookies kept, random 5 to 15 s pauses.
+   - The first captcha, 403, 429 or empty page stops that store for the day.
+     Two days in a row pause it for a week and tell the author.
+   - **Never bypass a captcha or an anti-bot challenge.** That is the line
+     between collecting public prices and breaking a security measure
+     (Lei 12.737/2012).
+   - No proxies for now, and **never free proxies**: unknown servers that can
+     read and change the traffic. The old `scrapers/src/config/proxy_rotator.py`
+     has a free SOCKS5 pool; the new collectors do not use it.
+   - Store only what rule 5 lists, and no personal data (LGPD).
+   - Prefer an official or public API over HTML whenever a store has one.
+   - **Plain HTTP (`requests`) first; a browser only when a price is rendered
+     by JavaScript.** Lighter, faster, runs on any machine. A browser is never
+     used to get past a challenge.
+10. **Collectors are a new, clean module; the old `scrapers/` package stays as
+    it is.** Keyword alerts keep working. The comparator is not only for books
+    (the goal is Zoom-like: books, electronics, anything), so a collector asks
+    a store for a **product identifier**: ISBN for books now, EAN/GTIN for most
+    other products later. Keyword search stays as a strategy for products
+    without a code, with the result checked by the category's matcher.
+11. **Failures:** logs for now, no notifications. Each collection is a task
+    that retries with backoff; after the last retry it is recorded as failed
+    (a dead-letter list) so it can be inspected and rerun, and a store that
+    keeps failing is paused (rule 9). Today that is Celery
+    (`autoretry_for`, `retry_backoff`, `max_retries`); on AWS the same idea
+    maps to an SQS queue with a redrive policy into a dead-letter queue, and an
+    SNS notification when it fills. The collectors and the use cases must not
+    depend on either: the queue is an adapter (AWS track).
 
-- Does the Estante Virtual search accept an ISBN and return the book directly?
-- Does the Radware challenge still pass from the container the scrapers run in?
-- What changed on Mercado Livre between April and Nov 3?
+## Spike results (Nov 9 2026)
+
+Searched every candidate store for one ISBN (*1984*, 9788535914849): a plain
+HTTP request per store, a few seconds apart. `robots.txt` allows search on all
+that answered. A follow-up run with a headless browser against the stores that
+answered with challenges was **not** done: it would be the kind of anti-bot
+workaround rule 9 forbids.
+
+| Store | Result | Verdict |
+|---|---|---|
+| Estante Virtual | ISBN search returns the book page link; the book page shows "usados a partir de R$ 17,50", "novos a partir de R$ 20,00" and has JSON-LD | **Easy.** Collector 1 (2c) |
+| Livraria da Vila | VTEX store. Public catalog API (`/api/catalog_system/pub/products/search?fq=alternateIds_Ean:<isbn>`) returns the exact book, price and stock as JSON | **Easy, no HTML.** Candidate for 2d |
+| Martins Fontes | VTEX too, same public API returns the book | **Easy, no HTML.** Candidate for 2d (same adapter as Vila) |
+| Traça (`traca.com.br`) | Shopify store with used books. Search page lists the book with prices; its `robots.txt` points to an `agents.md` that invites agents through the Universal Commerce Protocol (UCP/MCP) | **Promising**, and it officially welcomes agents. Look at UCP before any HTML |
+| Travessa | Finds the ISBN, but the price is not in the HTML (loaded by JavaScript) | Medium. Later |
+| Leitura | Answers with an anti-bot challenge page | Out for now (rule 9) |
+| Magalu | 403 even on `robots.txt` | Out; affiliate program later |
+| Mercado Livre | Redirects to an account verification page, which likely explains the Nov 3 "nothing found" | Out; affiliate program later |
+| Shopee | JavaScript app, no products in the HTML, captcha markers | Out; affiliate program later |
+
+Takeaway: a single **VTEX adapter** covers two stores through a public JSON API,
+and EAN lookups there work for any product, not only books (rule 10).
