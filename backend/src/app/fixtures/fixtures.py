@@ -8,7 +8,7 @@ Usage via CLI:
 
 from datetime import UTC, datetime, time
 
-from src.app.entities.product import ProductCondition
+from src.app.catalog.entities import ProductCondition
 
 
 def get_fixtures() -> dict:

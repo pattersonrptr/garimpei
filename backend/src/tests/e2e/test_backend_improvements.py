@@ -10,18 +10,18 @@ Tests:
 
 from datetime import UTC, datetime, timedelta
 
-from src.app.entities.product import ProductCondition
+from src.app.catalog.entities import ProductCondition
+from src.app.catalog.persistence.models import (
+    PriceHistory as PriceHistoryModel,
+)
+from src.app.catalog.persistence.models import (
+    Product as ProductModel,
+)
 from src.app.infrastructure.database.models.price_alert_model import (
     PriceAlert as PriceAlertModel,
 )
 from src.app.infrastructure.database.models.price_alert_source_website_model import (
     price_alert_source_website,
-)
-from src.app.infrastructure.database.models.price_history_model import (
-    PriceHistory as PriceHistoryModel,
-)
-from src.app.infrastructure.database.models.product_model import (
-    Product as ProductModel,
 )
 from src.app.infrastructure.database.models.search_config_model import (
     SearchConfig as SearchConfigModel,

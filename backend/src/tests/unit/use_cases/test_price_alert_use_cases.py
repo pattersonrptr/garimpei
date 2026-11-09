@@ -5,8 +5,8 @@ from unittest.mock import Mock
 
 import pytest
 
+from src.app.catalog.entities import Product as ProductEntity
 from src.app.entities.price_alert import PriceAlert as PriceAlertEntity
-from src.app.entities.product import Product as ProductEntity
 from src.app.entities.search_config import SearchConfig as SearchConfigEntity
 from src.app.use_cases.price_alert_use_cases import (
     CreatePriceAlertUseCase,

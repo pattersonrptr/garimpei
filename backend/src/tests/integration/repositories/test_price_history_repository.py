@@ -9,22 +9,22 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from src.app.entities.price_history import PriceHistory as PriceHistoryEntity
+from src.app.catalog.entities import PriceHistory as PriceHistoryEntity
 
 # Import models to register with Base.metadata
-from src.app.infrastructure.database.models.price_history_model import (  # noqa: F401
+from src.app.catalog.persistence.models import (  # noqa: F401
     PriceHistory as PriceHistoryModel,
 )
-from src.app.infrastructure.database.models.product_model import (  # noqa: F401
+from src.app.catalog.persistence.models import (  # noqa: F401
     Product as ProductModel,
+)
+from src.app.catalog.persistence.repositories import (
+    PriceHistoryRepository,
 )
 from src.app.infrastructure.database.models.source_website_model import (  # noqa: F401
     SourceWebsite as SourceWebsiteModel,
 )
 from src.app.infrastructure.database_config import Base
-from src.app.infrastructure.repositories.price_history_repository import (
-    PriceHistoryRepository,
-)
 
 # ============================================================================
 # Fixtures
@@ -49,7 +49,7 @@ def price_history_repository(test_db):
 @pytest.fixture
 def sample_product(test_db):
     """Creates a SourceWebsite + Product for FK references."""
-    from src.app.entities.product import ProductCondition
+    from src.app.catalog.entities import ProductCondition
 
     source_website = SourceWebsiteModel(
         name="OLX", base_url="https://www.olx.com.br", is_active=True

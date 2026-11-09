@@ -2,10 +2,9 @@ import argparse
 
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
+from src.app.catalog.persistence.models import PriceHistory, Product
 from src.app.fixtures.fixtures import get_fixtures
 from src.app.infrastructure.database.models.plan_model import Plan
-from src.app.infrastructure.database.models.price_history_model import PriceHistory
-from src.app.infrastructure.database.models.product_model import Product
 from src.app.infrastructure.database.models.search_config_model import SearchConfig
 from src.app.infrastructure.database.models.search_config_source_website_model import (
     search_config_source_website,

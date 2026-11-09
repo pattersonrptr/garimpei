@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from src.app.entities.product import ProductCondition
+from src.app.catalog.entities import ProductCondition
 from src.common.jsonapi import (
     CollectionResponse,
     ResourceObject,

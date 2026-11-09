@@ -1,7 +1,7 @@
 from fastapi.responses import JSONResponse
 
-from src.app.entities.price_history import PriceHistory as PriceHistoryEntity
-from src.app.interfaces.http.schemas.price_history_schema import (
+from src.app.catalog.entities import PriceHistory as PriceHistoryEntity
+from src.app.catalog.http.price_history_schema import (
     PriceHistoriesCollectionResponse,
     PriceHistoryReadResponse,
     PriceHistoryResource,

@@ -4,10 +4,9 @@ from unittest.mock import Mock
 
 import pytest
 
-from src.app.domain.validators.product_validator import ProductValidator
-from src.app.entities.product import Product as ProductEntity
-from src.app.entities.product import ProductCondition
-from src.app.interfaces.http.schemas.product_schema import (
+from src.app.catalog.entities import Product as ProductEntity
+from src.app.catalog.entities import ProductCondition
+from src.app.catalog.http.product_schema import (
     ProductAttributesForCreation,
     ProductAttributesForUpdate,
     ProductCreateRequest,
@@ -15,6 +14,7 @@ from src.app.interfaces.http.schemas.product_schema import (
     ProductResourceForUpdate,
     ProductUpdateRequest,
 )
+from src.app.catalog.rules import ProductValidator
 
 # ============================================================================
 # Helpers

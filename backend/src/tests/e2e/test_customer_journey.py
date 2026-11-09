@@ -9,14 +9,14 @@ from unittest.mock import MagicMock
 import pytest
 from passlib.context import CryptContext
 
-from src.app.infrastructure.database.models.notification_log_model import (
-    NotificationLog as NotificationLogModel,
-)
-from src.app.infrastructure.database.models.price_history_model import (
+from src.app.catalog.persistence.models import (
     PriceHistory as PriceHistoryModel,
 )
-from src.app.infrastructure.database.models.product_model import (
+from src.app.catalog.persistence.models import (
     Product as ProductModel,
+)
+from src.app.infrastructure.database.models.notification_log_model import (
+    NotificationLog as NotificationLogModel,
 )
 from src.app.infrastructure.database.models.search_execution_log_model import (
     SearchExecutionLog as SearchExecutionLogModel,

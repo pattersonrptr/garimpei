@@ -10,8 +10,8 @@ from datetime import datetime
 import pytest
 from fastapi.responses import JSONResponse
 
-from src.app.entities.product import Product as ProductEntity
-from src.app.interfaces.http.presenters.product_presenter import ProductPresenter
+from src.app.catalog.entities import Product as ProductEntity
+from src.app.catalog.http.product_presenter import ProductPresenter
 from src.common.jsonapi import JsonApiError
 
 # ============================================================================

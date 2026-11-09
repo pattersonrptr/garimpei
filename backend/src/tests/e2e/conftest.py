@@ -21,6 +21,12 @@ from sqlalchemy.pool import StaticPool
 os.environ["ENABLE_FILE_LOGGING"] = "false"
 
 # Import models first so they register with Base.metadata before create_all()
+from src.app.catalog.persistence.models import (
+    PriceHistory as PriceHistoryModel,  # noqa: F401
+)
+from src.app.catalog.persistence.models import (
+    Product as ProductModel,  # noqa: F401
+)
 from src.app.infrastructure.database.models.notification_log_model import (
     NotificationLog as NotificationLogModel,  # noqa: F401
 )
@@ -32,12 +38,6 @@ from src.app.infrastructure.database.models.price_alert_model import (
 )
 from src.app.infrastructure.database.models.price_alert_source_website_model import (  # noqa: F401
     price_alert_source_website,
-)
-from src.app.infrastructure.database.models.price_history_model import (
-    PriceHistory as PriceHistoryModel,  # noqa: F401
-)
-from src.app.infrastructure.database.models.product_model import (
-    Product as ProductModel,  # noqa: F401
 )
 from src.app.infrastructure.database.models.search_config_model import (  # noqa: F401
     SearchConfig as SearchConfigModel,
@@ -82,7 +82,7 @@ def test_db():
     with SQLAlchemy's Base.metadata before create_all() is called.
     """
     # Ensure all models are imported to register with Base.metadata
-    from src.app.infrastructure.database.models.product_model import (  # noqa: F401
+    from src.app.catalog.persistence.models import (  # noqa: F401
         Product as ProductModel,
     )
     from src.app.infrastructure.database.models.source_website_model import (  # noqa: F401
@@ -334,7 +334,7 @@ def sample_product(test_db, sample_source_website):
     Returns:
         ProductModel: Persisted Product instance
     """
-    from src.app.entities.product import ProductCondition
+    from src.app.catalog.entities import ProductCondition
 
     product = ProductModel(
         url="https://test.example.com/product/123",

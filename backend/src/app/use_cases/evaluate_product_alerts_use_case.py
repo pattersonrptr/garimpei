@@ -7,21 +7,19 @@ for which a notification was already sent for the same product (dedup).
 
 from datetime import UTC, datetime
 
+from src.app.catalog.entities import Product as ProductEntity
+from src.app.catalog.entities import ProductListFilters
+from src.app.catalog.ports import (
+    PriceHistoryRepositoryInterface,
+    ProductRepositoryInterface,
+)
 from src.app.entities.notification_log import NotificationLog as NotificationLogEntity
 from src.app.entities.price_alert import PriceAlert as PriceAlertEntity
-from src.app.entities.product import Product as ProductEntity
-from src.app.entities.product import ProductListFilters
 from src.app.interfaces.repositories.notification_log_repository import (
     NotificationLogRepositoryInterface,
 )
 from src.app.interfaces.repositories.price_alert_repository import (
     PriceAlertRepositoryInterface,
-)
-from src.app.interfaces.repositories.price_history_repository import (
-    PriceHistoryRepositoryInterface,
-)
-from src.app.interfaces.repositories.product_repository import (
-    ProductRepositoryInterface,
 )
 from src.app.interfaces.repositories.source_website_repository import (
     SourceWebsiteRepositoryInterface,

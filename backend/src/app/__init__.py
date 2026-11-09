@@ -1,3 +1,7 @@
+from src.app.catalog.persistence.models import (
+    PriceHistory,  # noqa: F401
+    Product,  # noqa: F401
+)
 from src.app.infrastructure.database.models.notification_log_model import (
     NotificationLog,  # noqa: F401
 )
@@ -7,10 +11,6 @@ from src.app.infrastructure.database.models.price_alert_model import (
 from src.app.infrastructure.database.models.price_alert_source_website_model import (
     price_alert_source_website,  # noqa: F401
 )
-from src.app.infrastructure.database.models.price_history_model import (
-    PriceHistory,  # noqa: F401
-)
-from src.app.infrastructure.database.models.product_model import Product  # noqa: F401
 from src.app.infrastructure.database.models.search_config_model import (
     SearchConfig,  # noqa: F401
 )
