@@ -12,10 +12,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests
 
+from src.celery.search_run import SearchRun, title_matches
 from src.celery.tasks import (
-    _finish_log,
     get_celery_worker_token,
-    process_urls_list,
     run_scraper_search,
     run_scraper_update,
     run_search,
@@ -41,6 +40,46 @@ def _mock_redis():
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+class FakeRedis:
+    """Just enough of redis-py for SearchRun (hashes, lists, delete)."""
+
+    def __init__(self):
+        self.hashes: dict[str, dict[str, int]] = {}
+        self.lists: dict[str, list[str]] = {}
+
+    def hset(self, key, mapping):
+        self.hashes.setdefault(key, {}).update({k: int(v) for k, v in mapping.items()})
+
+    def expire(self, key, seconds):
+        return True
+
+    def hincrby(self, key, field, amount):
+        bucket = self.hashes.setdefault(key, {})
+        bucket[field] = bucket.get(field, 0) + amount
+        return bucket[field]
+
+    def hgetall(self, key):
+        return dict(self.hashes.get(key, {}))
+
+    def rpush(self, key, value):
+        self.lists.setdefault(key, []).append(value)
+
+    def lrange(self, key, start, end):
+        return list(self.lists.get(key, []))
+
+    def delete(self, *keys):
+        for key in keys:
+            self.hashes.pop(key, None)
+            self.lists.pop(key, None)
+
+
+@pytest.fixture
+def fake_redis():
+    redis_client = FakeRedis()
+    with patch("src.celery.tasks._redis", redis_client):
+        yield redis_client
 
 
 def _mock_response(status_code: int, json_data=None):
@@ -114,29 +153,39 @@ def test_get_celery_worker_token_returns_none_when_token_missing(mock_post):
 @patch("src.celery.tasks.ApiClient")
 @patch("src.celery.tasks.ScraperFactory")
 @patch("src.celery.tasks.ScraperManager")
-@patch("src.celery.tasks.process_urls_list")
-def test_run_search_success(
-    mock_process, mock_manager_cls, mock_factory_cls, mock_client_cls, mock_token
+@patch("src.celery.tasks.scrape_batch")
+def test_run_search_queues_every_listing_found_with_the_term(
+    mock_batch,
+    mock_manager_cls,
+    mock_factory_cls,
+    mock_client_cls,
+    mock_token,
+    fake_redis,
 ):
     client = _make_client_mock()
     mock_client_cls.return_value = client
-
-    mock_scraper_instance = MagicMock()
-    mock_factory_cls.return_value.create_scraper.return_value = mock_scraper_instance
-
     mock_manager = MagicMock()
-    mock_manager.get_products_urls.return_value = ["url1", "url2", "url3"]
-    mock_manager.get_urls_to_update.return_value = ["url1", "url2", "url3"]
+    # duplicates are scraped once; known listings are scraped again (new prices)
+    mock_manager.get_products_urls.return_value = ["url1", "url2", "url1", "url3"]
+    mock_manager.split_search_urls.return_value = [["url1", "url2"], ["url3"]]
     mock_manager_cls.return_value = mock_manager
+    SearchRun(fake_redis, "42").start(steps=1)
 
-    mock_process.apply_async = MagicMock()
+    result = run_search("notebook", "enjoei", 1, "42")
 
-    result = run_search("notebook", "enjoei", 1)
-
-    assert result["status"] == "success"
-    assert result["new_urls_count"] == 3
-    client.create_search_execution_log.assert_called_once_with(
-        search_config_id=1, status="running"
+    assert result == {"status": "success", "search": "notebook", "urls_count": 3}
+    mock_manager.split_search_urls.assert_called_once_with(
+        {"search": "notebook", "urls": ["url1", "url2", "url3"]}, 20
+    )
+    mock_batch.apply_async.assert_any_call(
+        args=[["url3"], "enjoei", 1, "42", "notebook"], countdown=5
+    )
+    run = SearchRun(fake_redis, "42")
+    assert run.snapshot()["listings_found"] == 3
+    # one site step finished, two batch steps pending
+    assert fake_redis.hashes[run.key]["pending"] == 2
+    client.update_search_execution_log.assert_called_with(
+        "42", listings_found=3, listings_checked=0, results_count=0
     )
 
 
@@ -144,25 +193,88 @@ def test_run_search_success(
 @patch("src.celery.tasks.ApiClient")
 @patch("src.celery.tasks.ScraperFactory")
 @patch("src.celery.tasks.ScraperManager")
-def test_run_search_scraper_exception_logs_failed(
-    mock_manager_cls, mock_factory_cls, mock_client_cls, mock_token
+def test_run_with_no_listings_is_closed_as_success(
+    mock_manager_cls, mock_factory_cls, mock_client_cls, mock_token, fake_redis
+):
+    """Used to stay "running" forever: no batch was queued to close it."""
+    client = _make_client_mock()
+    mock_client_cls.return_value = client
+    mock_manager = MagicMock()
+    mock_manager.get_products_urls.return_value = []
+    mock_manager.split_search_urls.return_value = []
+    mock_manager_cls.return_value = mock_manager
+    SearchRun(fake_redis, "42").start(steps=1)
+
+    run_search("notebook", "enjoei", 7, "42")
+
+    client.update_search_execution_log.assert_called_with(
+        "42",
+        status="success",
+        error_message=None,
+        listings_found=0,
+        listings_checked=0,
+        results_count=0,
+    )
+    assert fake_redis.hashes == {}  # run cleared
+
+
+@patch("src.celery.tasks.get_celery_worker_token", return_value="tok")
+@patch("src.celery.tasks.ApiClient")
+@patch("src.celery.tasks.ScraperFactory")
+@patch("src.celery.tasks.ScraperManager")
+def test_run_search_error_closes_the_run_as_failed(
+    mock_manager_cls, mock_factory_cls, mock_client_cls, mock_token, fake_redis
 ):
     client = _make_client_mock()
     mock_client_cls.return_value = client
     mock_factory_cls.return_value.create_scraper.side_effect = ValueError(
         "not supported"
     )
+    SearchRun(fake_redis, "42").start(steps=1)
 
-    result = run_search("x", "bad_scraper", 1)
+    result = run_search("x", "bad_scraper", 1, "42")
 
     assert result["status"] == "error"
-    # Should create a "failed" log with error_message
-    failed_call = [
-        c
-        for c in client.create_search_execution_log.call_args_list
-        if c.kwargs.get("status") == "failed" or (c.args and "failed" in c.args)
-    ]
-    assert len(failed_call) >= 1
+    call = client.update_search_execution_log.call_args
+    assert call.kwargs["status"] == "failed"
+    assert "bad_scraper: not supported" in call.kwargs["error_message"]
+
+
+@patch("src.celery.tasks.get_celery_worker_token", return_value="tok")
+@patch("src.celery.tasks.ApiClient")
+def test_last_batch_closes_the_run_with_totals(mock_client_cls, mock_token, fake_redis):
+    client = _make_client_mock()
+    client.get_product_by_url.return_value = {"id": "5"}
+    mock_client_cls.return_value = client
+    run = SearchRun(fake_redis, "42")
+    run.start(steps=1)  # one batch left
+    run.add("listings_found", 2)
+
+    save_products(
+        [
+            _scrape_result("http://a.com", 50.0, "Notebook Dell"),
+            _scrape_result("http://b.com", 70.0, "Mouse pad"),
+        ],
+        "enjoei",
+        search_config_id=1,
+        log_id="42",
+        search_term="notebook",
+    )
+
+    client.update_search_execution_log.assert_called_with(
+        "42",
+        status="success",
+        error_message=None,
+        listings_found=2,
+        listings_checked=2,
+        results_count=1,
+    )
+
+
+def test_title_matches_ignores_case_and_accents():
+    assert title_matches("Microsserviços Prontos Para Produção", "microsservicos")
+    assert title_matches("PYTHON FLUENTE - 2ª edição", "python fluente")
+    assert not title_matches("A linguagem de Deus", "python fluente")
 
 
 # ---------------------------------------------------------------------------
@@ -170,12 +282,12 @@ def test_run_search_scraper_exception_logs_failed(
 # ---------------------------------------------------------------------------
 
 
-def _scrape_result(url: str, price: float = 99.0):
+def _scrape_result(url: str, price: float = 99.0, title: str = "Test Product"):
     return {
         "status": "success",
         "data": {
             "url": url,
-            "title": "Test Product",
+            "title": title,
             "price": price,
             "current_price": price,
             "source_website_id": "2",
@@ -311,6 +423,30 @@ def test_save_products_evaluate_alerts_failure_does_not_break(
     client.evaluate_product_alerts.assert_called_once()
 
 
+@patch("src.celery.tasks.get_celery_worker_token", return_value="tok")
+@patch("src.celery.tasks.ApiClient")
+def test_save_products_keeps_only_listings_that_match_the_term(
+    mock_client_cls, mock_token
+):
+    client = _make_client_mock()
+    client.get_product_by_url.return_value = {}
+    client.create_product.return_value = {"id": "10"}
+    mock_client_cls.return_value = client
+
+    outcome = save_products(
+        [
+            _scrape_result("http://a.com", 50.0, "Python Fluente, 2ª edição"),
+            _scrape_result("http://b.com", 20.0, "A linguagem de Deus"),
+        ],
+        "estante_virtual",
+        search_term="python fluente",
+    )
+
+    assert outcome["processed"] == 1
+    assert outcome["unrelated"] == 1
+    client.create_product.assert_called_once()
+
+
 # ---------------------------------------------------------------------------
 # send_price_alert_notifications
 # ---------------------------------------------------------------------------
@@ -393,47 +529,6 @@ def test_send_notifications_checks_all_alerts_when_no_config(
 
 
 # ---------------------------------------------------------------------------
-# _finish_log
-# ---------------------------------------------------------------------------
-
-
-def test_finish_log_calls_create_execution_log():
-    client = MagicMock()
-    _finish_log(
-        client, search_config_id=1, log_id="42", status="success", results_count=10
-    )
-    client.create_search_execution_log.assert_called_once_with(
-        search_config_id=1, status="success", results_count=10, error_message=None
-    )
-
-
-def test_finish_log_with_error_message():
-    client = MagicMock()
-    _finish_log(
-        client,
-        search_config_id=2,
-        log_id=None,
-        status="failed",
-        results_count=0,
-        error_message="scrape failed",
-    )
-    client.create_search_execution_log.assert_called_once_with(
-        search_config_id=2,
-        status="failed",
-        results_count=0,
-        error_message="scrape failed",
-    )
-
-
-def test_finish_log_does_nothing_when_search_config_id_is_none():
-    client = MagicMock()
-    _finish_log(
-        client, search_config_id=None, log_id=None, status="success", results_count=0
-    )
-    client.create_search_execution_log.assert_not_called()
-
-
-# ---------------------------------------------------------------------------
 # run_scraper_search
 # ---------------------------------------------------------------------------
 
@@ -489,6 +584,10 @@ def test_run_scraper_search_dispatches_active_source_websites(
     run_scraper_search(1)
 
     mock_group.assert_called_once()
+    # one log for the whole run, opened before the sites are searched
+    client.create_search_execution_log.assert_called_once_with(
+        search_config_id=1, status="running"
+    )
 
 
 @patch("src.celery.tasks.get_celery_worker_token", return_value="tok")
@@ -544,37 +643,6 @@ def test_run_scraper_search_non_200_source_website_skipped(
 
     result = run_scraper_search(1)
     assert result["status"] == "skipped"
-
-
-# ---------------------------------------------------------------------------
-# process_urls_list
-# ---------------------------------------------------------------------------
-
-
-@patch("src.celery.tasks.scrape_batch")
-@patch("src.celery.tasks.ScraperFactory")
-@patch("src.celery.tasks.ScraperManager")
-def test_process_urls_list_splits_and_dispatches(
-    mock_manager_cls, mock_factory_cls, mock_scrape_batch
-):
-    mock_scraper = MagicMock()
-    mock_factory_cls.return_value.create_scraper.return_value = mock_scraper
-
-    mock_manager = MagicMock()
-    mock_manager.split_search_urls.return_value = [["url1", "url2"]]
-    mock_manager_cls.return_value = mock_manager
-
-    search_results = {"status": "success", "urls": ["url1", "url2"]}
-    result = process_urls_list(
-        search_results, "enjoei", search_config_id=1, log_id="42"
-    )
-
-    mock_manager.split_search_urls.assert_called_once_with(search_results, 20)
-    mock_scrape_batch.apply_async.assert_called_once_with(
-        args=[["url1", "url2"], "enjoei", 1, "42"],
-        countdown=5,
-    )
-    assert result == {"status": "dispatched", "batches": 1}
 
 
 # ---------------------------------------------------------------------------

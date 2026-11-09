@@ -232,6 +232,17 @@ def test_get_product_by_url_not_found(mock_req, client):
     assert client.get_product_by_url("http://missing.com") == {}
 
 
+@patch("requests.request")
+def test_get_product_by_url_not_found_is_not_an_error(mock_req, client, caplog):
+    # A listing seen for the first time is the normal case, not an error
+    response = _mock_response(404)
+    response.raise_for_status.side_effect = requests.HTTPError("404 Not Found")
+    mock_req.return_value = response
+    with caplog.at_level("ERROR"):
+        client.get_product_by_url("http://missing.com")
+    assert caplog.records == []
+
+
 def test_product_exists_true(client):
     with patch.object(client, "get_product_by_url", return_value={"id": "1"}):
         assert client.product_exists("http://a.com") is True
