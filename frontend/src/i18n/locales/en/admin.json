@@ -93,7 +93,10 @@
       "deleteFailed": "Failed to delete search config",
       "bulkDeleted_one": "{{count}} config deleted",
       "bulkDeleted_other": "{{count}} configs deleted",
-      "bulkDeleteFailed": "Failed to delete some configs"
+      "bulkDeleteFailed": "Failed to delete some configs",
+      "inUse_one": "This search is used by {{count}} alert. Delete or change the alert first.",
+      "inUse_other": "This search is used by {{count}} alerts. Delete or change the alerts first.",
+      "bulkInUse": "{{count}} of the selected searches are used by alerts and were kept."
     },
     "dialogs": {
       "deleteTitle": "Delete Search Config",
@@ -101,7 +104,9 @@
       "bulkDeleteTitle": "Delete Search Configs",
       "bulkDeleteMessage_one": "Are you sure you want to delete {{count}} configuration?",
       "bulkDeleteMessage_other": "Are you sure you want to delete {{count}} configurations?"
-    }
+    },
+    "search": "Search",
+    "searchHint": "Filter by search term"
   },
   "sourceWebsites": {
     "title": "Source Websites",

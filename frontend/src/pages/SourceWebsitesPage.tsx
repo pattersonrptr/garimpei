@@ -29,6 +29,7 @@ import { GenericFormModal } from '@/components/common/GenericFormModal'
 import { PageHeader } from '@/components/common/PageHeader'
 import { usePaginatedResource } from '@/hooks/usePaginatedResource'
 import { logger } from '@/lib/logger'
+import { EMPTY_SELECTION, selectedRowIds } from '@/lib/selection'
 import {
   createSourceWebsite,
   deleteSourceWebsite,
@@ -66,10 +67,7 @@ export function SourceWebsitesPage() {
     page: 0,
     pageSize: 10,
   })
-  const [rowSelection, setRowSelection] = useState<GridRowSelectionModel>({
-    type: 'include',
-    ids: new Set(),
-  })
+  const [rowSelection, setRowSelection] = useState<GridRowSelectionModel>(EMPTY_SELECTION)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
 
@@ -103,12 +101,11 @@ export function SourceWebsitesPage() {
   // ---------------------------------------------------------------------------
 
   function selectedIds(): string[] {
-    if (rowSelection.type !== 'include') return []
-    return Array.from(rowSelection.ids) as string[]
+    return selectedRowIds(rowSelection, items)
   }
 
   function selectionCount(): number {
-    return rowSelection.type === 'include' ? rowSelection.ids.size : 0
+    return selectedIds().length
   }
 
   function openEdit(site: SourceWebsite) {
@@ -186,7 +183,7 @@ export function SourceWebsitesPage() {
     try {
       await Promise.all(ids.map(deleteSourceWebsite))
       enqueueSnackbar(t('toast.bulkDeleted', { count: ids.length }), { variant: 'success' })
-      setRowSelection({ type: 'include', ids: new Set() })
+      setRowSelection(EMPTY_SELECTION)
       reload()
     } catch (err) {
       logger.error('Failed to bulk delete source websites', { ids }, err)

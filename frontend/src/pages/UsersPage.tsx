@@ -31,6 +31,7 @@ import { useAuth } from '@/context/AuthContext'
 import { usePaginatedResource } from '@/hooks/usePaginatedResource'
 import { formatDateTime } from '@/lib/formatters'
 import { logger } from '@/lib/logger'
+import { EMPTY_SELECTION, selectedRowIds } from '@/lib/selection'
 import {
   createUser,
   deleteUser,
@@ -82,10 +83,7 @@ export function UsersPage() {
     page: 0,
     pageSize: 10,
   })
-  const [rowSelection, setRowSelection] = useState<GridRowSelectionModel>({
-    type: 'include',
-    ids: new Set(),
-  })
+  const [rowSelection, setRowSelection] = useState<GridRowSelectionModel>(EMPTY_SELECTION)
 
   // Single delete confirmation
   const [deleteId, setDeleteId] = useState<string | null>(null)
@@ -123,12 +121,11 @@ export function UsersPage() {
 
   /** IDs currently selected (only valid for 'include' type). */
   function selectedIds(): string[] {
-    if (rowSelection.type !== 'include') return []
-    return Array.from(rowSelection.ids) as string[]
+    return selectedRowIds(rowSelection, items)
   }
 
   function selectionCount(): number {
-    return rowSelection.type === 'include' ? rowSelection.ids.size : 0
+    return selectedIds().length
   }
 
   // ---------------------------------------------------------------------------
@@ -214,7 +211,7 @@ export function UsersPage() {
     try {
       await Promise.all(ids.map(deleteUser))
       enqueueSnackbar(t('toast.bulkDeleted', { count: ids.length }), { variant: 'success' })
-      setRowSelection({ type: 'include', ids: new Set() })
+      setRowSelection(EMPTY_SELECTION)
       reload()
     } catch (err) {
       logger.error('Failed to bulk delete users', { ids }, err)

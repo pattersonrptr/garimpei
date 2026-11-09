@@ -65,5 +65,21 @@
   "columns": {
     "actions": "Ações"
   },
-  "loadFailed": "Não foi possível carregar os dados."
+  "loadFailed": "Não foi possível carregar os dados.",
+  "planLimit": {
+    "maxActiveAlerts_one": "Seu plano permite {{count}} alerta ativo. Pause ou exclua um, ou mude de plano.",
+    "maxActiveAlerts_other": "Seu plano permite {{count}} alertas ativos. Pause ou exclua um, ou mude de plano.",
+    "minFrequency_one": "Seu plano verifica no máximo a cada {{count}} minuto. Escolha {{count}} ou mais, ou mude de plano.",
+    "minFrequency_other": "Seu plano verifica no máximo a cada {{count}} minutos. Escolha {{count}} ou mais, ou mude de plano.",
+    "maxSources_one": "Seu plano permite {{count}} site por alerta. Remova um site, ou mude de plano.",
+    "maxSources_other": "Seu plano permite até {{count}} sites por alerta. Remova um site, ou mude de plano.",
+    "manualRun_one": "Seu plano permite uma verificação a cada {{count}} minuto. Tente de novo em {{wait}} min.",
+    "manualRun_other": "Seu plano permite uma verificação a cada {{count}} minutos. Tente de novo em {{wait}} min."
+  },
+  "notFound": {
+    "title": "Página não encontrada",
+    "body": "Este endereço não existe no Garimpei. Pode ter sido digitado errado ou mudado de lugar.",
+    "home": "Ir para a página inicial",
+    "dashboard": "Ir para o painel"
+  }
 }

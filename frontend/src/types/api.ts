@@ -52,6 +52,14 @@ export interface PaginationParams {
   sort_order?: 'asc' | 'desc'
 }
 
+/** Filters the products list understands (GET /products/) */
+export interface ProductListParams extends PaginationParams {
+  title?: string
+  condition?: string
+  is_available?: boolean
+  opportunities_only?: boolean
+}
+
 /** Paginated result returned by services after unwrapping the API response */
 export interface PaginatedResult<T> {
   items: T[]

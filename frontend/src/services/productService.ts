@@ -7,7 +7,7 @@ import { apiClient } from '@/api/client'
 import { ENDPOINTS } from '@/api/endpoints'
 import { unwrapCollection, unwrapSingle, wrapPayload } from '@/api/jsonapi'
 import { logger } from '@/lib/logger'
-import type { PaginationParams, PaginatedResult } from '@/types/api'
+import type { PaginatedResult, ProductListParams } from '@/types/api'
 import type {
   Product,
   ProductCreatePayload,
@@ -74,7 +74,7 @@ function toApiPayload(
 }
 
 export async function getProducts(
-  params: PaginationParams,
+  params: ProductListParams,
 ): Promise<PaginatedResult<Product>> {
   logger.debug('Fetching products', { params })
   const response = await apiClient.get(ENDPOINTS.products.list, { params })

@@ -17,6 +17,11 @@ test.describe('Alerts page', () => {
     await cleanupTestConfigs('ep-')
   })
 
+  // The Free plan allows 3 active alerts: each test cleans up after itself.
+  test.afterEach(async () => {
+    await cleanupTestAlerts('e')
+  })
+
   test.beforeEach(async ({ authenticatedPage: page }) => {
     await page.goto('/alerts')
     await expect(page.getByText('My Alerts')).toBeVisible()
@@ -46,7 +51,8 @@ test.describe('Alerts page', () => {
     await page.getByRole('button', { name: /new alert/i }).click()
     await page.getByLabel(/search term/i).fill(alertName)
     await page.getByRole('spinbutton', { name: /max price/i }).fill('500')
-    await page.getByLabel(/check frequency/i).fill('30')
+    // The lowest frequency the Free plan allows
+    await page.getByLabel(/check frequency/i).fill('360')
 
     await page.getByRole('button', { name: 'Create' }).click()
 

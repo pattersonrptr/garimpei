@@ -19,12 +19,18 @@
   },
   "runNow": {
     "run": "Buscar agora",
+    "hint": "Buscar agora: procurar nos sites para este alerta",
     "running": "Buscando…",
-    "inactive": "Ative o alerta primeiro",
-    "noConfig": "Este alerta não tem busca vinculada",
-    "triggered": "Busca iniciada! Garimpando…",
-    "done_one": "Busca concluída — {{count}} resultado",
-    "done_other": "Busca concluída — {{count}} resultados",
+    "searching": "Buscando nos sites…",
+    "progress_one": "Verificando {{checked}} de {{count}} anúncio…",
+    "progress_other": "Verificando {{checked}} de {{count}} anúncios…",
+    "noConfig": "Nenhuma busca vinculada a este alerta",
+    "triggered": "Busca iniciada! Leva alguns minutos; o progresso aparece na lista.",
+    "done_one": "Busca concluída: {{count}} anúncio verificado, {{matches}}.",
+    "done_other": "Busca concluída: {{count}} anúncios verificados, {{matches}}.",
+    "matches_one": "{{count}} tem o seu termo",
+    "matches_other": "{{count}} têm o seu termo",
+    "nothingFound": "Os sites não devolveram anúncios para este termo. Tente outras palavras, ou tente mais tarde: às vezes os sites bloqueiam buscas por um tempo.",
     "failed": "A busca falhou: {{error}}",
     "alreadyRunning": "A busca já está em andamento",
     "triggerFailed": "Não foi possível iniciar a busca"
@@ -54,5 +60,13 @@
     "bulkDeleteTitle": "Excluir alertas selecionados",
     "bulkDeleteMessage_one": "Excluir {{count}} alerta?",
     "bulkDeleteMessage_other": "Excluir {{count}} alertas?"
+  },
+  "seePlans": "Ver planos",
+  "help": {
+    "searchTerm": "Anúncios cujo título contém este texto, sem diferenciar acentos.",
+    "maxPrice": "Você recebe um aviso quando um anúncio custar isso ou menos. Os mais caros continuam sendo acompanhados.",
+    "frequency": "Seu plano {{plan}} verifica no máximo a cada {{count}} minutos.",
+    "sources_one": "Seu plano permite {{count}} site por alerta.",
+    "sources_other": "Seu plano permite até {{count}} sites por alerta."
   }
 }

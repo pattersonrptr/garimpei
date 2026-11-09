@@ -19,7 +19,8 @@
   "deleteSelected": "Excluir selecionados ({{count}})",
   "empty": {
     "title": "Nenhum produto encontrado",
-    "body": "Os produtos aparecem aqui quando seus alertas encontram resultados nos marketplaces."
+    "body": "Os produtos aparecem aqui quando seus alertas encontram resultados nos marketplaces.",
+    "noOpportunities": "Nenhum dos seus alertas tem anúncio abaixo do preço máximo ainda."
   },
   "toast": {
     "deleted": "Produto excluído",
@@ -47,6 +48,15 @@
     "sourceUrl": "Link do anúncio",
     "priceHistory": "Histórico de preços",
     "price": "Preço",
-    "noHistory": "Ainda não há histórico de preços para este produto."
-  }
+    "noHistory": "Ainda não há histórico de preços para este produto.",
+    "yourAlerts": "Seus alertas",
+    "noMatchingAlert": "Nenhum dos seus alertas corresponde a este anúncio.",
+    "alertMax": "máx. {{price}}",
+    "noPriceYet": "Ainda sem preço",
+    "savings": "Oportunidade: {{amount}} abaixo do seu preço máximo",
+    "aboveMax": "{{amount}} acima do seu preço máximo",
+    "showMore": "Mostrar mais",
+    "showLess": "Mostrar menos"
+  },
+  "opportunitiesOnly": "Só oportunidades"
 }

@@ -34,7 +34,9 @@ import { GenericFormModal } from '@/components/common/GenericFormModal'
 import { PageHeader } from '@/components/common/PageHeader'
 import { useAuth } from '@/context/AuthContext'
 import { usePaginatedResource } from '@/hooks/usePaginatedResource'
+import { firstApiError } from '@/lib/apiErrors'
 import { logger } from '@/lib/logger'
+import { EMPTY_SELECTION, selectedRowIds } from '@/lib/selection'
 import {
   createSearchConfig,
   deleteSearchConfig,
@@ -79,10 +81,18 @@ export function SearchConfigsPage() {
     page: 0,
     pageSize: 10,
   })
-  const [rowSelection, setRowSelection] = useState<GridRowSelectionModel>({
-    type: 'include',
-    ids: new Set(),
-  })
+  const [rowSelection, setRowSelection] = useState<GridRowSelectionModel>(EMPTY_SELECTION)
+  const [searchInput, setSearchInput] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
+
+  // Search as the admin types, without a request per keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchTerm(searchInput.trim())
+      setPaginationModel((m) => ({ ...m, page: 0 }))
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchInput])
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
 
@@ -118,8 +128,9 @@ export function SearchConfigsPage() {
       getSearchConfigs({
         limit: paginationModel.pageSize,
         offset: paginationModel.page * paginationModel.pageSize,
+        ...(searchTerm ? { search_term: searchTerm } : {}),
       }),
-    [paginationModel],
+    [paginationModel, searchTerm],
   )
 
   const { items, total, loading, error, reload } = usePaginatedResource(fetcher)
@@ -129,12 +140,18 @@ export function SearchConfigsPage() {
   // ---------------------------------------------------------------------------
 
   function selectedIds(): string[] {
-    if (rowSelection.type !== 'include') return []
-    return Array.from(rowSelection.ids) as string[]
+    return selectedRowIds(rowSelection, items)
   }
 
   function selectionCount(): number {
-    return rowSelection.type === 'include' ? rowSelection.ids.size : 0
+    return selectedIds().length
+  }
+
+  /** Alerts still using the search, when the API refused to delete it. */
+  function alertsUsingSearch(err: unknown): number | null {
+    const { status, error } = firstApiError(err)
+    if (status !== 409 || error?.code !== 'SEARCH_CONFIG_IN_USE') return null
+    return Number(error.meta?.alert_count ?? 1)
   }
 
   function openEdit(config: SearchConfig) {
@@ -199,8 +216,13 @@ export function SearchConfigsPage() {
       enqueueSnackbar(t('toast.deleted'), { variant: 'success' })
       reload()
     } catch (err) {
-      logger.error('Failed to delete search config', { id: deleteId }, err)
-      enqueueSnackbar(t('toast.deleteFailed'), { variant: 'error' })
+      const inUse = alertsUsingSearch(err)
+      if (inUse != null) {
+        enqueueSnackbar(t('toast.inUse', { count: inUse }), { variant: 'warning' })
+      } else {
+        logger.error('Failed to delete search config', { id: deleteId }, err)
+        enqueueSnackbar(t('toast.deleteFailed'), { variant: 'error' })
+      }
     } finally {
       setDeleteId(null)
     }
@@ -209,15 +231,23 @@ export function SearchConfigsPage() {
   async function handleBulkDelete() {
     setBulkDeleteOpen(false)
     const ids = selectedIds()
-    try {
-      await Promise.all(ids.map(deleteSearchConfig))
-      enqueueSnackbar(t('toast.bulkDeleted', { count: ids.length }), { variant: 'success' })
-      setRowSelection({ type: 'include', ids: new Set() })
-      reload()
-    } catch (err) {
-      logger.error('Failed to bulk delete search configs', { ids }, err)
+    const results = await Promise.allSettled(ids.map(deleteSearchConfig))
+    const deleted = results.filter((r) => r.status === 'fulfilled').length
+    const failures = results.flatMap((r) => (r.status === 'rejected' ? [r.reason] : []))
+    const inUse = failures.filter((err) => alertsUsingSearch(err) != null).length
+
+    if (deleted > 0) {
+      enqueueSnackbar(t('toast.bulkDeleted', { count: deleted }), { variant: 'success' })
+    }
+    if (inUse > 0) {
+      enqueueSnackbar(t('toast.bulkInUse', { count: inUse }), { variant: 'warning' })
+    }
+    if (failures.length > inUse) {
+      logger.error('Failed to bulk delete search configs', { ids }, failures)
       enqueueSnackbar(t('toast.bulkDeleteFailed'), { variant: 'error' })
     }
+    setRowSelection(EMPTY_SELECTION)
+    reload()
   }
 
   // ---------------------------------------------------------------------------
@@ -247,7 +277,7 @@ export function SearchConfigsPage() {
       width: 100,
       getActions: ({ row }) => [
         <Tooltip title={tc('actions.edit')} key="edit">
-          <IconButton size="small" onClick={() => openEdit(row)}>
+          <IconButton size="small" aria-label={tc('actions.edit')} onClick={() => openEdit(row)}>
             <EditIcon fontSize="small" />
           </IconButton>
         </Tooltip>,
@@ -255,6 +285,7 @@ export function SearchConfigsPage() {
           <IconButton
             size="small"
             color="error"
+            aria-label={tc('actions.delete')}
             onClick={() => setDeleteId(row.id)}
           >
             <DeleteIcon fontSize="small" />
@@ -355,8 +386,17 @@ export function SearchConfigsPage() {
         </Alert>
       )}
 
-      {selectionCount() > 0 && (
-        <Box sx={{ mb: 1 }}>
+      <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1 }}>
+        <TextField
+          label={t('search')}
+          placeholder={t('searchHint')}
+          type="search"
+          size="small"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          sx={{ minWidth: 260 }}
+        />
+        {selectionCount() > 0 && (
           <Button
             variant="outlined"
             color="error"
@@ -366,8 +406,8 @@ export function SearchConfigsPage() {
           >
             {tc('actions.deleteSelected')} ({selectionCount()})
           </Button>
-        </Box>
-      )}
+        )}
+      </Stack>
 
       <DataGrid
         rows={items}

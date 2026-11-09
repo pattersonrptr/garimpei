@@ -32,7 +32,7 @@ import Stack from '@mui/material/Stack'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
+import { Link as RouterLink, useNavigate } from 'react-router-dom'
 import { PageHeader } from '@/components/common/PageHeader'
 import { useAuth } from '@/context/AuthContext'
 import { useDashboardSummary } from '@/hooks/useDashboardSummary'
@@ -123,11 +123,13 @@ function OpportunitiesCard({
   const { t } = useTranslation('dashboard')
 
   return (
-    <Card>
+    <Card component="section" aria-labelledby="dashboard-opportunities-heading">
       <CardContent>
         <Stack direction="row" alignItems="center" spacing={1} mb={1}>
           <TrendingDownIcon color="success" />
-          <Typography variant="h6">{t('opportunities.title')}</Typography>
+          <Typography id="dashboard-opportunities-heading" variant="h6">
+            {t('opportunities.title')}
+          </Typography>
           <Chip
             size="small"
             label={opportunities.length}
@@ -166,12 +168,28 @@ function OpportunitiesCard({
                 </ListItemIcon>
                 <ListItemText
                   primary={
-                    <Typography variant="body2" noWrap sx={{ maxWidth: 300 }}>
+                    <Link
+                      component={RouterLink}
+                      to={`/products/${op.id}`}
+                      variant="body2"
+                      underline="hover"
+                      color="text.primary"
+                      noWrap
+                      sx={{ display: 'block', maxWidth: 300 }}
+                    >
                       {op.title}
-                    </Typography>
+                    </Link>
                   }
                   secondary={
-                    <Stack direction="row" spacing={1} alignItems="center">
+                    <Stack
+                      component="span"
+                      direction="row"
+                      spacing={1}
+                      useFlexGap
+                      flexWrap="wrap"
+                      alignItems="center"
+                      sx={{ rowGap: 0.5 }}
+                    >
                       <Typography
                         component="span"
                         variant="body2"
@@ -180,10 +198,19 @@ function OpportunitiesCard({
                       >
                         {formatCurrency(op.currentPrice)}
                       </Typography>
+                      <Chip
+                        size="small"
+                        color="success"
+                        label={t('opportunities.save', {
+                          amount: formatCurrency(op.alertMaxPrice - op.currentPrice),
+                        })}
+                        sx={{ height: 20, fontSize: '0.7rem' }}
+                      />
                       <Typography
                         component="span"
                         variant="caption"
                         color="text.secondary"
+                        noWrap
                       >
                         {t('opportunities.max', { price: formatCurrency(op.alertMaxPrice) })}
                       </Typography>
@@ -334,15 +361,18 @@ export function DashboardPage() {
         </Box>
       )}
 
-      <Divider sx={{ my: 4 }} />
-
-      <Typography variant="body2" color="text.secondary">
-        {t('tip.before')}
-        <Link href="/alerts" variant="body2">
-          {t('tip.link')}
-        </Link>
-        {t('tip.after')}
-      </Typography>
+      {isNewUser && (
+        <>
+          <Divider sx={{ my: 4 }} />
+          <Typography variant="body2" color="text.secondary">
+            {t('tip.before')}
+            <Link component={RouterLink} to="/alerts" variant="body2">
+              {t('tip.link')}
+            </Link>
+            {t('tip.after')}
+          </Typography>
+        </>
+      )}
     </Box>
   )
 }

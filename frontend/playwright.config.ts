@@ -10,6 +10,9 @@ import { defineConfig, devices } from '@playwright/test'
  *   HEADLESS=false npx playwright test
  */
 const headless = process.env.HEADLESS !== 'false'
+// Use an installed browser instead of Playwright's bundled one,
+// e.g. E2E_CHANNEL=chrome npx playwright test --project=chromium
+const channel = process.env.E2E_CHANNEL
 
 export default defineConfig({
   testDir: './e2e',
@@ -32,7 +35,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'], ...(channel ? { channel } : {}) },
     },
     {
       name: 'firefox',

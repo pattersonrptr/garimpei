@@ -1,6 +1,18 @@
-import { test, expect } from './fixtures'
+import { ADMIN_USER, TERM_PREFIX, api, expect, test } from './fixtures'
 
 test.describe('Dashboard', () => {
+  // The cards show for someone who already has alerts; a brand-new account
+  // gets the onboarding screen instead. The alert is paused so it does not
+  // take one of the plan's active-alert slots the other specs use.
+  test.beforeAll(async () => {
+    await api.reset()
+    await api.createAlert(`${TERM_PREFIX} dashboard`, 100, ['estante_virtual'], ADMIN_USER, false)
+  })
+
+  test.afterAll(async () => {
+    await api.reset()
+  })
+
   test.beforeEach(async ({ authenticatedPage: page }) => {
     await page.goto('/dashboard')
   })

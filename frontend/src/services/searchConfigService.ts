@@ -54,7 +54,7 @@ function toApiPayload(
 }
 
 export async function getSearchConfigs(
-  params: PaginationParams,
+  params: PaginationParams & { search_term?: string },
 ): Promise<PaginatedResult<SearchConfig>> {
   logger.debug('Fetching search configs', { params })
   const response = await apiClient.get(ENDPOINTS.searchConfigs.list, { params })
@@ -109,7 +109,12 @@ export interface ExecutionStatus {
   status: 'idle' | 'pending' | 'running' | 'success' | 'failed'
   startedAt: string | null
   finishedAt: string | null
+  /** Listings that matched the search term */
   resultsCount: number | null
+  /** Listings the sites returned for the term */
+  listingsFound: number | null
+  /** Listings scraped so far */
+  listingsChecked: number | null
   errorMessage: string | null
 }
 
@@ -119,6 +124,8 @@ interface RawExecutionStatusAttributes {
   started_at: string | null
   finished_at: string | null
   results_count: number | null
+  listings_found?: number | null
+  listings_checked?: number | null
   error_message: string | null
 }
 
@@ -129,6 +136,8 @@ function toExecutionStatus(raw: RawExecutionStatusAttributes): ExecutionStatus {
     startedAt: raw.started_at,
     finishedAt: raw.finished_at,
     resultsCount: raw.results_count,
+    listingsFound: raw.listings_found ?? null,
+    listingsChecked: raw.listings_checked ?? null,
     errorMessage: raw.error_message,
   }
 }
