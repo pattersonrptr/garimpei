@@ -20,7 +20,7 @@ prices from at least 2 stores, new and used**, matched to books by ISBN, so
 
 | # | Slice | Done when |
 |---|---|---|
-| 2a | **Ingest contract.** A staff/service endpoint takes a plain offer DTO (isbn, store, url, price, condition, availability), finds or creates the book, upserts the offer by URL, adds a price-history point | Posting the same offer twice updates it, adds history, creates no duplicate; tested at use-case level |
+| 2a | **Ingest contract** (done: `POST /offers`, `IngestOfferUseCase`). A staff/service endpoint takes a plain offer DTO (isbn, store, url, price, condition, availability), finds or creates the book, upserts the offer by URL, adds a price-history point | Posting the same offer twice updates it, adds history, creates no duplicate; tested at use-case level |
 | 2b | **Seed list.** A list of ISBNs the system keeps fresh (a file in the repo to start) | One command loads it into the catalog |
 | 2c | **Collector 1: Estante Virtual by ISBN**, new and used as separate offers | A seed book yields 1 new and/or used offers in the DB |
 | 2d | **Collector 2** (source to decide, see below) | Same, from a second store |
@@ -30,6 +30,20 @@ prices from at least 2 stores, new and used**, matched to books by ISBN, so
 2a first: it is the contract every collector depends on, and it has no scraping
 risk. Collectors only send plain DTOs; none writes to the database
 (architecture rule 5).
+
+## 2a notes
+
+- `POST /offers` (staff token, like the scrapers use) takes `isbn`,
+  `source_website_id`, `url`, `price`, `condition`, `is_available`, `city`,
+  `state`. 201 for a new offer, 200 for an update, 422 for an invalid ISBN,
+  unknown book, unknown store or bad values, 503 when BrasilAPI is down.
+- Every call adds a price point; collectors are expected to check each offer
+  once a day.
+- The offer's title is the book's title from metadata (cut to 255 characters).
+- An offer created earlier by a keyword search is linked to the book when the
+  same URL comes in.
+- Ingestion does not evaluate price alerts. Alerts still work by keyword; making
+  them follow a book is Phase 4.
 
 ## Decisions (Nov 2026)
 

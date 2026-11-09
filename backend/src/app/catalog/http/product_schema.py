@@ -27,6 +27,7 @@ class ProductAttributes(BaseModel):
     is_available: bool = True
     source_website_id: int
     source_metadata: dict | None = None
+    canonical_product_id: int | None = None
     current_price: float | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
