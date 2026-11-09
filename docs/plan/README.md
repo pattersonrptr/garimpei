@@ -108,7 +108,7 @@ Each phase ends with something usable or observable.
 |---|---|---|---|
 | 0 | **Visual direction** (done) | Reference board (Zoom, Buscapé, Google Shopping, Keepa, Estante Virtual, plus the author's prints) and three style directions | One direction chosen; basic tokens (colors, type, spacing) written down |
 | 1a | **Screaming layout** (done) | Target folder layout decided; first module moved (the one `catalog` depends on: today's products/offers), dataclass entities | Layout recorded as a decision; moved module has pure entities; all tests pass with no behavior change |
-| 1b | **Catalog model** | `catalog` module: CanonicalProduct, ProductIdentifier, Offer, ISBN metadata via BrasilAPI, migration compatible with alerts | Given an ISBN, the backend creates or reuses a book with metadata; existing tests pass |
+| 1b | **Catalog model** (done, see `docs/architecture/catalog-model.md`) | `catalog` module: CanonicalProduct, ProductIdentifier, Offer, ISBN metadata via BrasilAPI, migration compatible with alerts | Given an ISBN, the backend creates or reuses a book with metadata; existing tests pass |
 | — | **Refactor remaining modules** | `alerts`, `accounts`, `billing`… moved one by one, between other phases | Old layer folders are gone |
 | 2 | **Offer collection** | Most viable sources feeding offers (new + used), matched to books by ISBN, on a schedule | A seed list of books gets daily prices from at least 2 stores, new and used. **History starts accumulating** |
 | 3 | **Public pages (Next.js)** | Search, book page with offers side by side, price chart, affiliate links | A visitor finds a book and goes to a store without logging in; pages render on the server |
@@ -156,7 +156,7 @@ Each one becomes a short decision record when it is made.
 - [x] Entities are pure dataclasses; Pydantic only at the edges (decided Nov 2026)
 - [x] Backend is refactored to a screaming, domain-first layout, incrementally (decided Nov 2026)
 - [x] Module list and folder layout: one module per domain, `catalog` first (decided Nov 2026; record in `docs/architecture/screaming-layout.md` on branch `refactor/screaming-layout`)
-- [ ] How `catalog` relates to today's `Product` (Phase 1b)
+- [x] How `catalog` relates to today's `Product`: `Product` stays as the offer (renamed later); a nullable `canonical_product_id` links it to a `CanonicalProduct` (decided Nov 2026, see `docs/architecture/catalog-model.md`)
 - [ ] Source of the new-book price anchor (Phase 2)
 - [ ] Verdict rule: window, thresholds, minimum history (Phase 4)
 - [ ] Hosting for Next.js (same VPS as the API or separate) (Phase 3)

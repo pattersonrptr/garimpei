@@ -1,9 +1,18 @@
 from dataclasses import fields
 
+from src.app.catalog.entities import (
+    BookMetadata,
+    CanonicalProduct,
+    ProductCategory,
+    ProductListFilters,
+)
 from src.app.catalog.entities import PriceHistory as PriceHistoryEntity
 from src.app.catalog.entities import Product as ProductEntity
-from src.app.catalog.entities import ProductListFilters
+from src.app.catalog.isbn import InvalidIsbnError
+from src.app.catalog.matching import IsbnMatcher
 from src.app.catalog.ports import (
+    BookMetadataGateway,
+    CanonicalProductRepositoryInterface,
     PriceHistoryRepositoryInterface,
     ProductRepositoryInterface,
 )
@@ -232,3 +241,69 @@ class DeletePriceHistoryUseCase:
 
     def execute(self, price_history_id: int) -> bool:
         return self.price_history_repo.delete(price_history_id)
+
+
+class BookNotFoundError(Exception):
+    """The ISBN is valid but no metadata source knows the book."""
+
+
+def _book_attributes(book: BookMetadata) -> dict:
+    """The category-specific attributes of a book, without empty values."""
+    attributes = {
+        "subtitle": book.subtitle,
+        "authors": list(book.authors),
+        "publisher": book.publisher,
+        "year": book.year,
+        "page_count": book.page_count,
+        "synopsis": book.synopsis,
+        "cover_url": book.cover_url,
+    }
+    return {key: value for key, value in attributes.items() if value}
+
+
+class GetOrCreateBookByIsbnUseCase:
+    """Find the book with this ISBN, creating it from its metadata if new."""
+
+    def __init__(
+        self,
+        products: CanonicalProductRepositoryInterface,
+        metadata: BookMetadataGateway,
+        matcher: IsbnMatcher | None = None,
+    ):
+        self.products = products
+        self.metadata = metadata
+        self.matcher = matcher or IsbnMatcher()
+
+    def execute(self, isbn: str) -> CanonicalProduct:
+        """
+        Args:
+            isbn: ISBN-10 or ISBN-13, with or without hyphens
+
+        Returns:
+            The existing or newly created book
+
+        Raises:
+            InvalidIsbnError: ``isbn`` is not a valid ISBN
+            BookNotFoundError: no metadata source knows the book
+            BookMetadataUnavailableError: the metadata source failed
+        """
+        identifier = self.matcher.identify(isbn)
+        if identifier is None:
+            raise InvalidIsbnError(f"Not a valid ISBN: {isbn!r}")
+
+        existing = self.products.get_by_identifier(identifier.kind, identifier.value)
+        if existing:
+            return existing
+
+        book = self.metadata.fetch(identifier.value)
+        if book is None:
+            raise BookNotFoundError(identifier.value)
+
+        return self.products.create(
+            CanonicalProduct(
+                category=ProductCategory.BOOK,
+                title=book.title,
+                attributes=_book_attributes(book),
+                identifiers=[identifier],
+            )
+        )
