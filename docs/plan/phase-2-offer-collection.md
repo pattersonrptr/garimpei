@@ -22,7 +22,7 @@ prices from at least 2 stores, new and used**, matched to books by ISBN, so
 |---|---|---|
 | 2a | **Ingest contract** (done: `POST /offers`, `IngestOfferUseCase`). A staff/service endpoint takes a plain offer DTO (isbn, store, url, price, condition, availability), finds or creates the book, upserts the offer by URL, adds a price-history point | Posting the same offer twice updates it, adds history, creates no duplicate; tested at use-case level |
 | 2b | **Seed list** (done: `backend/seeds/books_bestsellers.csv`, `python -m src.scripts.load_seed_books`). A list of ISBNs the system keeps fresh (a file in the repo to start) | One command loads it into the catalog |
-| 2c | **Collector 1: Estante Virtual by ISBN**, new and used as separate offers | A seed book yields 1 new and/or used offers in the DB |
+| 2c | **Collector 1: Estante Virtual by ISBN** (done: `scrapers/src/collectors`, `python -m src.collectors.run`), new and used as separate offers | A seed book yields 1 new and/or used offers in the DB |
 | 2d | **Collector 2** (source to decide, see below) | Same, from a second store |
 | 2e | **Schedule.** A daily job runs the collectors over the seed list, stalest first | History grows by a point per offer per day without anyone clicking |
 | 2f | **Freshness.** Each offer records when it was last checked | The API can say "updated 3 h ago" |
@@ -68,6 +68,29 @@ How the seed list was built (Nov 2026), so it can be rebuilt or extended:
 Each book is **one edition**. Matching is by ISBN, so other editions of the same
 work are different products for now; grouping editions of a work is a later
 question. The loader is idempotent and reports ISBNs it could not load.
+
+## 2c notes
+
+- New module `scrapers/src/collectors` (decision 10): `CollectedOffer` DTO,
+  `OfferSource`/`OfferSink`/`PageFetcher` ports, the `CollectOffers` use case,
+  `PoliteHttpClient` (decision 9), the Estante Virtual adapter and an API sink
+  to `POST /offers`. The core imports no HTTP library; `run.py` wires it.
+- Two plain requests per book, no browser: `/busca?q=<isbn>` (the group whose
+  `isbn` attribute matches), then the book page's `window.__INITIAL_STATE__`.
+- Each condition gets the page's own tab URL (`?condition=novo|usado`), so the
+  backend keeps two offers per book.
+- **Price:** the offer's `prices[0].salePrice`, which includes promotions (a
+  "PayDay" promotion showed R$ 93,41 against a full R$ 109,90). The item's own
+  `salePrice` is the full price.
+- **Not available on the page:** how many sellers there are
+  (`filters[].count` is always 1) and the seller's city. Decision 7's seller
+  count waits for a source that has it.
+- A page without the state JSON counts as a block (a challenge or an error
+  page): the store stops for the run. Skipping the store for the day and the
+  one-week pause need state across runs, so they come with the schedule (2e).
+- Verified end to end on a throwaway Postgres (Nov 9): 2 seed books gave 4
+  offers linked to their catalog books; a second run updated them and added a
+  history point, with no duplicates.
 
 ## Decisions (Nov 2026)
 
