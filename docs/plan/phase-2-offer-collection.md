@@ -21,7 +21,7 @@ prices from at least 2 stores, new and used**, matched to books by ISBN, so
 | # | Slice | Done when |
 |---|---|---|
 | 2a | **Ingest contract** (done: `POST /offers`, `IngestOfferUseCase`). A staff/service endpoint takes a plain offer DTO (isbn, store, url, price, condition, availability), finds or creates the book, upserts the offer by URL, adds a price-history point | Posting the same offer twice updates it, adds history, creates no duplicate; tested at use-case level |
-| 2b | **Seed list.** A list of ISBNs the system keeps fresh (a file in the repo to start) | One command loads it into the catalog |
+| 2b | **Seed list** (done: `backend/seeds/books_bestsellers.csv`, `python -m src.scripts.load_seed_books`). A list of ISBNs the system keeps fresh (a file in the repo to start) | One command loads it into the catalog |
 | 2c | **Collector 1: Estante Virtual by ISBN**, new and used as separate offers | A seed book yields 1 new and/or used offers in the DB |
 | 2d | **Collector 2** (source to decide, see below) | Same, from a second store |
 | 2e | **Schedule.** A daily job runs the collectors over the seed list, stalest first | History grows by a point per offer per day without anyone clicking |
@@ -44,6 +44,30 @@ risk. Collectors only send plain DTOs; none writes to the database
   same URL comes in.
 - Ingestion does not evaluate price alerts. Alerts still work by keyword; making
   them follow a book is Phase 4.
+
+## 2b notes
+
+How the seed list was built (Nov 2026), so it can be rebuilt or extended:
+
+1. Titles come from Wikipedia's *List of best-selling books*, individual books
+   only (series and reference works such as dictionaries, almanacs, school
+   readers and cookbooks are left out), ordered by estimated sales.
+2. For each title, an Open Library search (title plus author surname) suggests
+   editions with a Brazilian ISBN (prefix 978-85 or 978-65). Google Books was
+   tried first, but its anonymous quota returned 429 on every query.
+3. An ISBN is accepted only if BrasilAPI knows it, with the author's surname
+   among its authors and a title that matches the Open Library edition. Titles
+   with no confirmed Brazilian edition are skipped, and the next one on the
+   list is tried, until there are 50.
+4. A person reviews the result. The automatic check confirms author and
+   edition, not that it is the *same work*: it accepted six wrong books by the
+   right author (e.g. *A Christmas Carol* for *A Tale of Two Cities*). Three
+   were fixed by searching the Portuguese title; three were dropped and
+   replaced by the next titles on the list.
+
+Each book is **one edition**. Matching is by ISBN, so other editions of the same
+work are different products for now; grouping editions of a work is a later
+question. The loader is idempotent and reports ISBNs it could not load.
 
 ## Decisions (Nov 2026)
 

@@ -1,18 +1,21 @@
-from dataclasses import dataclass, fields
+from collections.abc import Callable, Iterable
+from dataclasses import dataclass, field, fields
 
 from src.app.catalog.entities import (
     BookMetadata,
     CanonicalProduct,
+    IdentifierKind,
     ProductCategory,
     ProductCondition,
     ProductListFilters,
 )
 from src.app.catalog.entities import PriceHistory as PriceHistoryEntity
 from src.app.catalog.entities import Product as ProductEntity
-from src.app.catalog.isbn import InvalidIsbnError
+from src.app.catalog.isbn import InvalidIsbnError, normalize_isbn
 from src.app.catalog.matching import IsbnMatcher
 from src.app.catalog.ports import (
     BookMetadataGateway,
+    BookMetadataUnavailableError,
     CanonicalProductRepositoryInterface,
     PriceHistoryRepositoryInterface,
     ProductRepositoryInterface,
@@ -407,3 +410,49 @@ class IngestOfferUseCase:
         )
         offer.current_price = offer_in.price
         return IngestOfferResult(offer=offer, book=book, created=created)
+
+
+@dataclass
+class SeedLoadReport:
+    created: list[str] = field(default_factory=list)
+    existing: list[str] = field(default_factory=list)
+    failed: list[tuple[str, str]] = field(default_factory=list)
+
+
+class LoadSeedBooksUseCase:
+    """Make sure every ISBN of a seed list is a book in the catalog.
+
+    Idempotent: books already there are left alone and cost no outside call.
+    One bad ISBN does not stop the rest; it is reported.
+    """
+
+    def __init__(
+        self,
+        get_book: GetOrCreateBookByIsbnUseCase,
+        products: CanonicalProductRepositoryInterface,
+        pause: Callable[[], None] = lambda: None,
+    ):
+        self.get_book = get_book
+        self.products = products
+        self.pause = pause  # between outside lookups, to be gentle with the source
+
+    def execute(self, isbns: Iterable[str]) -> SeedLoadReport:
+        report = SeedLoadReport()
+        for raw in isbns:
+            try:
+                isbn13 = normalize_isbn(raw)
+            except InvalidIsbnError:
+                report.failed.append((raw, "invalid ISBN"))
+                continue
+            if self.products.get_by_identifier(IdentifierKind.ISBN13, isbn13):
+                report.existing.append(isbn13)
+                continue
+            try:
+                self.get_book.execute(isbn13)
+                report.created.append(isbn13)
+            except BookNotFoundError:
+                report.failed.append((isbn13, "unknown to the metadata source"))
+            except BookMetadataUnavailableError as exc:
+                report.failed.append((isbn13, f"metadata source unavailable: {exc}"))
+            self.pause()
+        return report
