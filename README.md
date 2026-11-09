@@ -53,15 +53,31 @@ keyword, a maximum price, the marketplaces to search and how often to check.
 
 ![My Alerts: keyword, max price, sources, check frequency and actions](docs/screenshots/en-04-alerts.png)
 
+The form explains each field and shows the plan's limits before you hit them.
+
+![Create alert form: help under each field, the Free plan's minimum frequency and site limit](docs/screenshots/en-05-alert-form.png)
+
 **2. Scrapers run in the background.** Celery Beat schedules each alert; one
 search fans out into tasks per marketplace, then into batches of product pages.
+Only listings whose title contains the search term are kept.
 
-![Flower: run_search per marketplace, then process_urls_list and scrape_batch](docs/screenshots/tool-flower-tasks.png)
+![Flower: run_scraper_search, then run_search per marketplace, then scrape_batch for each batch of listings](docs/screenshots/tool-flower-tasks.png)
 
-**3. When a product shows up below your price, you get an email**, at most one
-per alert per hour.
+*Run now* starts a search on demand and shows its progress until it ends.
+
+![Run now in progress: "Checking 1 of 13 listings…" in the alert's row](docs/screenshots/en-09-run-now.png)
+
+![Run now finished: "Search finished: 13 listings checked, 7 match your term"](docs/screenshots/en-09b-run-finished.png)
+
+**3. When a product shows up below your price, you get an email**, once per
+listing and alert. Raising an alert's max price also checks the listings
+already collected.
 
 ![Alert email: product, price found, savings against the alert, link to the listing](docs/screenshots/tool-mailpit-email.png)
+
+In the app, each listing says which of your alerts found it and how much you save.
+
+![Product page: "Your alerts" with the matching alert, R$ 7.00 below the max price](docs/screenshots/en-07-product-detail.png)
 
 **4. Every check feeds the price history**, so you can see if a deal is really
 a deal.
@@ -72,9 +88,8 @@ a deal.
 it was taken.</sub>
 
 **5. Plans set the limits, and the backend enforces them.** A Free user who
-clicks *Run now* too soon gets the plan's rule back, not a silent failure.
-
-![Run now blocked by the Free plan: one check every 360 minutes](docs/screenshots/en-09-run-now.png)
+goes over a limit (a 4th alert, a check below 360 minutes, *Run now* too soon)
+is told which rule applies, not left with a silent failure.
 
 ![Plans: Free, Pro and Business with their limits](docs/screenshots/en-08-plans.png)
 
@@ -85,7 +100,12 @@ clicks *Run now* too soon gets the plan's rule back, not a silent failure.
 ![One endpoint in Swagger: ownership rule and a JSON:API response with type, id, attributes and relationships](docs/screenshots/tool-swagger-endpoint.png)
 
 The UI is also in Portuguese (the default); screenshots in
-[`docs/screenshots/`](docs/screenshots/).
+[`docs/screenshots/`](docs/screenshots/). A short silent demo of the customer
+journey is in [`docs/demo/`](docs/demo/) (English and Portuguese).
+
+The app was tested the way a customer uses it; what was found and fixed is in
+the [exploratory test report](docs/qa/exploratory-report.md), and each finding
+has a Playwright user story in [`frontend/e2e/stories/`](frontend/e2e/stories/).
 
 ---
 
