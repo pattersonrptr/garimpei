@@ -36,6 +36,7 @@ class SearchConfigRepositoryInterface(ABC):
         sort_by: str | None = None,
         sort_order: str | None = None,
         user_id: int | None = None,
+        search_term: str | None = None,
     ) -> tuple[list[SearchConfigEntity], int]:
         """Return a paginated list of all search configs and the total count."""
         raise NotImplementedError

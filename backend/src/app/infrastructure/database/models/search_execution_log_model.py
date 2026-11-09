@@ -15,8 +15,10 @@ class SearchExecutionLog(Base):
     search_config_id = Column(Integer, ForeignKey("search_configs.id"), nullable=False)
     status = Column(String(20), default="pending", nullable=False)
     results_count = Column(Integer, nullable=True)
+    listings_found = Column(Integer, nullable=True)
+    listings_checked = Column(Integer, nullable=True)
     error_message = Column(String(1000), nullable=True)
-    started_at = Column(DateTime, default=datetime.now(UTC), nullable=False)
+    started_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
     finished_at = Column(DateTime, nullable=True)
 
     # Relationships

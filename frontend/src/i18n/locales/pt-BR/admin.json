@@ -93,7 +93,10 @@
       "deleteFailed": "Não foi possível excluir a busca",
       "bulkDeleted_one": "{{count}} busca excluída",
       "bulkDeleted_other": "{{count}} buscas excluídas",
-      "bulkDeleteFailed": "Não foi possível excluir algumas buscas"
+      "bulkDeleteFailed": "Não foi possível excluir algumas buscas",
+      "inUse_one": "Esta busca é usada por {{count}} alerta. Exclua ou altere o alerta antes.",
+      "inUse_other": "Esta busca é usada por {{count}} alertas. Exclua ou altere os alertas antes.",
+      "bulkInUse": "{{count}} das buscas selecionadas são usadas por alertas e foram mantidas."
     },
     "dialogs": {
       "deleteTitle": "Excluir busca",
@@ -101,7 +104,9 @@
       "bulkDeleteTitle": "Excluir buscas",
       "bulkDeleteMessage_one": "Tem certeza de que quer excluir {{count}} busca?",
       "bulkDeleteMessage_other": "Tem certeza de que quer excluir {{count}} buscas?"
-    }
+    },
+    "search": "Pesquisar",
+    "searchHint": "Filtrar pelo termo de busca"
   },
   "sourceWebsites": {
     "title": "Sites de origem",

@@ -8,6 +8,7 @@ import requests
 
 from celery import Celery, chord, group
 from src.api.api_client import ApiClient
+from src.celery.search_run import SearchRun, title_matches
 from src.scrapers.factory.scraper_factory import ScraperFactory
 from src.scrapers.manager.scraper_manager import ScraperManager
 
@@ -75,12 +76,16 @@ def run_scraper_search(search_config_id: int):
 
 
 def _run_scraper_search_locked(search_config_id: int):
-    """Inner implementation — called while the Redis lock is held."""
+    """Inner implementation, called while the Redis lock is held.
+
+    Opens one execution log for the whole run and one step per site; see
+    src/celery/search_run.py for how the run is closed.
+    """
     client = ApiClient(get_celery_worker_token())
     search_config = client.get_search_config_by_id(search_config_id)
 
     if not search_config:
-        _redis.delete(f"search_config_lock:{search_config_id}")
+        _release_lock(search_config_id)
         logger.error("Search config %s not found, skipping.", search_config_id)
         return {
             "status": "error",
@@ -108,82 +113,71 @@ def _run_scraper_search_locked(search_config_id: int):
                 )
 
     if not searches:
-        _redis.delete(f"search_config_lock:{search_config_id}")
+        client.create_search_execution_log(
+            search_config_id=search_config_id,
+            status="failed",
+            error_message="None of the search's websites is active",
+        )
+        _release_lock(search_config_id)
         logger.warning(
             "No active source websites for search config %s", search_config_id
         )
         return {"status": "skipped", "message": "No active source websites"}
 
+    log = client.create_search_execution_log(
+        search_config_id=search_config_id, status="running"
+    )
+    log_id = log.get("id")
+    if log_id:
+        SearchRun(_redis, log_id).start(steps=len(searches))
+    else:
+        logger.warning("Could not open a run log for config %s", search_config_id)
+
     return group(
-        run_search.s(s["search_term"], s["scraper_name"], s["search_config_id"])
+        run_search.s(s["search_term"], s["scraper_name"], s["search_config_id"], log_id)
         for s in searches
     )()
 
 
 @app.task(name="src.celery.tasks.run_search")
-def run_search(search: str, scraper_name: str, search_config_id: int):
-    """Run a search for a given term on a given scraper and dispatch URL processing."""
-    client = ApiClient(get_celery_worker_token())
-    log = client.create_search_execution_log(
-        search_config_id=search_config_id,
-        status="running",
-    )
-    log_id = log.get("id")
-
-    try:
-        scraper = ScraperManager(ScraperFactory().create_scraper(scraper_name))
-        existing_urls = client.get_existing_product_urls(scraper_name)
-        urls = list(scraper.get_products_urls(search))
-        new_urls = scraper.get_urls_to_update(existing_urls, urls)
-
-        process_urls_list.apply_async(
-            args=[
-                {"status": "success", "search": search, "urls": new_urls},
-                scraper_name,
-                search_config_id,
-                log_id,
-            ],
-            countdown=10,
-        )
-        return {"status": "success", "search": search, "new_urls_count": len(new_urls)}
-
-    except Exception as e:
-        logger.error(
-            "Error in run_search for '%s' on '%s': %s", search, scraper_name, e
-        )
-        client.create_search_execution_log(
-            search_config_id=search_config_id,
-            status="failed",
-            results_count=0,
-            error_message=str(e),
-        )
-        return {"status": "error", "search": search, "message": str(e)}
-
-
-@app.task(name="src.celery.tasks.process_urls_list")
-def process_urls_list(
-    search_results: dict,
+def run_search(
+    search: str,
     scraper_name: str,
     search_config_id: int,
     log_id: str | None = None,
 ):
-    """Split URLs into small batches and dispatch one task per batch.
+    """Collect the listing URLs for a term on one site and queue their scraping.
 
-    Each ``scrape_batch`` task reuses a single browser instance for all
-    URLs in its batch, then persists the results — avoiding the memory
-    explosion of launching one Chromium process per URL.
+    Every listing found is scraped again, new or not: that is how known
+    listings get their current price.
     """
-    scraper = ScraperManager(ScraperFactory().create_scraper(scraper_name))
-    # Use smaller chunks (20) so each batch finishes in reasonable time
-    chunks = list(scraper.split_search_urls(search_results, 20))
+    client = ApiClient(get_celery_worker_token())
+    run = SearchRun(_redis, log_id) if log_id else None
 
-    for chunk in chunks:
-        scrape_batch.apply_async(
-            args=[chunk, scraper_name, search_config_id, log_id],
-            countdown=5,
+    try:
+        scraper = ScraperManager(ScraperFactory().create_scraper(scraper_name))
+        urls = list(dict.fromkeys(scraper.get_products_urls(search)))
+        chunks = list(scraper.split_search_urls({"search": search, "urls": urls}, 20))
+        if run:
+            run.add_steps(len(chunks))
+            run.add("listings_found", len(urls))
+            _report_progress(client, run)
+        for chunk in chunks:
+            scrape_batch.apply_async(
+                args=[chunk, scraper_name, search_config_id, log_id, search],
+                countdown=5,
+            )
+        result = {"status": "success", "search": search, "urls_count": len(urls)}
+    except Exception as e:
+        logger.error(
+            "Error in run_search for '%s' on '%s': %s", search, scraper_name, e
         )
+        if run:
+            run.add_error(f"{scraper_name}: {e}")
+        result = {"status": "error", "search": search, "message": str(e)}
 
-    return {"status": "dispatched", "batches": len(chunks)}
+    _step_done(client, run, search_config_id)
+    return result
 
 
 @app.task(name="src.celery.tasks.scrape_batch")
@@ -192,6 +186,7 @@ def scrape_batch(
     scraper_name: str,
     search_config_id: int | None = None,
     log_id: str | None = None,
+    search_term: str | None = None,
 ):
     """Scrape a batch of URLs using a single browser, then save results.
 
@@ -226,7 +221,7 @@ def scrape_batch(
             scraper_instance.stop_sync()
 
     # Persist immediately (no chord needed)
-    return save_products(results, scraper_name, search_config_id, log_id)
+    return save_products(results, scraper_name, search_config_id, log_id, search_term)
 
 
 @app.task(name="src.celery.tasks.scrape_product_page")
@@ -250,13 +245,37 @@ def save_products(
     scraper_name: str,
     search_config_id: int | None = None,
     log_id: str | None = None,
+    search_term: str | None = None,
 ):
-    """Persist scraped products and record price history entries. Finalises the execution log."""
-    client = ApiClient(get_celery_worker_token())
+    """Persist scraped listings and their prices, then count the batch in its run.
 
+    With a ``search_term``, only listings whose title contains it are saved:
+    marketplaces also return loosely related items, and an alert would never
+    match those anyway.
+    """
+    client = ApiClient(get_celery_worker_token())
+    run = SearchRun(_redis, log_id) if log_id else None
+    try:
+        outcome = _save_results(client, results, scraper_name, search_term)
+    except Exception as e:
+        logger.error("Saving %s results failed: %s", scraper_name, e)
+        if run:
+            run.add_error(f"{scraper_name}: {e}")
+        outcome = {"status": "error", "message": str(e), "processed": 0}
+
+    if run:
+        run.add("listings_checked", len(results))
+        run.add("results_count", outcome.get("processed", 0))
+        _report_progress(client, run)
+    _step_done(client, run, search_config_id)
+    return outcome
+
+
+def _save_results(
+    client: ApiClient, results: list, scraper_name: str, search_term: str | None
+) -> dict:
     if not results:
-        _finish_log(client, search_config_id, log_id, status="success", results_count=0)
-        return {"status": "error", "message": "No products to save"}
+        return {"status": "error", "message": "No products to save", "processed": 0}
 
     source_website = client.get_source_website_by_name(scraper_name.lower())
     website_id = source_website.get("id")
@@ -266,13 +285,28 @@ def save_products(
         for r in results
         if r.get("status") == "success"
     ]
-
     if not successful:
-        _finish_log(client, search_config_id, log_id, status="success", results_count=0)
-        return {"status": "error", "message": "All scraping attempts failed"}
+        return {
+            "status": "error",
+            "message": "All scraping attempts failed",
+            "processed": 0,
+        }
+
+    matching = (
+        [p for p in successful if title_matches(p.get("title", ""), search_term)]
+        if search_term
+        else successful
+    )
+    unrelated = len(successful) - len(matching)
+    if unrelated:
+        logger.info(
+            "Skipped %d listing(s) whose title does not contain '%s'",
+            unrelated,
+            search_term,
+        )
 
     created = 0
-    for product_data in successful:
+    for product_data in matching:
         url = product_data.get("url")
         if not url:
             continue
@@ -284,40 +318,27 @@ def save_products(
             if product_id and current_price is not None:
                 client.create_price_history(product_id, current_price)
             client.update_product(product_id, product_data)
-            # Evaluate alerts for the updated product
-            if product_id:
-                try:
-                    client.evaluate_product_alerts(product_id)
-                except Exception as e:
-                    logger.warning(
-                        "Alert evaluation failed for product %s: %s", product_id, e
-                    )
         else:
             created_product = client.create_product(product_data)
+            product_id = created_product.get("id") if created_product else None
+            if product_id and current_price is not None:
+                client.create_price_history(product_id, current_price)
             if created_product:
-                product_id = created_product.get("id")
-                if product_id and current_price is not None:
-                    client.create_price_history(product_id, current_price)
-                    # Evaluate alerts for the newly created product
-                    try:
-                        client.evaluate_product_alerts(product_id)
-                    except Exception as e:
-                        logger.warning(
-                            "Alert evaluation failed for product %s: %s",
-                            product_id,
-                            e,
-                        )
                 created += 1
+        if product_id and current_price is not None:
+            try:
+                client.evaluate_product_alerts(product_id)
+            except Exception as e:
+                logger.warning(
+                    "Alert evaluation failed for product %s: %s", product_id, e
+                )
 
-    _finish_log(
-        client,
-        search_config_id,
-        log_id,
-        status="success",
-        results_count=len(successful),
-    )
-
-    return {"status": "success", "created": created, "processed": len(successful)}
+    return {
+        "status": "success",
+        "created": created,
+        "processed": len(matching),
+        "unrelated": unrelated,
+    }
 
 
 @app.task(name="src.celery.tasks.run_scraper_update")
@@ -389,30 +410,34 @@ def update_products(results: list, scraper_name: str):
 # ---------------------------------------------------------------------------
 
 
-def _finish_log(
-    client: ApiClient,
-    search_config_id: int | None,
-    log_id: str | None,
-    status: str,
-    results_count: int,
-    error_message: str | None = None,
-):
-    """Update or create a SearchExecutionLog entry to mark a search as finished.
+def _release_lock(search_config_id: int | None) -> None:
+    if search_config_id is not None:
+        _redis.delete(f"search_config_lock:{search_config_id}")
 
-    Also releases the Redis lock so the search config can be triggered again.
-    """
-    if search_config_id is None:
+
+def _report_progress(client: ApiClient, run: SearchRun) -> None:
+    """Send the run's counters to its execution log (the UI polls them)."""
+    client.update_search_execution_log(run.log_id, **run.snapshot())
+
+
+def _step_done(
+    client: ApiClient, run: SearchRun | None, search_config_id: int | None
+) -> None:
+    """Count one finished step; the last one closes the run and frees the lock."""
+    if run is None or not run.step_done():
         return
-    # The API currently only supports creating logs; if a PATCH endpoint is
-    # added later this helper can be updated to use it instead.
-    client.create_search_execution_log(
-        search_config_id=search_config_id,
-        status=status,
-        results_count=results_count,
-        error_message=error_message,
+    counters = run.snapshot()
+    errors = run.errors()
+    # Failed only when nothing worked; partial errors are reported on success.
+    failed = bool(errors) and counters["listings_found"] == 0
+    client.update_search_execution_log(
+        run.log_id,
+        status="failed" if failed else "success",
+        error_message="; ".join(errors)[:1000] or None,
+        **counters,
     )
-    # Release lock so the config can be re-triggered
-    _redis.delete(f"search_config_lock:{search_config_id}")
+    run.clear()
+    _release_lock(search_config_id)
 
 
 app.conf.timezone = "America/Sao_Paulo"

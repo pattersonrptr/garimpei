@@ -36,6 +36,9 @@ class PlanLimitViolation:
     title: str
     detail: str
     pointer: str | None = None
+    # Machine-readable facts so clients can explain it in the user's language:
+    # {"limit": "<name>", "value": <number>, "plan": "<plan name>"}
+    meta: dict | None = None
 
 
 def limits_for_plan(plan: Plan | None) -> PlanLimits:
@@ -72,6 +75,11 @@ def alert_limit_violation(
                 f"Upgrade your plan for more."
             ),
             pointer="/data/attributes/is_active",
+            meta={
+                "limit": "max_active_alerts",
+                "value": limits.max_active_alerts,
+                "plan": limits.plan_name,
+            },
         )
     return None
 
@@ -89,6 +97,11 @@ def frequency_limit_violation(
                 f"Upgrade your plan for faster checks."
             ),
             pointer="/data/attributes/frequency_minutes",
+            meta={
+                "limit": "min_frequency_minutes",
+                "value": limits.min_frequency_minutes,
+                "plan": limits.plan_name,
+            },
         )
     return None
 
@@ -108,6 +121,11 @@ def source_limit_violation(
                 f"Upgrade your plan for more."
             ),
             pointer="/data/attributes/source_website_ids",
+            meta={
+                "limit": "max_sources",
+                "value": limits.max_sources,
+                "plan": limits.plan_name,
+            },
         )
     return None
 
@@ -133,5 +151,11 @@ def manual_run_violation(
                 f"{limits.min_frequency_minutes} minutes. "
                 f"Try again in {wait_minutes} minutes."
             ),
+            meta={
+                "limit": "manual_run_interval",
+                "value": limits.min_frequency_minutes,
+                "wait_minutes": wait_minutes,
+                "plan": limits.plan_name,
+            },
         )
     return None

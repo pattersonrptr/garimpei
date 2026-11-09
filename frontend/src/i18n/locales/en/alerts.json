@@ -19,12 +19,18 @@
   },
   "runNow": {
     "run": "Run now",
+    "hint": "Run now: search the sites for this alert",
     "running": "Searching…",
-    "inactive": "Activate the alert first",
+    "searching": "Searching the sites…",
+    "progress_one": "Checking {{checked}} of {{count}} listing…",
+    "progress_other": "Checking {{checked}} of {{count}} listings…",
     "noConfig": "No search config linked to this alert",
-    "triggered": "Search triggered! Scraping in progress…",
-    "done_one": "Search complete — {{count}} result",
-    "done_other": "Search complete — {{count}} results",
+    "triggered": "Search started! It takes a few minutes; progress shows in the list.",
+    "done_one": "Search finished: {{count}} listing checked, {{matches}}.",
+    "done_other": "Search finished: {{count}} listings checked, {{matches}}.",
+    "matches_one": "{{count}} matches your term",
+    "matches_other": "{{count}} match your term",
+    "nothingFound": "The sites returned no listings for this term. Try other words, or try again later: sites sometimes block searches for a while.",
     "failed": "Search failed: {{error}}",
     "alreadyRunning": "Search is already running",
     "triggerFailed": "Failed to trigger search"
@@ -54,5 +60,13 @@
     "bulkDeleteTitle": "Delete Selected Alerts",
     "bulkDeleteMessage_one": "Delete {{count}} alert?",
     "bulkDeleteMessage_other": "Delete {{count}} alerts?"
+  },
+  "seePlans": "See plans",
+  "help": {
+    "searchTerm": "Listings whose title contains this text, ignoring accents.",
+    "maxPrice": "You'll be notified when a listing costs this much or less. More expensive listings are still tracked.",
+    "frequency": "Your {{plan}} plan checks every {{count}} minutes at most.",
+    "sources_one": "Your plan allows {{count}} site per alert.",
+    "sources_other": "Your plan allows up to {{count}} sites per alert."
   }
 }

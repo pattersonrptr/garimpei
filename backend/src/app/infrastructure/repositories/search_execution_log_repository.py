@@ -24,6 +24,8 @@ class SearchExecutionLogRepository(SearchExecutionLogRepositoryInterface):
             search_config_id=model.search_config_id,
             status=model.status,
             results_count=model.results_count,
+            listings_found=model.listings_found,
+            listings_checked=model.listings_checked,
             error_message=model.error_message,
             started_at=model.started_at,
             finished_at=model.finished_at,
@@ -37,11 +39,30 @@ class SearchExecutionLogRepository(SearchExecutionLogRepositoryInterface):
             search_config_id=search_execution_log.search_config_id,
             status=search_execution_log.status,
             results_count=search_execution_log.results_count,
+            listings_found=search_execution_log.listings_found,
+            listings_checked=search_execution_log.listings_checked,
             error_message=search_execution_log.error_message,
             started_at=search_execution_log.started_at,
             finished_at=search_execution_log.finished_at,
         )
         self.db.add(db_log)
+        self.db.commit()
+        self.db.refresh(db_log)
+        return self._to_entity(db_log)
+
+    def update(
+        self, search_execution_log_id: int, changes: dict
+    ) -> SearchExecutionLogEntity | None:
+        """Apply field changes to a log; returns None if it does not exist."""
+        db_log = (
+            self.db.query(SearchExecutionLogModel)
+            .filter(SearchExecutionLogModel.id == search_execution_log_id)
+            .first()
+        )
+        if not db_log:
+            return None
+        for field, value in changes.items():
+            setattr(db_log, field, value)
         self.db.commit()
         self.db.refresh(db_log)
         return self._to_entity(db_log)

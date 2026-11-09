@@ -16,6 +16,13 @@ class SearchExecutionLogRepositoryInterface(ABC):
         ...
 
     @abstractmethod
+    def update(
+        self, search_execution_log_id: int, changes: dict
+    ) -> SearchExecutionLogEntity | None:
+        """Apply field changes to a log; returns None if it does not exist."""
+        ...
+
+    @abstractmethod
     def get_by_id(
         self, search_execution_log_id: int
     ) -> SearchExecutionLogEntity | None:

@@ -19,8 +19,8 @@ class NotificationLog(Base):
     subject = Column(String(500), nullable=False)
     status = Column(String(20), default="sent", nullable=False)
     error_message = Column(String(1000), nullable=True)
-    sent_at = Column(DateTime, default=datetime.now(UTC), nullable=False)
-    created_at = Column(DateTime, default=datetime.now(UTC), nullable=False)
+    sent_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
 
     # Relationships
     price_alert = relationship("PriceAlert", back_populates="notification_logs")

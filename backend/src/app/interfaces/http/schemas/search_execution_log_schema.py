@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -17,6 +18,8 @@ class SearchExecutionLogAttributes(BaseModel):
     search_config_id: int
     status: str
     results_count: int | None = None
+    listings_found: int | None = None
+    listings_checked: int | None = None
     error_message: str | None = None
     started_at: datetime | None = None
     finished_at: datetime | None = None
@@ -28,6 +31,18 @@ class SearchExecutionLogAttributesForCreation(BaseModel):
     search_config_id: int
     status: str = "pending"
     results_count: int | None = None
+    listings_found: int | None = None
+    listings_checked: int | None = None
+    error_message: str | None = None
+
+
+class SearchExecutionLogAttributesForUpdate(BaseModel):
+    """Attributes a scraper may change while a run progresses (all optional)."""
+
+    status: Literal["pending", "running", "success", "failed"] | None = None
+    results_count: int | None = None
+    listings_found: int | None = None
+    listings_checked: int | None = None
     error_message: str | None = None
 
 
@@ -44,6 +59,22 @@ class SearchExecutionLogCreateRequest(SingleResourceRequest):
     """Request schema for creating a search execution log."""
 
     data: SearchExecutionLogResourceForCreation
+
+
+class SearchExecutionLogResourceForUpdate(BaseModel):
+    """ResourceObject for a partial update."""
+
+    type: str = Field(
+        default="search_execution_logs", examples=["search_execution_logs"]
+    )
+    id: str | None = None
+    attributes: SearchExecutionLogAttributesForUpdate
+
+
+class SearchExecutionLogUpdateRequest(BaseModel):
+    """Request schema for updating a search execution log."""
+
+    data: SearchExecutionLogResourceForUpdate
 
 
 class SearchExecutionLogResource(ResourceObject):

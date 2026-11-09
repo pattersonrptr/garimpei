@@ -23,13 +23,22 @@ class ApiClient:
     # -------------------------------------------------------------------------
 
     def _make_request(
-        self, method: str, endpoint: str, data: dict = None, params: dict = None
+        self,
+        method: str,
+        endpoint: str,
+        data: dict = None,
+        params: dict = None,
+        expected_statuses: tuple[int, ...] = (),
     ) -> requests.Response:
+        """Send a request. Error statuses are logged, except ``expected_statuses``
+        (an answer the caller handles, such as 404 for "not found yet")."""
         url = f"{self.base_url}{endpoint}"
         try:
             response = requests.request(
                 method, url, headers=self.headers, json=data, params=params, timeout=10
             )
+            if response.status_code in expected_statuses:
+                return response
             response.raise_for_status()
             return response
         except Exception as e:
@@ -125,7 +134,10 @@ class ApiClient:
 
     def get_product_by_url(self, url: str) -> dict[str, Any]:
         logger.debug("Getting product by URL: %s", url)
-        response = self._make_request("GET", "/products/url", params={"url": url})
+        # 404 is the normal answer for a listing seen for the first time
+        response = self._make_request(
+            "GET", "/products/url", params={"url": url}, expected_statuses=(404,)
+        )
         if response.status_code == 200:
             return self._extract_attributes(response.json())
         return {}
@@ -228,6 +240,20 @@ class ApiClient:
         )
         return {}
 
+    def update_search_execution_log(
+        self, log_id: int | str, **attributes: Any
+    ) -> dict[str, Any]:
+        """Record a run's progress or outcome (PATCH, None values are skipped)."""
+        changes = {k: v for k, v in attributes.items() if v is not None}
+        payload = self._wrap_for_update("search_execution_logs", log_id, changes)
+        response = self._make_request(
+            "PATCH", f"/search-execution-logs/{log_id}", data=payload
+        )
+        if response.status_code == 200:
+            return self._extract_attributes(response.json())
+        logger.error("Failed to update search execution log %s", log_id)
+        return {}
+
     # -------------------------------------------------------------------------
     # Notifications
     # -------------------------------------------------------------------------
@@ -235,7 +261,9 @@ class ApiClient:
     def get_active_price_alerts(self) -> list[dict[str, Any]]:
         """Fetch all active price alerts from the backend."""
         logger.debug("Getting active price alerts")
-        response = self._make_request("GET", "/price-alerts/", params={"limit": 100})
+        response = self._make_request(
+            "GET", "/price-alerts/", params={"limit": 100, "scope": "all"}
+        )
         if response.status_code == 200:
             alerts = self._extract_collection(response.json())
             return [a for a in alerts if a.get("is_active")]

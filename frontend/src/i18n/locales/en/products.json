@@ -19,7 +19,8 @@
   "deleteSelected": "Delete selected ({{count}})",
   "empty": {
     "title": "No products found",
-    "body": "Products show up here when your alerts find results on the marketplaces."
+    "body": "Products show up here when your alerts find results on the marketplaces.",
+    "noOpportunities": "None of your alerts has a listing under its max price yet."
   },
   "toast": {
     "deleted": "Product deleted",
@@ -47,6 +48,15 @@
     "sourceUrl": "Source URL",
     "priceHistory": "Price History",
     "price": "Price",
-    "noHistory": "No price history available for this product."
-  }
+    "noHistory": "No price history available for this product.",
+    "yourAlerts": "Your alerts",
+    "noMatchingAlert": "None of your alerts matches this listing.",
+    "alertMax": "max {{price}}",
+    "noPriceYet": "No price yet",
+    "savings": "Opportunity: {{amount}} below your max price",
+    "aboveMax": "{{amount}} above your max price",
+    "showMore": "Show more",
+    "showLess": "Show less"
+  },
+  "opportunitiesOnly": "Opportunities only"
 }

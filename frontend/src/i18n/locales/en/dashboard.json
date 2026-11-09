@@ -14,9 +14,10 @@
   },
   "opportunities": {
     "title": "Recent Opportunities",
-    "empty": "No opportunities found yet. Create alerts to start tracking prices!",
+    "empty": "No listing under your max price yet. When one shows up, it appears here and you get an email.",
     "openProduct": "Open product",
-    "max": "(max: {{price}})"
+    "max": "(max: {{price}})",
+    "save": "save {{amount}}"
   },
   "nextChecks": {
     "title": "Next Checks",

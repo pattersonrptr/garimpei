@@ -14,9 +14,10 @@
   },
   "opportunities": {
     "title": "Oportunidades recentes",
-    "empty": "Nenhuma oportunidade ainda. Crie alertas para começar a acompanhar preços!",
+    "empty": "Nenhum anúncio abaixo do seu preço máximo ainda. Quando aparecer, ele surge aqui e você recebe um e-mail.",
     "openProduct": "Abrir produto",
-    "max": "(máx.: {{price}})"
+    "max": "(máx.: {{price}})",
+    "save": "economize {{amount}}"
   },
   "nextChecks": {
     "title": "Próximas verificações",

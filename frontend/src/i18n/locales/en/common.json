@@ -65,5 +65,21 @@
   "columns": {
     "actions": "Actions"
   },
-  "loadFailed": "Failed to load data."
+  "loadFailed": "Failed to load data.",
+  "planLimit": {
+    "maxActiveAlerts_one": "Your plan allows {{count}} active alert. Pause or delete one, or upgrade your plan.",
+    "maxActiveAlerts_other": "Your plan allows {{count}} active alerts. Pause or delete one, or upgrade your plan.",
+    "minFrequency_one": "Your plan checks every {{count}} minute at most. Choose {{count}} or more, or upgrade your plan.",
+    "minFrequency_other": "Your plan checks every {{count}} minutes at most. Choose {{count}} or more, or upgrade your plan.",
+    "maxSources_one": "Your plan allows {{count}} site per alert. Remove a site, or upgrade your plan.",
+    "maxSources_other": "Your plan allows up to {{count}} sites per alert. Remove a site, or upgrade your plan.",
+    "manualRun_one": "Your plan allows one check every {{count}} minute. Try again in {{wait}} min.",
+    "manualRun_other": "Your plan allows one check every {{count}} minutes. Try again in {{wait}} min."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "This address doesn't exist in Garimpei. It may have been mistyped or moved.",
+    "home": "Go to the home page",
+    "dashboard": "Go to the dashboard"
+  }
 }

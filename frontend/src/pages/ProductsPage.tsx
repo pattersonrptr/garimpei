@@ -1,6 +1,7 @@
 /**
- * Products list page — MUI DataGrid with server-side pagination, sort, filters,
- * bulk delete, and an inline edit modal.
+ * Products list page — MUI DataGrid with server-side pagination, sort and
+ * filters. Customers see the listings their alerts found; staff see the whole
+ * catalog and can edit or delete listings (one by one or in bulk).
  */
 
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -11,9 +12,11 @@ import VisibilityIcon from '@mui/icons-material/Visibility'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
+import Checkbox from '@mui/material/Checkbox'
 import Chip from '@mui/material/Chip'
 import Collapse from '@mui/material/Collapse'
 import FormControl from '@mui/material/FormControl'
+import FormControlLabel from '@mui/material/FormControlLabel'
 import IconButton from '@mui/material/IconButton'
 import InputLabel from '@mui/material/InputLabel'
 import MenuItem from '@mui/material/MenuItem'
@@ -38,8 +41,10 @@ import { GenericFormModal } from '@/components/common/GenericFormModal'
 import { PageHeader } from '@/components/common/PageHeader'
 import { useAuth } from '@/context/AuthContext'
 import { usePaginatedResource } from '@/hooks/usePaginatedResource'
+import { matchesForProduct } from '@/lib/alertMatch'
 import { formatCurrency } from '@/lib/formatters'
 import { logger } from '@/lib/logger'
+import { EMPTY_SELECTION, selectedRowIds } from '@/lib/selection'
 import { deleteProduct, getProducts, updateProduct } from '@/services/productService'
 import { getPriceAlertsByUser } from '@/services/priceAlertService'
 import type { PriceAlert } from '@/types/priceAlert'
@@ -53,9 +58,15 @@ interface Filters {
   title: string
   condition: string
   isAvailable: string
+  opportunitiesOnly: boolean
 }
 
-const defaultFilters: Filters = { title: '', condition: '', isAvailable: '' }
+const defaultFilters: Filters = {
+  title: '',
+  condition: '',
+  isAvailable: '',
+  opportunitiesOnly: false,
+}
 
 // ---------------------------------------------------------------------------
 // Edit form state
@@ -80,24 +91,21 @@ export function ProductsPage() {
   const navigate = useNavigate()
   const { enqueueSnackbar } = useSnackbar()
   const { t } = useTranslation(['products', 'common'])
-  const { userId } = useAuth()
+  const { userId, isStaff, isSuperuser } = useAuth()
+  const canManage = isStaff || isSuperuser
 
-  // Price alerts for opportunity tagging
+  // My alerts, to tag the listings that are opportunities for me
   const [alerts, setAlerts] = useState<PriceAlert[]>([])
   useEffect(() => {
     if (userId) {
-      getPriceAlertsByUser(userId)
-        .then((a) => setAlerts(a.filter((x) => x.isActive)))
-        .catch(() => {})
+      getPriceAlertsByUser(userId).then(setAlerts).catch(() => {})
     }
   }, [userId])
 
-  /** Check if a product is an opportunity (price ≤ any active alert's max) */
+  /** Same rule as the API: one of my alerts matches and the price fits. */
   const isOpportunity = useCallback(
-    (product: Product): boolean => {
-      if (product.currentPrice == null) return false
-      return alerts.some((a) => product.currentPrice! <= a.maxPrice)
-    },
+    (product: Product): boolean =>
+      matchesForProduct(alerts, product).some((m) => m.isOpportunity),
     [alerts],
   )
 
@@ -108,10 +116,7 @@ export function ProductsPage() {
   const [sortModel, setSortModel] = useState<GridSortModel>([])
   const [filters, setFilters] = useState<Filters>(defaultFilters)
   const [showFilters, setShowFilters] = useState(false)
-  const [rowSelection, setRowSelection] = useState<GridRowSelectionModel>({
-    type: 'include',
-    ids: new Set(),
-  })
+  const [rowSelection, setRowSelection] = useState<GridRowSelectionModel>(EMPTY_SELECTION)
 
   // Single delete
   const [deleteId, setDeleteId] = useState<string | null>(null)
@@ -146,6 +151,7 @@ export function ProductsPage() {
         ...(filters.isAvailable !== ''
           ? { is_available: filters.isAvailable === 'true' }
           : {}),
+        ...(filters.opportunitiesOnly ? { opportunities_only: true } : {}),
       }),
     [paginationModel, sortModel, filters],
   )
@@ -157,12 +163,11 @@ export function ProductsPage() {
   // ---------------------------------------------------------------------------
 
   function selectedIds(): string[] {
-    if (rowSelection.type !== 'include') return []
-    return Array.from(rowSelection.ids) as string[]
+    return selectedRowIds(rowSelection, items)
   }
 
   function selectionCount(): number {
-    return rowSelection.type === 'include' ? rowSelection.ids.size : 0
+    return selectedIds().length
   }
 
   function openEdit(product: Product) {
@@ -206,7 +211,7 @@ export function ProductsPage() {
     try {
       await Promise.all(ids.map(deleteProduct))
       enqueueSnackbar(t('toast.bulkDeleted', { count: ids.length }), { variant: 'success' })
-      setRowSelection({ type: 'include', ids: new Set() })
+      setRowSelection(EMPTY_SELECTION)
       reload()
     } catch (err) {
       logger.error('Failed to bulk delete products', { ids }, err)
@@ -295,20 +300,37 @@ export function ProductsPage() {
       width: 120,
       getActions: ({ row }) => [
         <Tooltip title={t('common:actions.viewDetails')} key="view">
-          <IconButton size="small" onClick={() => navigate(`/products/${row.id}`)}>
+          <IconButton
+            size="small"
+            aria-label={t('common:actions.viewDetails')}
+            onClick={() => navigate(`/products/${row.id}`)}
+          >
             <VisibilityIcon fontSize="small" />
           </IconButton>
         </Tooltip>,
-        <Tooltip title={t('common:actions.edit')} key="edit">
-          <IconButton size="small" onClick={() => openEdit(row)}>
-            <EditIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>,
-        <Tooltip title={t('common:actions.delete')} key="delete">
-          <IconButton size="small" color="error" onClick={() => setDeleteId(row.id)}>
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>,
+        ...(canManage
+          ? [
+              <Tooltip title={t('common:actions.edit')} key="edit">
+                <IconButton
+                  size="small"
+                  aria-label={t('common:actions.edit')}
+                  onClick={() => openEdit(row)}
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>,
+              <Tooltip title={t('common:actions.delete')} key="delete">
+                <IconButton
+                  size="small"
+                  color="error"
+                  aria-label={t('common:actions.delete')}
+                  onClick={() => setDeleteId(row.id)}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>,
+            ]
+          : []),
       ],
     },
   ]
@@ -337,7 +359,17 @@ export function ProductsPage() {
         >
           {t('common:filters.title')}
         </Button>
-        {selectionCount() > 0 && (
+        <FormControlLabel
+          control={
+            <Checkbox
+              size="small"
+              checked={filters.opportunitiesOnly}
+              onChange={(e) => applyFilters({ opportunitiesOnly: e.target.checked })}
+            />
+          }
+          label={t('opportunitiesOnly')}
+        />
+        {canManage && selectionCount() > 0 && (
           <Button
             variant="outlined"
             color="error"
@@ -412,7 +444,7 @@ export function ProductsPage() {
         sortModel={sortModel}
         onSortModelChange={setSortModel}
         pageSizeOptions={[10, 25, 50, 100]}
-        checkboxSelection
+        checkboxSelection={canManage}
         rowSelectionModel={rowSelection}
         onRowSelectionModelChange={setRowSelection}
         disableRowSelectionOnClick
@@ -431,7 +463,7 @@ export function ProductsPage() {
                 {t('empty.title')}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {t('empty.body')}
+                {filters.opportunitiesOnly ? t('empty.noOpportunities') : t('empty.body')}
               </Typography>
             </Stack>
           ),

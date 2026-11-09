@@ -1,9 +1,19 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import asc, desc, func
+from sqlalchemy import and_, asc, desc, exists, func
 from sqlalchemy.orm import Session, joinedload
 
 from src.app.entities.product import Product as ProductEntity
+from src.app.entities.product import ProductCondition, ProductListFilters
+from src.app.infrastructure.database.models.notification_log_model import (
+    NotificationLog as NotificationLogModel,
+)
+from src.app.infrastructure.database.models.price_alert_model import (
+    PriceAlert as PriceAlertModel,
+)
+from src.app.infrastructure.database.models.price_alert_source_website_model import (
+    price_alert_source_website,
+)
 from src.app.infrastructure.database.models.price_history_model import (
     PriceHistory as PriceHistoryModel,
 )
@@ -72,8 +82,9 @@ class ProductRepository(ProductRepositoryInterface):
         offset: int = 0,
         sort_by: str | None = None,
         sort_order: str | None = None,
+        filters: ProductListFilters | None = None,
     ) -> tuple[list[ProductEntity], int]:
-        """Retrieve all products with pagination, sorting and current price."""
+        """Retrieve products with pagination, sorting, filters and current price."""
         # Subquery: latest price per product
         latest_price_sq = (
             self.db.query(
@@ -97,20 +108,21 @@ class ProductRepository(ProductRepositoryInterface):
             .subquery()
         )
 
+        conditions = self._filter_conditions(filters, price_sq.c.price)
+
         query = (
             self.db.query(ProductModel, price_sq.c.price)
             .outerjoin(price_sq, ProductModel.id == price_sq.c.product_id)
             .options(joinedload(ProductModel.source_website))
+            .filter(*conditions)
         )
 
         # Get total count (count on ProductModel.id to avoid issues with outer join)
         total = (
             self.db.query(func.count(ProductModel.id))
-            .select_from(
-                ProductModel.__table__.outerjoin(
-                    price_sq, ProductModel.id == price_sq.c.product_id
-                )
-            )
+            .select_from(ProductModel)
+            .outerjoin(price_sq, ProductModel.id == price_sq.c.product_id)
+            .filter(*conditions)
             .scalar()
         )
 
@@ -124,6 +136,7 @@ class ProductRepository(ProductRepositoryInterface):
         else:
             # Default sorting by created_at desc
             query = query.order_by(desc(ProductModel.created_at))
+        query = query.order_by(desc(ProductModel.id))  # stable pages
 
         # Apply pagination
         results = query.limit(limit).offset(offset).all()
@@ -135,6 +148,50 @@ class ProductRepository(ProductRepositoryInterface):
             entities.append(entity)
 
         return entities, total
+
+    @staticmethod
+    def _filter_conditions(filters: ProductListFilters | None, current_price) -> list:
+        """SQL conditions for a ProductListFilters (see its docstring)."""
+        if filters is None:
+            return []
+        conditions = []
+        if filters.title:
+            conditions.append(title_contains(ProductModel.title, filters.title))
+        if filters.condition:
+            conditions.append(
+                ProductModel.condition == ProductCondition(filters.condition.lower())
+            )
+        if filters.is_available is not None:
+            conditions.append(ProductModel.is_available.is_(filters.is_available))
+        if filters.source_website_id is not None:
+            conditions.append(
+                ProductModel.source_website_id == filters.source_website_id
+            )
+        if (
+            filters.matching_user_id is not None
+            or filters.matching_alert_id is not None
+        ):
+            alert_matches = [
+                PriceAlertModel.deleted_at.is_(None),
+                price_alert_source_website.c.price_alert_id == PriceAlertModel.id,
+                price_alert_source_website.c.source_website_id
+                == ProductModel.source_website_id,
+                title_contains(ProductModel.title, PriceAlertModel.search_term),
+            ]
+            if filters.matching_user_id is not None:
+                alert_matches.append(
+                    PriceAlertModel.user_id == filters.matching_user_id
+                )
+            if filters.matching_alert_id is not None:
+                alert_matches.append(PriceAlertModel.id == filters.matching_alert_id)
+            if filters.opportunities_only:
+                alert_matches.append(current_price <= PriceAlertModel.max_price)
+            conditions.append(
+                exists()
+                .where(and_(*alert_matches))
+                .correlate_except(PriceAlertModel, price_alert_source_website)
+            )
+        return conditions
 
     def update(self, product_id: int, product: ProductEntity) -> ProductEntity | None:
         """Update an existing product."""
@@ -167,6 +224,10 @@ class ProductRepository(ProductRepositoryInterface):
             return False
 
         try:
+            # Sent notifications are history: keep them, without the product.
+            self.db.query(NotificationLogModel).filter(
+                NotificationLogModel.product_id == product_id
+            ).update({NotificationLogModel.product_id: None}, synchronize_session=False)
             self.db.delete(db_product)
             self.db.commit()
             return True

@@ -15,6 +15,7 @@ from src.app.interfaces.http.schemas.search_execution_log_schema import (
     SearchExecutionLogCreateRequest,
     SearchExecutionLogReadResponse,
     SearchExecutionLogsCollectionResponse,
+    SearchExecutionLogUpdateRequest,
 )
 from src.app.security.auth import get_current_staff_user
 from src.app.use_cases.search_execution_log_use_cases import (
@@ -22,6 +23,7 @@ from src.app.use_cases.search_execution_log_use_cases import (
     GetSearchExecutionLogByIdUseCase,
     GetSearchExecutionLogsBySearchConfigIdUseCase,
     ListSearchExecutionLogsUseCase,
+    UpdateSearchExecutionLogUseCase,
 )
 from src.config.logging_config import get_logger
 
@@ -166,8 +168,42 @@ def create_search_execution_log(
         search_config_id=attrs.search_config_id,
         status=attrs.status,
         results_count=attrs.results_count,
+        listings_found=attrs.listings_found,
+        listings_checked=attrs.listings_checked,
         error_message=attrs.error_message,
     )
     use_case = CreateSearchExecutionLogUseCase(search_execution_log_repo)
     created = use_case.execute(entity)
     return SearchExecutionLogPresenter.handle_success(created)
+
+
+@router.patch(
+    "/{search_execution_log_id}", response_model=SearchExecutionLogReadResponse
+)
+def update_search_execution_log(
+    search_execution_log_id: int,
+    payload: SearchExecutionLogUpdateRequest,
+    search_execution_log_repo: SearchExecutionLogRepository = Depends(
+        get_search_execution_log_repository
+    ),
+    current_user: UserEntity = Depends(get_current_staff_user),
+):
+    """
+    Record the progress or the outcome of a search run. Requires staff access
+    (the scrapers' service user). Setting status to success or failed closes
+    the run and stamps finished_at.
+
+    Returns:
+        - 200: Updated log
+        - 403: Permission denied
+        - 404: Log not found
+    """
+    use_case = UpdateSearchExecutionLogUseCase(search_execution_log_repo)
+    updated = use_case.execute(
+        search_execution_log_id, payload.data.attributes.model_dump()
+    )
+    if not updated:
+        return SearchExecutionLogPresenter.handle_not_found(
+            f"id {search_execution_log_id}", "/data/id"
+        )
+    return SearchExecutionLogPresenter.handle_success(updated)

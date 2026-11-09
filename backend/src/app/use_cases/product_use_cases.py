@@ -1,4 +1,5 @@
 from src.app.entities.product import Product as ProductEntity
+from src.app.entities.product import ProductListFilters
 from src.app.interfaces.repositories.product_repository import (
     ProductRepositoryInterface,
 )
@@ -77,9 +78,10 @@ class ListProductsUseCase:
         offset: int = 0,
         sort_by: str | None = None,
         sort_order: str | None = None,
+        filters: ProductListFilters | None = None,
     ) -> tuple[list[ProductEntity], int]:
         """
-        List products with pagination and sorting.
+        List products with pagination, sorting and optional filters.
 
         Args:
             limit: Maximum number of products to return
@@ -95,6 +97,7 @@ class ListProductsUseCase:
             offset=offset,
             sort_by=sort_by,
             sort_order=sort_order,
+            filters=filters,
         )
 
 

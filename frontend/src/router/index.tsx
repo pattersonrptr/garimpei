@@ -11,6 +11,7 @@ import { AlertsPage } from '@/pages/AlertsPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { LandingPage } from '@/pages/LandingPage'
 import { LoginPage } from '@/pages/LoginPage'
+import { NotFoundPage } from '@/pages/NotFoundPage'
 import { PlansPage } from '@/pages/PlansPage'
 import { RegisterPage } from '@/pages/RegisterPage'
 import { ProductDetailPage } from '@/pages/ProductDetailPage'
@@ -137,12 +138,7 @@ export function AppRouter() {
       </Route>
 
       {/* Catch-all */}
-      <Route
-        path="*"
-        element={
-          <Navigate to={isAuthenticated ? '/dashboard' : '/'} replace />
-        }
-      />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )
 }

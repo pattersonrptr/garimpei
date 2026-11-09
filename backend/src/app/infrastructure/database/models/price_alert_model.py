@@ -31,11 +31,11 @@ class PriceAlert(Base):
     last_triggered_at = Column(DateTime, nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     search_config_id = Column(Integer, ForeignKey("search_configs.id"), nullable=True)
-    created_at = Column(DateTime, default=datetime.now(UTC), nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
     updated_at = Column(
         DateTime,
-        default=datetime.now(UTC),
-        onupdate=datetime.now(UTC),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
         nullable=False,
     )
     deleted_at = Column(DateTime, nullable=True, default=None)

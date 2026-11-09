@@ -1,5 +1,6 @@
 /**
- * Product detail page with price history chart.
+ * Product detail page: the listing, which of my alerts found it (and how much
+ * I save), and its price history chart.
  */
 
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
@@ -10,8 +11,12 @@ import Chip from '@mui/material/Chip'
 import CircularProgress from '@mui/material/CircularProgress'
 import Divider from '@mui/material/Divider'
 import Link from '@mui/material/Link'
+import List from '@mui/material/List'
+import ListItem from '@mui/material/ListItem'
+import ListItemText from '@mui/material/ListItemText'
 import Paper from '@mui/material/Paper'
 import Typography from '@mui/material/Typography'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
@@ -23,14 +28,28 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { useAuth } from '@/context/AuthContext'
 import { useProductDetails } from '@/hooks/useProductDetails'
+import { matchesForProduct } from '@/lib/alertMatch'
 import { formatCurrency } from '@/lib/formatters'
+import { getPriceAlertsByUser } from '@/services/priceAlertService'
+import type { PriceAlert } from '@/types/priceAlert'
+
+/** Descriptions longer than this start collapsed. */
+const DESCRIPTION_PREVIEW_CHARS = 600
 
 export function ProductDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { t } = useTranslation(['products', 'common'])
   const { product, chartData, loading, error } = useProductDetails(id ?? '')
+  const { userId } = useAuth()
+  const [alerts, setAlerts] = useState<PriceAlert[]>([])
+  const [showFullDescription, setShowFullDescription] = useState(false)
+
+  useEffect(() => {
+    if (userId) getPriceAlertsByUser(userId).then(setAlerts).catch(() => {})
+  }, [userId])
 
   if (loading) {
     return (
@@ -55,6 +74,14 @@ export function ProductDetailPage() {
     )
   }
 
+  const matches = matchesForProduct(alerts, product)
+  const description = product.description ?? ''
+  const longDescription = description.length > DESCRIPTION_PREVIEW_CHARS
+  const shownDescription =
+    longDescription && !showFullDescription
+      ? `${description.slice(0, DESCRIPTION_PREVIEW_CHARS).trimEnd()}…`
+      : description
+
   return (
     <Box>
       <Button
@@ -64,6 +91,44 @@ export function ProductDetailPage() {
       >
         {t('detail.back')}
       </Button>
+
+      {/* ── Which of my alerts found it ── */}
+      <Paper component="section" aria-labelledby="your-alerts-heading" sx={{ p: 3, mb: 3 }}>
+        <Typography id="your-alerts-heading" variant="h6" fontWeight={600} gutterBottom>
+          {t('detail.yourAlerts')}
+        </Typography>
+        {matches.length === 0 ? (
+          <Typography variant="body2" color="text.secondary">
+            {t('detail.noMatchingAlert')}
+          </Typography>
+        ) : (
+          <List dense disablePadding>
+            {matches.map(({ alert, savings, isOpportunity }) => (
+              <ListItem key={alert.id} disableGutters>
+                <ListItemText
+                  primary={
+                    <>
+                      <strong>{alert.searchTerm}</strong>
+                      {' — '}
+                      {t('detail.alertMax', { price: formatCurrency(alert.maxPrice) })}
+                    </>
+                  }
+                  secondary={
+                    savings == null
+                      ? t('detail.noPriceYet')
+                      : isOpportunity
+                        ? t('detail.savings', { amount: formatCurrency(savings) })
+                        : t('detail.aboveMax', { amount: formatCurrency(-savings) })
+                  }
+                />
+                {isOpportunity && (
+                  <Chip label={t('opportunity')} color="success" size="small" sx={{ ml: 1 }} />
+                )}
+              </ListItem>
+            ))}
+          </List>
+        )}
+      </Paper>
 
       {/* ── Product info ── */}
       <Paper sx={{ p: 3, mb: 3 }}>
@@ -140,7 +205,12 @@ export function ProductDetailPage() {
             <Typography variant="body2" color="text.secondary" gutterBottom>
               {t('fields.description')}
             </Typography>
-            <Typography>{product.description}</Typography>
+            <Typography sx={{ whiteSpace: 'pre-line' }}>{shownDescription}</Typography>
+            {longDescription && (
+              <Button size="small" onClick={() => setShowFullDescription((v) => !v)} sx={{ mt: 1 }}>
+                {showFullDescription ? t('detail.showLess') : t('detail.showMore')}
+              </Button>
+            )}
           </>
         )}
 
