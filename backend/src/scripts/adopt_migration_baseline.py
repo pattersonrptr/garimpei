@@ -11,11 +11,11 @@ baseline revision; new databases and already-versioned ones are left alone.
 Safe to run on every start (idempotent).
 """
 
-from alembic.config import Config
-from alembic.script import ScriptDirectory
 from sqlalchemy import inspect, text
 
 from alembic import command
+from alembic.config import Config
+from alembic.script import ScriptDirectory
 from src.app.infrastructure.database_config import engine
 
 BASELINE_REVISION = "02608ed9b827"
