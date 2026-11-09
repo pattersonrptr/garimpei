@@ -9,8 +9,8 @@ from datetime import UTC, datetime
 import pytest
 from fastapi.responses import JSONResponse
 
-from src.app.entities.notification_log import NotificationLog as NotificationLogEntity
-from src.app.interfaces.http.presenters.notification_log_presenter import (
+from src.app.alerts.entities import NotificationLog as NotificationLogEntity
+from src.app.alerts.http.notification_log_presenter import (
     NotificationLogPresenter,
 )
 

@@ -1,7 +1,7 @@
 from fastapi.responses import JSONResponse
 
-from src.app.entities.notification_log import NotificationLog as NotificationLogEntity
-from src.app.interfaces.http.schemas.notification_log_schema import (
+from src.app.alerts.entities import NotificationLog as NotificationLogEntity
+from src.app.alerts.http.notification_log_schema import (
     NotificationLogReadResponse,
     NotificationLogResource,
     NotificationLogsCollectionResponse,

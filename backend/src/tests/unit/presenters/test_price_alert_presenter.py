@@ -10,8 +10,8 @@ from datetime import datetime
 import pytest
 from fastapi.responses import JSONResponse
 
-from src.app.entities.price_alert import PriceAlert as PriceAlertEntity
-from src.app.interfaces.http.presenters.price_alert_presenter import (
+from src.app.alerts.entities import PriceAlert as PriceAlertEntity
+from src.app.alerts.http.price_alert_presenter import (
     PriceAlertPresenter,
 )
 from src.common.jsonapi import JsonApiError

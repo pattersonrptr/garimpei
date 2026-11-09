@@ -1,10 +1,10 @@
 from sqlalchemy import asc, desc
 from sqlalchemy.orm import Session, joinedload
 
-from src.app.entities.search_config import SearchConfig as SearchConfigEntity
-from src.app.infrastructure.database.models.price_alert_model import (
+from src.app.alerts.persistence.models import (
     PriceAlert as PriceAlertModel,
 )
+from src.app.entities.search_config import SearchConfig as SearchConfigEntity
 from src.app.infrastructure.database.models.search_config_model import (
     SearchConfig as SearchConfigModel,
 )

@@ -1,32 +1,30 @@
 from fastapi import APIRouter, Depends, Query
 
-from src.app.catalog.persistence.repositories import ProductRepository
-from src.app.entities.user import User as UserEntity
-from src.app.infrastructure.database_config import get_db
-from src.app.infrastructure.repositories.notification_log_repository import (
-    NotificationLogRepository,
-)
-from src.app.infrastructure.repositories.price_alert_repository import (
-    PriceAlertRepository,
-)
-from src.app.infrastructure.repositories.source_website_repository import (
-    SourceWebsiteRepository,
-)
-from src.app.infrastructure.repositories.user_repository import UserRepository
-from src.app.interfaces.http.presenters.notification_log_presenter import (
+from src.app.alerts.http.notification_log_presenter import (
     NotificationLogPresenter,
 )
-from src.app.interfaces.http.schemas.notification_log_schema import (
+from src.app.alerts.http.notification_log_schema import (
     NotificationLogReadResponse,
     NotificationLogsCollectionResponse,
 )
-from src.app.security.auth import get_current_staff_user
-from src.app.use_cases.notification_log_use_cases import (
+from src.app.alerts.persistence.repositories import (
+    NotificationLogRepository,
+    PriceAlertRepository,
+)
+from src.app.alerts.use_cases import (
     DeleteNotificationLogUseCase,
     GetNotificationLogByIdUseCase,
     GetNotificationLogsByPriceAlertIdUseCase,
     ListNotificationLogsUseCase,
 )
+from src.app.catalog.persistence.repositories import ProductRepository
+from src.app.entities.user import User as UserEntity
+from src.app.infrastructure.database_config import get_db
+from src.app.infrastructure.repositories.source_website_repository import (
+    SourceWebsiteRepository,
+)
+from src.app.infrastructure.repositories.user_repository import UserRepository
+from src.app.security.auth import get_current_staff_user
 from src.config.logging_config import get_logger
 
 router = APIRouter(tags=["notification_logs"], prefix="/notification-logs")

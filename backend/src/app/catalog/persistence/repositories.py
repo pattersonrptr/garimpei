@@ -4,6 +4,15 @@ from datetime import UTC, datetime
 from sqlalchemy import and_, asc, desc, exists, func
 from sqlalchemy.orm import Session, joinedload
 
+from src.app.alerts.persistence.models import (
+    NotificationLog as NotificationLogModel,
+)
+from src.app.alerts.persistence.models import (
+    PriceAlert as PriceAlertModel,
+)
+from src.app.alerts.persistence.models import (
+    price_alert_source_website,
+)
 from src.app.catalog.entities import PriceHistory as PriceHistoryEntity
 from src.app.catalog.entities import Product as ProductEntity
 from src.app.catalog.entities import ProductCondition, ProductListFilters
@@ -14,15 +23,6 @@ from src.app.catalog.persistence.models import Product as ProductModel
 from src.app.catalog.ports import (
     PriceHistoryRepositoryInterface,
     ProductRepositoryInterface,
-)
-from src.app.infrastructure.database.models.notification_log_model import (
-    NotificationLog as NotificationLogModel,
-)
-from src.app.infrastructure.database.models.price_alert_model import (
-    PriceAlert as PriceAlertModel,
-)
-from src.app.infrastructure.database.models.price_alert_source_website_model import (
-    price_alert_source_website,
 )
 from src.app.infrastructure.database.text_match import title_contains
 
