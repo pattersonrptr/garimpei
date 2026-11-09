@@ -1,9 +1,10 @@
-from dataclasses import fields
+from dataclasses import dataclass, fields
 
 from src.app.catalog.entities import (
     BookMetadata,
     CanonicalProduct,
     ProductCategory,
+    ProductCondition,
     ProductListFilters,
 )
 from src.app.catalog.entities import PriceHistory as PriceHistoryEntity
@@ -307,3 +308,102 @@ class GetOrCreateBookByIsbnUseCase:
                 identifiers=[identifier],
             )
         )
+
+
+class InvalidOfferError(ValueError):
+    """The offer sent by a collector is missing data or has impossible values."""
+
+
+@dataclass(frozen=True, kw_only=True)
+class OfferInput:
+    """One offer as a collector sees it: a plain DTO, no database ids but the store's.
+
+    Only what the scraping rule allows: price, link, condition, availability,
+    store and seller city. The book's title and authors come from its metadata.
+    """
+
+    isbn: str
+    source_website_id: int
+    url: str
+    price: float
+    condition: ProductCondition
+    is_available: bool = True
+    city: str | None = None
+    state: str | None = None
+
+
+@dataclass(frozen=True, kw_only=True)
+class IngestOfferResult:
+    offer: ProductEntity
+    book: CanonicalProduct
+    created: bool
+
+
+# products.title is String(255); a canonical title can be longer.
+_OFFER_TITLE_MAX = 255
+
+
+class IngestOfferUseCase:
+    """Record one offer for a book: find or create the book, upsert the offer by
+    URL, and add a price-history point.
+
+    Every call adds a point, so a collector that checks once a day builds one
+    point per offer per day.
+    """
+
+    def __init__(
+        self,
+        get_book: GetOrCreateBookByIsbnUseCase,
+        offers: ProductRepositoryInterface,
+        prices: PriceHistoryRepositoryInterface,
+    ):
+        self.get_book = get_book
+        self.offers = offers
+        self.prices = prices
+
+    def execute(self, offer_in: OfferInput) -> IngestOfferResult:
+        """
+        Raises:
+            InvalidOfferError: empty URL or a price that is not positive
+            InvalidIsbnError, BookNotFoundError, BookMetadataUnavailableError:
+                see GetOrCreateBookByIsbnUseCase
+        """
+        url = offer_in.url.strip()
+        if not url:
+            raise InvalidOfferError("The offer has no URL")
+        if offer_in.price <= 0:
+            raise InvalidOfferError(f"Price must be positive, got {offer_in.price}")
+
+        book = self.get_book.execute(offer_in.isbn)
+        title = book.title[:_OFFER_TITLE_MAX]
+
+        existing = self.offers.get_by_url(url)
+        if existing:
+            existing.title = title
+            existing.condition = ProductCondition(offer_in.condition)
+            existing.is_available = offer_in.is_available
+            existing.city = offer_in.city
+            existing.state = offer_in.state
+            existing.canonical_product_id = book.id
+            offer = self.offers.update(existing.id, existing) or existing
+            created = False
+        else:
+            offer = self.offers.create(
+                ProductEntity(
+                    url=url,
+                    title=title,
+                    source_website_id=offer_in.source_website_id,
+                    condition=offer_in.condition,
+                    is_available=offer_in.is_available,
+                    city=offer_in.city,
+                    state=offer_in.state,
+                    canonical_product_id=book.id,
+                )
+            )
+            created = True
+
+        self.prices.create(
+            PriceHistoryEntity(product_id=offer.id, price=offer_in.price)
+        )
+        offer.current_price = offer_in.price
+        return IngestOfferResult(offer=offer, book=book, created=created)
