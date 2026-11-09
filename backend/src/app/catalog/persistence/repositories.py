@@ -2,6 +2,7 @@ from dataclasses import asdict
 from datetime import UTC, datetime
 
 from sqlalchemy import and_, asc, desc, exists, func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from src.app.alerts.persistence.models import (
@@ -13,14 +14,27 @@ from src.app.alerts.persistence.models import (
 from src.app.alerts.persistence.models import (
     price_alert_source_website,
 )
+from src.app.catalog.entities import CanonicalProduct as CanonicalProductEntity
+from src.app.catalog.entities import (
+    IdentifierKind,
+    ProductCondition,
+    ProductListFilters,
+)
 from src.app.catalog.entities import PriceHistory as PriceHistoryEntity
 from src.app.catalog.entities import Product as ProductEntity
-from src.app.catalog.entities import ProductCondition, ProductListFilters
+from src.app.catalog.entities import ProductIdentifier as ProductIdentifierEntity
+from src.app.catalog.persistence.models import (
+    CanonicalProduct as CanonicalProductModel,
+)
 from src.app.catalog.persistence.models import (
     PriceHistory as PriceHistoryModel,
 )
 from src.app.catalog.persistence.models import Product as ProductModel
+from src.app.catalog.persistence.models import (
+    ProductIdentifier as ProductIdentifierModel,
+)
 from src.app.catalog.ports import (
+    CanonicalProductRepositoryInterface,
     PriceHistoryRepositoryInterface,
     ProductRepositoryInterface,
 )
@@ -264,6 +278,7 @@ class ProductRepository(ProductRepositoryInterface):
             "is_available": product_model.is_available,
             "source_website_id": product_model.source_website_id,
             "source_metadata": product_model.source_metadata,
+            "canonical_product_id": product_model.canonical_product_id,
             "created_at": product_model.created_at,
             "updated_at": product_model.updated_at,
             "current_price": None,  # Will be populated from price_history later
@@ -425,3 +440,63 @@ class PriceHistoryRepository(PriceHistoryRepositoryInterface):
         self.db.delete(db_record)
         self.db.commit()
         return True
+
+
+class CanonicalProductRepository(CanonicalProductRepositoryInterface):
+    """SQLAlchemy implementation of CanonicalProductRepositoryInterface."""
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def get_by_identifier(
+        self, kind: IdentifierKind, value: str
+    ) -> CanonicalProductEntity | None:
+        row = (
+            self.db.query(CanonicalProductModel)
+            .join(ProductIdentifierModel)
+            .filter(
+                ProductIdentifierModel.kind == IdentifierKind(kind).value,
+                ProductIdentifierModel.value == value,
+            )
+            .first()
+        )
+        return self._to_entity(row) if row else None
+
+    def create(self, product: CanonicalProductEntity) -> CanonicalProductEntity:
+        row = CanonicalProductModel(
+            category=product.category.value,
+            title=product.title,
+            attributes=product.attributes,
+            identifiers=[
+                ProductIdentifierModel(kind=i.kind.value, value=i.value)
+                for i in product.identifiers
+            ],
+        )
+        self.db.add(row)
+        try:
+            self.db.commit()
+        except IntegrityError:
+            # Another request stored the same identifier first: reuse its product.
+            self.db.rollback()
+            for identifier in product.identifiers:
+                existing = self.get_by_identifier(identifier.kind, identifier.value)
+                if existing:
+                    return existing
+            raise
+        self.db.refresh(row)
+        return self._to_entity(row)
+
+    @staticmethod
+    def _to_entity(row: CanonicalProductModel) -> CanonicalProductEntity:
+        return CanonicalProductEntity(
+            id=row.id,
+            category=row.category,
+            title=row.title,
+            attributes=dict(row.attributes or {}),
+            identifiers=[
+                ProductIdentifierEntity(id=i.id, kind=i.kind, value=i.value)
+                for i in row.identifiers
+            ],
+            created_at=row.created_at,
+            updated_at=row.updated_at,
+        )

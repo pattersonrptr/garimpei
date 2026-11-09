@@ -11,6 +11,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    UniqueConstraint,
 )
 from sqlalchemy import Enum as SQLAlchemyEnum
 from sqlalchemy.orm import relationship
@@ -67,6 +68,13 @@ class Product(Base):
         nullable=True,
         comment="Additional source-specific data in JSON format",
     )
+    canonical_product_id = Column(
+        Integer,
+        ForeignKey("canonical_products.id"),
+        index=True,
+        nullable=True,
+        comment="The product this offer is for, once matched",
+    )
 
     # Timestamps
     created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
@@ -115,4 +123,56 @@ class PriceHistory(Base):
 
     __table_args__ = (
         Index("ix_price_history_product_created", "product_id", "created_at"),
+    )
+
+
+class CanonicalProduct(Base):
+    """CanonicalProduct SQLAlchemy model: the product itself, not a store's offer."""
+
+    __tablename__ = "canonical_products"
+
+    id = Column(Integer, primary_key=True)
+    category = Column(String(30), index=True, nullable=False)
+    title = Column(String(500), nullable=False)
+    attributes = Column(
+        JSON,
+        nullable=False,
+        default=dict,
+        comment="Category-specific data (author, publisher, ...)",
+    )
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+
+    identifiers = relationship(
+        "ProductIdentifier",
+        back_populates="canonical_product",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
+
+class ProductIdentifier(Base):
+    """ProductIdentifier SQLAlchemy model: a code (ISBN-13, EAN, ...) of a product."""
+
+    __tablename__ = "product_identifiers"
+
+    id = Column(Integer, primary_key=True)
+    canonical_product_id = Column(
+        Integer,
+        ForeignKey("canonical_products.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    kind = Column(String(20), nullable=False)
+    value = Column(String(64), nullable=False)
+
+    canonical_product = relationship("CanonicalProduct", back_populates="identifiers")
+
+    __table_args__ = (
+        UniqueConstraint("kind", "value", name="uq_product_identifier_kind_value"),
     )

@@ -1,8 +1,13 @@
 from abc import ABC, abstractmethod
 
+from src.app.catalog.entities import (
+    BookMetadata,
+    CanonicalProduct,
+    IdentifierKind,
+    ProductListFilters,
+)
 from src.app.catalog.entities import PriceHistory as PriceHistoryEntity
 from src.app.catalog.entities import Product as ProductEntity
-from src.app.catalog.entities import ProductListFilters
 
 
 class ProductRepositoryInterface(ABC):
@@ -175,3 +180,43 @@ class PriceHistoryRepositoryInterface(ABC):
     def delete(self, price_history_id: int) -> bool:
         """Delete a price record by id. Returns True if deleted, False if not found."""
         ...
+
+
+class BookMetadataUnavailableError(Exception):
+    """The metadata source could not answer (network, timeout, server error)."""
+
+
+class BookMetadataGateway(ABC):
+    """What the catalog needs from a book metadata source.
+
+    BrasilAPI, another provider or a test double all plug in here.
+    """
+
+    @abstractmethod
+    def fetch(self, isbn13: str) -> BookMetadata | None:
+        """Metadata for the ISBN-13, or None if the source does not know it.
+
+        Raises:
+            BookMetadataUnavailableError: the source could not be reached or failed.
+        """
+        raise NotImplementedError
+
+
+class CanonicalProductRepositoryInterface(ABC):
+    """Storage the catalog needs for canonical products."""
+
+    @abstractmethod
+    def get_by_identifier(
+        self, kind: IdentifierKind, value: str
+    ) -> CanonicalProduct | None:
+        """The canonical product that has this identifier, if any."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def create(self, product: CanonicalProduct) -> CanonicalProduct:
+        """Store a new canonical product with its identifiers.
+
+        If another request created a product with the same identifier first,
+        returns that one instead of failing.
+        """
+        raise NotImplementedError
