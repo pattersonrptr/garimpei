@@ -1,8 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-
-from pydantic import BaseModel, ConfigDict, Field
 
 
 class ProductCondition(str, Enum):
@@ -14,10 +12,9 @@ class ProductCondition(str, Enum):
     UNDETERMINED = "undetermined"
 
 
-class Product(BaseModel):
+@dataclass(kw_only=True)
+class Product:
     """Product domain entity representing a tracked product from e-commerce sites."""
-
-    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
 
     # Identification
     id: int | None = None
@@ -46,8 +43,11 @@ class Product(BaseModel):
     current_price: float | None = None
 
     # Timestamps
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+
+    def __post_init__(self) -> None:
+        self.condition = ProductCondition(self.condition)
 
 
 @dataclass(frozen=True)
@@ -69,12 +69,11 @@ class ProductListFilters:
     opportunities_only: bool = False
 
 
-class PriceHistory(BaseModel):
+@dataclass(kw_only=True)
+class PriceHistory:
     """PriceHistory domain entity representing a price record for a tracked product."""
-
-    model_config = ConfigDict(from_attributes=True)
 
     id: int | None = None
     product_id: int
     price: float
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))

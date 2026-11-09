@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from datetime import UTC, datetime
 
 from sqlalchemy import and_, asc, desc, exists, func
@@ -26,6 +27,14 @@ from src.app.infrastructure.database.models.price_alert_source_website_model imp
 from src.app.infrastructure.database.text_match import title_contains
 
 
+def _persisted_fields(product: ProductEntity) -> dict:
+    """The entity's columns as a dict (``id`` and ``current_price`` are not stored)."""
+    data = asdict(product)
+    data.pop("id")
+    data.pop("current_price")
+    return data
+
+
 class ProductRepository(ProductRepositoryInterface):
     """SQLAlchemy implementation of ProductRepositoryInterface."""
 
@@ -34,7 +43,7 @@ class ProductRepository(ProductRepositoryInterface):
 
     def create(self, product: ProductEntity) -> ProductEntity:
         """Create a new product in the database."""
-        db_product = ProductModel(**product.model_dump(exclude={"id", "current_price"}))
+        db_product = ProductModel(**_persisted_fields(product))
         self.db.add(db_product)
         self.db.commit()
         self.db.refresh(db_product)
@@ -204,9 +213,7 @@ class ProductRepository(ProductRepositoryInterface):
             return None
 
         try:
-            for key, value in product.model_dump(
-                exclude_unset=True, exclude={"id", "current_price"}
-            ).items():
+            for key, value in _persisted_fields(product).items():
                 setattr(db_product, key, value)
 
             db_product.updated_at = datetime.now(UTC)

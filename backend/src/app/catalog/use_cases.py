@@ -1,3 +1,5 @@
+from dataclasses import fields
+
 from src.app.catalog.entities import PriceHistory as PriceHistoryEntity
 from src.app.catalog.entities import Product as ProductEntity
 from src.app.catalog.entities import ProductListFilters
@@ -5,6 +7,10 @@ from src.app.catalog.ports import (
     PriceHistoryRepositoryInterface,
     ProductRepositoryInterface,
 )
+
+# An update never touches these: the id and creation time identify the product,
+# the current price comes from price history, and updated_at is set on save.
+_PROTECTED_PRODUCT_FIELDS = {"id", "created_at", "updated_at", "current_price"}
 
 
 class CreateProductUseCase:
@@ -129,9 +135,13 @@ class UpdateProductUseCase:
             return None
 
         # Update fields from product_data
-        for key, value in product_data.model_dump(exclude_unset=True).items():
-            if key not in ["id", "created_at", "current_price"]:
-                setattr(existing_product, key, value)
+        for data_field in fields(product_data):
+            if data_field.name not in _PROTECTED_PRODUCT_FIELDS:
+                setattr(
+                    existing_product,
+                    data_field.name,
+                    getattr(product_data, data_field.name),
+                )
 
         updated_product = self.product_repo.update(product_id, existing_product)
         return updated_product
