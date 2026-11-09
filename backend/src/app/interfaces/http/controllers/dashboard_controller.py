@@ -4,15 +4,15 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
+from src.app.alerts.persistence.models import (
+    PriceAlert,
+    price_alert_source_website,
+)
 from src.app.catalog.persistence.models import (
     PriceHistory,
     Product,
 )
 from src.app.entities.user import User as UserEntity
-from src.app.infrastructure.database.models.price_alert_model import PriceAlert
-from src.app.infrastructure.database.models.price_alert_source_website_model import (
-    price_alert_source_website,
-)
 from src.app.infrastructure.database.models.search_execution_log_model import (
     SearchExecutionLog,
 )

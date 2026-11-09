@@ -14,15 +14,15 @@ Tests all code paths with mocked repositories and email service:
 from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
+from src.app.alerts.entities import PriceAlert as PriceAlertEntity
+from src.app.alerts.use_cases import (
+    EvaluateProductAlertsUseCase,
+)
 from src.app.catalog.entities import PriceHistory as PriceHistoryEntity
 from src.app.catalog.entities import Product as ProductEntity
-from src.app.entities.price_alert import PriceAlert as PriceAlertEntity
 from src.app.entities.source_website import SourceWebsite as SourceWebsiteEntity
 from src.app.entities.user import User as UserEntity
 from src.app.interfaces.services.email_service import EmailResult
-from src.app.use_cases.evaluate_product_alerts_use_case import (
-    EvaluateProductAlertsUseCase,
-)
 
 # ============================================================================
 # Helpers

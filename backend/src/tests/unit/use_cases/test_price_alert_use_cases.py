@@ -5,10 +5,8 @@ from unittest.mock import Mock
 
 import pytest
 
-from src.app.catalog.entities import Product as ProductEntity
-from src.app.entities.price_alert import PriceAlert as PriceAlertEntity
-from src.app.entities.search_config import SearchConfig as SearchConfigEntity
-from src.app.use_cases.price_alert_use_cases import (
+from src.app.alerts.entities import PriceAlert as PriceAlertEntity
+from src.app.alerts.use_cases import (
     CreatePriceAlertUseCase,
     DeletePriceAlertUseCase,
     GetPriceAlertByIdUseCase,
@@ -19,6 +17,8 @@ from src.app.use_cases.price_alert_use_cases import (
     _cleanup_orphaned_search_config,
     _find_or_create_search_config,
 )
+from src.app.catalog.entities import Product as ProductEntity
+from src.app.entities.search_config import SearchConfig as SearchConfigEntity
 
 # ============================================================================
 # Helpers

@@ -2,20 +2,38 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from src.app.alerts.entities import PriceAlert as PriceAlertEntity
+from src.app.alerts.http.price_alert_presenter import (
+    PriceAlertPresenter,
+)
+from src.app.alerts.http.price_alert_schema import (
+    PriceAlertCreateRequest,
+    PriceAlertReadResponse,
+    PriceAlertsCollectionResponse,
+    PriceAlertUpdateRequest,
+)
+from src.app.alerts.persistence.repositories import (
+    NotificationLogRepository,
+    PriceAlertRepository,
+)
+from src.app.alerts.rules import PriceAlertValidator
+from src.app.alerts.use_cases import (
+    CreatePriceAlertUseCase,
+    DeletePriceAlertUseCase,
+    GetPriceAlertByIdUseCase,
+    GetPriceAlertsByUserIdUseCase,
+    GetProductsByPriceAlertUseCase,
+    ListPriceAlertsUseCase,
+    NotifyAlertOpportunitiesUseCase,
+    SendPriceAlertNotificationUseCase,
+    UpdatePriceAlertUseCase,
+)
 from src.app.catalog.http.product_presenter import ProductPresenter
 from src.app.catalog.http.product_schema import ProductsCollectionResponse
 from src.app.catalog.persistence.repositories import ProductRepository
 from src.app.domain.plan_limits import PlanLimits
-from src.app.domain.validators.price_alert_validator import PriceAlertValidator
-from src.app.entities.price_alert import PriceAlert as PriceAlertEntity
 from src.app.entities.user import User as UserEntity
 from src.app.infrastructure.database_config import get_db
-from src.app.infrastructure.repositories.notification_log_repository import (
-    NotificationLogRepository,
-)
-from src.app.infrastructure.repositories.price_alert_repository import (
-    PriceAlertRepository,
-)
 from src.app.infrastructure.repositories.search_config_repository import (
     SearchConfigRepository,
 )
@@ -30,36 +48,12 @@ from src.app.interfaces.http.plan_limits import (
     check_source_limit,
     get_user_plan_limits,
 )
-from src.app.interfaces.http.presenters.price_alert_presenter import (
-    PriceAlertPresenter,
-)
-from src.app.interfaces.http.schemas.price_alert_schema import (
-    PriceAlertCreateRequest,
-    PriceAlertReadResponse,
-    PriceAlertsCollectionResponse,
-    PriceAlertUpdateRequest,
-)
 from src.app.interfaces.services.email_service import EmailServiceInterface
 from src.app.security.auth import (
     can_access_owned_resource,
     get_current_active_user,
     get_current_staff_user,
     is_staff_or_superuser,
-)
-from src.app.use_cases.evaluate_product_alerts_use_case import (
-    NotifyAlertOpportunitiesUseCase,
-)
-from src.app.use_cases.notification_log_use_cases import (
-    SendPriceAlertNotificationUseCase,
-)
-from src.app.use_cases.price_alert_use_cases import (
-    CreatePriceAlertUseCase,
-    DeletePriceAlertUseCase,
-    GetPriceAlertByIdUseCase,
-    GetPriceAlertsByUserIdUseCase,
-    GetProductsByPriceAlertUseCase,
-    ListPriceAlertsUseCase,
-    UpdatePriceAlertUseCase,
 )
 from src.common.jsonapi import JsonApiError, JsonApiErrorResponse
 from src.config.logging_config import get_logger

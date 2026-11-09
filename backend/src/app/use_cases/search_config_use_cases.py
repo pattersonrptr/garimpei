@@ -1,7 +1,7 @@
-from src.app.entities.search_config import SearchConfig as SearchConfigEntity
-from src.app.interfaces.repositories.price_alert_repository import (
+from src.app.alerts.ports import (
     PriceAlertRepositoryInterface,
 )
+from src.app.entities.search_config import SearchConfig as SearchConfigEntity
 from src.app.interfaces.repositories.search_config_repository import (
     SearchConfigRepositoryInterface,
 )

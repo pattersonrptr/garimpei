@@ -9,14 +9,17 @@ from unittest.mock import MagicMock
 import pytest
 from passlib.context import CryptContext
 
+from src.app.alerts.http.price_alert_controller import (
+    get_email_service,
+)
+from src.app.alerts.persistence.models import (
+    NotificationLog as NotificationLogModel,
+)
 from src.app.catalog.persistence.models import (
     PriceHistory as PriceHistoryModel,
 )
 from src.app.catalog.persistence.models import (
     Product as ProductModel,
-)
-from src.app.infrastructure.database.models.notification_log_model import (
-    NotificationLog as NotificationLogModel,
 )
 from src.app.infrastructure.database.models.search_execution_log_model import (
     SearchExecutionLog as SearchExecutionLogModel,
@@ -25,9 +28,6 @@ from src.app.infrastructure.database.models.source_website_model import (
     SourceWebsite as SourceWebsiteModel,
 )
 from src.app.infrastructure.database.models.user_model import User
-from src.app.interfaces.http.controllers.price_alert_controller import (
-    get_email_service,
-)
 from src.app.interfaces.services.email_service import EmailResult
 from src.main import app
 

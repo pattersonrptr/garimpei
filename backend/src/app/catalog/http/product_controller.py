@@ -1,6 +1,13 @@
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
+from src.app.alerts.persistence.repositories import (
+    NotificationLogRepository,
+    PriceAlertRepository,
+)
+from src.app.alerts.use_cases import (
+    EvaluateProductAlertsUseCase,
+)
 from src.app.catalog.entities import Product as ProductEntity
 from src.app.catalog.entities import ProductListFilters
 from src.app.catalog.http.product_presenter import ProductPresenter
@@ -25,12 +32,6 @@ from src.app.catalog.use_cases import (
 )
 from src.app.entities.user import User as UserEntity
 from src.app.infrastructure.database_config import get_db
-from src.app.infrastructure.repositories.notification_log_repository import (
-    NotificationLogRepository,
-)
-from src.app.infrastructure.repositories.price_alert_repository import (
-    PriceAlertRepository,
-)
 from src.app.infrastructure.repositories.source_website_repository import (
     SourceWebsiteRepository,
 )
@@ -41,9 +42,6 @@ from src.app.security.auth import (
     get_current_active_user,
     get_current_staff_user,
     is_staff_or_superuser,
-)
-from src.app.use_cases.evaluate_product_alerts_use_case import (
-    EvaluateProductAlertsUseCase,
 )
 from src.common.jsonapi import JsonApiError, JsonApiErrorResponse
 from src.config.logging_config import get_logger

@@ -3,6 +3,9 @@ from datetime import UTC, datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 
+from src.app.alerts.persistence.repositories import (
+    PriceAlertRepository,
+)
 from src.app.domain.plan_limits import (
     PlanLimits,
     manual_run_violation,
@@ -13,9 +16,6 @@ from src.app.entities.search_config import SearchConfig as SearchConfigEntity
 from src.app.entities.user import User as UserEntity
 from src.app.infrastructure.celery_client import dispatch_scraper_search
 from src.app.infrastructure.database_config import get_db
-from src.app.infrastructure.repositories.price_alert_repository import (
-    PriceAlertRepository,
-)
 from src.app.infrastructure.repositories.search_config_repository import (
     SearchConfigRepository,
 )

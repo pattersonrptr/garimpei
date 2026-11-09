@@ -7,13 +7,9 @@ Tests CRUD use cases and SendPriceAlertNotificationUseCase with mocked repos + e
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
-from src.app.catalog.entities import Product as ProductEntity
-from src.app.entities.notification_log import NotificationLog as NotificationLogEntity
-from src.app.entities.price_alert import PriceAlert as PriceAlertEntity
-from src.app.entities.source_website import SourceWebsite as SourceWebsiteEntity
-from src.app.entities.user import User as UserEntity
-from src.app.interfaces.services.email_service import EmailResult
-from src.app.use_cases.notification_log_use_cases import (
+from src.app.alerts.entities import NotificationLog as NotificationLogEntity
+from src.app.alerts.entities import PriceAlert as PriceAlertEntity
+from src.app.alerts.use_cases import (
     CreateNotificationLogUseCase,
     DeleteNotificationLogUseCase,
     GetNotificationLogByIdUseCase,
@@ -21,6 +17,10 @@ from src.app.use_cases.notification_log_use_cases import (
     ListNotificationLogsUseCase,
     SendPriceAlertNotificationUseCase,
 )
+from src.app.catalog.entities import Product as ProductEntity
+from src.app.entities.source_website import SourceWebsite as SourceWebsiteEntity
+from src.app.entities.user import User as UserEntity
+from src.app.interfaces.services.email_service import EmailResult
 
 # ============================================================================
 # Helpers
@@ -248,7 +248,7 @@ class TestSendPriceAlertNotificationUseCase:
         assert logs == []
         assert "inactive" in error
 
-    @patch("src.app.use_cases.notification_log_use_cases.settings")
+    @patch("src.app.alerts.use_cases.settings")
     def test_returns_error_when_rate_limited(self, mock_settings):
         mock_settings.NOTIFICATION_RATE_LIMIT_MINUTES = 60
         pa_repo = MagicMock()
@@ -265,7 +265,7 @@ class TestSendPriceAlertNotificationUseCase:
         assert logs == []
         assert "Rate limited" in error
 
-    @patch("src.app.use_cases.notification_log_use_cases.settings")
+    @patch("src.app.alerts.use_cases.settings")
     def test_returns_error_when_no_matching_products(self, mock_settings):
         mock_settings.NOTIFICATION_RATE_LIMIT_MINUTES = 60
         pa_repo = MagicMock()
@@ -287,7 +287,7 @@ class TestSendPriceAlertNotificationUseCase:
         assert logs == []
         assert "No matching products" in error
 
-    @patch("src.app.use_cases.notification_log_use_cases.settings")
+    @patch("src.app.alerts.use_cases.settings")
     def test_returns_error_when_user_not_found(self, mock_settings):
         mock_settings.NOTIFICATION_RATE_LIMIT_MINUTES = 60
         pa_repo = MagicMock()
@@ -316,7 +316,7 @@ class TestSendPriceAlertNotificationUseCase:
         assert logs == []
         assert "User not found" in error
 
-    @patch("src.app.use_cases.notification_log_use_cases.settings")
+    @patch("src.app.alerts.use_cases.settings")
     def test_sends_email_and_creates_log_on_success(self, mock_settings):
         mock_settings.NOTIFICATION_RATE_LIMIT_MINUTES = 60
         pa_repo = MagicMock()
@@ -372,7 +372,7 @@ class TestSendPriceAlertNotificationUseCase:
         # last_triggered_at updated
         pa_repo.update.assert_called_once()
 
-    @patch("src.app.use_cases.notification_log_use_cases.settings")
+    @patch("src.app.alerts.use_cases.settings")
     def test_records_failed_log_when_email_fails(self, mock_settings):
         mock_settings.NOTIFICATION_RATE_LIMIT_MINUTES = 60
         pa_repo = MagicMock()
@@ -414,7 +414,7 @@ class TestSendPriceAlertNotificationUseCase:
         assert logs[0].error_message == "API key invalid"
         assert "Email send failed" in error
 
-    @patch("src.app.use_cases.notification_log_use_cases.settings")
+    @patch("src.app.alerts.use_cases.settings")
     def test_searches_products_with_correct_params(self, mock_settings):
         mock_settings.NOTIFICATION_RATE_LIMIT_MINUTES = 60
         pa_repo = MagicMock()
@@ -446,7 +446,7 @@ class TestSendPriceAlertNotificationUseCase:
             offset=0,
         )
 
-    @patch("src.app.use_cases.notification_log_use_cases.settings")
+    @patch("src.app.alerts.use_cases.settings")
     def test_uses_unknown_when_source_website_not_found(self, mock_settings):
         mock_settings.NOTIFICATION_RATE_LIMIT_MINUTES = 60
         pa_repo = MagicMock()
@@ -488,7 +488,7 @@ class TestSendPriceAlertNotificationUseCase:
         call_kwargs = email_svc.send_price_alert_email.call_args
         assert call_kwargs[1]["source_website_name"] == "Unknown"
 
-    @patch("src.app.use_cases.notification_log_use_cases.settings")
+    @patch("src.app.alerts.use_cases.settings")
     def test_rate_limit_checks_correct_time_window(self, mock_settings):
         mock_settings.NOTIFICATION_RATE_LIMIT_MINUTES = 120  # 2 hours
 

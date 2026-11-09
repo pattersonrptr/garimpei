@@ -110,14 +110,14 @@ class TestEvaluateProductAlerts:
         When: POST /products/{id}/evaluate-alerts
         Then: Returns 200 with notifications_sent=1
         """
+        from src.app.alerts.persistence.models import (
+            PriceAlert as PriceAlertModel,
+        )
         from src.app.catalog.persistence.models import (
             PriceHistory as PriceHistoryModel,
         )
         from src.app.catalog.persistence.models import (
             Product as ProductModel,
-        )
-        from src.app.infrastructure.database.models.price_alert_model import (
-            PriceAlert as PriceAlertModel,
         )
 
         # Create product with title matching alert search_term
@@ -187,17 +187,17 @@ class TestEvaluateProductAlerts:
         When: POST /products/{id}/evaluate-alerts (second call)
         Then: Returns 200 with skipped=1, notifications_sent=0
         """
+        from src.app.alerts.persistence.models import (
+            NotificationLog as NotificationLogModel,
+        )
+        from src.app.alerts.persistence.models import (
+            PriceAlert as PriceAlertModel,
+        )
         from src.app.catalog.persistence.models import (
             PriceHistory as PriceHistoryModel,
         )
         from src.app.catalog.persistence.models import (
             Product as ProductModel,
-        )
-        from src.app.infrastructure.database.models.notification_log_model import (
-            NotificationLog as NotificationLogModel,
-        )
-        from src.app.infrastructure.database.models.price_alert_model import (
-            PriceAlert as PriceAlertModel,
         )
 
         product = ProductModel(
@@ -281,14 +281,14 @@ class TestEvaluateProductAlerts:
         When: POST /products/{id}/evaluate-alerts
         Then: No matching alerts, returns skipped
         """
+        from src.app.alerts.persistence.models import (
+            PriceAlert as PriceAlertModel,
+        )
         from src.app.catalog.persistence.models import (
             PriceHistory as PriceHistoryModel,
         )
         from src.app.catalog.persistence.models import (
             Product as ProductModel,
-        )
-        from src.app.infrastructure.database.models.price_alert_model import (
-            PriceAlert as PriceAlertModel,
         )
 
         product = ProductModel(

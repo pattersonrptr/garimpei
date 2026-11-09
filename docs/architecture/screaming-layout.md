@@ -17,7 +17,8 @@ backend/src/app/
     use_cases.py
     persistence/           SQLAlchemy models and repositories
     http/                  controllers, presenters, request/response schemas
-  alerts/ accounts/ billing/ ...   moved one per PR, behavior unchanged
+  alerts/                  price alerts, notification log, alert evaluation (done)
+  accounts/ billing/ ...   moved one per PR, behavior unchanged
   shared/                  database, middleware, security (when needed)
 ```
 
@@ -38,10 +39,14 @@ shrink as modules move and are removed when empty.
 | Module | State |
 |---|---|
 | `catalog` | Moved. Entities are dataclasses. |
-| `alerts` (alerts, notifications, evaluation) | Next |
+| `alerts` (alerts, notification log, evaluation) | Moved. Entities are dataclasses. |
 | `accounts` (users, auth), `billing` (plans, subscriptions) | Later |
 | search configs, source websites, execution logs | Later; module name to decide |
 
 Known leftover: `http/` inside `catalog` keeps one file per concept
 (`product_controller.py`, `price_history_controller.py`, ...) because each
 controller owns its own router.
+
+Leftover in `alerts`: the alert e-mail builder (`infrastructure/services/price_alert_email.py`)
+stays where it is, because the shared e-mail service imports it and `shared` must not
+depend on `alerts`. Decide with the e-mail service when `shared` is built.

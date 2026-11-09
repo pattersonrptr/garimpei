@@ -1,4 +1,4 @@
-from src.app.interfaces.repositories.price_alert_repository import (
+from src.app.alerts.ports import (
     PriceAlertRepositoryInterface,
 )
 from src.app.interfaces.repositories.source_website_repository import (
