@@ -14,7 +14,9 @@ class SearchExecutionLog(BaseModel):
     id: int | None = None
     search_config_id: int
     status: SearchExecutionStatus = "pending"
-    results_count: int | None = None
+    results_count: int | None = None  # listings that matched the search term
+    listings_found: int | None = None  # listings the sites returned
+    listings_checked: int | None = None  # listings scraped so far
     error_message: str | None = None
     started_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     finished_at: datetime | None = None

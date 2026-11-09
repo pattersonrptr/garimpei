@@ -200,6 +200,17 @@ class PriceAlertRepository(PriceAlertRepositoryInterface):
             .count()
         )
 
+    def count_by_search_config_id(self, search_config_id: int) -> int:
+        """Count non-deleted price alerts (active or paused) using a SearchConfig."""
+        return (
+            self.db.query(PriceAlertModel)
+            .filter(
+                PriceAlertModel.search_config_id == search_config_id,
+                PriceAlertModel.deleted_at.is_(None),
+            )
+            .count()
+        )
+
     def count_active_by_search_config_id(self, search_config_id: int) -> int:
         """Count active, non-deleted price alerts that reference a given SearchConfig."""
         return (

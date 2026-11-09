@@ -2,12 +2,19 @@ from sqlalchemy import asc, desc
 from sqlalchemy.orm import Session, joinedload
 
 from src.app.entities.search_config import SearchConfig as SearchConfigEntity
+from src.app.infrastructure.database.models.price_alert_model import (
+    PriceAlert as PriceAlertModel,
+)
 from src.app.infrastructure.database.models.search_config_model import (
     SearchConfig as SearchConfigModel,
+)
+from src.app.infrastructure.database.models.search_execution_log_model import (
+    SearchExecutionLog as SearchExecutionLogModel,
 )
 from src.app.infrastructure.database.models.source_website_model import (
     SourceWebsite as SourceWebsiteModel,
 )
+from src.app.infrastructure.database.text_match import title_contains
 from src.app.interfaces.repositories.search_config_repository import (
     SearchConfigRepositoryInterface,
 )
@@ -107,6 +114,7 @@ class SearchConfigRepository(SearchConfigRepositoryInterface):
         sort_by: str | None = None,
         sort_order: str | None = None,
         user_id: int | None = None,
+        search_term: str | None = None,
     ) -> tuple[list[SearchConfigEntity], int]:
         """Return a paginated list of all search configs and the total count."""
         query = self.db.query(SearchConfigModel).options(
@@ -114,6 +122,10 @@ class SearchConfigRepository(SearchConfigRepositoryInterface):
         )
         if user_id is not None:
             query = query.filter(SearchConfigModel.user_id == user_id)
+        if search_term:
+            query = query.filter(
+                title_contains(SearchConfigModel.search_term, search_term)
+            )
 
         total = query.count()
 
@@ -122,6 +134,7 @@ class SearchConfigRepository(SearchConfigRepositoryInterface):
             query = query.order_by(
                 desc(order_column) if sort_order == "desc" else asc(order_column)
             )
+        query = query.order_by(desc(SearchConfigModel.id))  # newest first
 
         records = query.offset(offset).limit(limit).all()
         return [self._to_entity(r) for r in records], total
@@ -161,6 +174,15 @@ class SearchConfigRepository(SearchConfigRepositoryInterface):
         )
         if not db_record:
             return False
+        # The run history goes with the search; soft-deleted alerts that still
+        # point at it are detached (live alerts are checked by the use case).
+        self.db.query(SearchExecutionLogModel).filter(
+            SearchExecutionLogModel.search_config_id == search_config_id
+        ).delete(synchronize_session=False)
+        self.db.query(PriceAlertModel).filter(
+            PriceAlertModel.search_config_id == search_config_id,
+            PriceAlertModel.deleted_at.is_not(None),
+        ).update({PriceAlertModel.search_config_id: None}, synchronize_session=False)
         self.db.delete(db_record)
         self.db.commit()
         return True

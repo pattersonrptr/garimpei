@@ -47,9 +47,11 @@ from src.app.use_cases.search_config_use_cases import (
     GetSearchConfigByIdUseCase,
     GetSearchConfigsByUserIdUseCase,
     ListSearchConfigsUseCase,
+    SearchConfigInUseError,
     UpdateSearchConfigUseCase,
 )
-from src.common.jsonapi import JsonApiErrorResponse
+from src.app.use_cases.search_execution_log_use_cases import GetLatestSearchRunUseCase
+from src.common.jsonapi import JsonApiError, JsonApiErrorResponse
 from src.config.logging_config import get_logger
 
 router = APIRouter(tags=["search_configs"], prefix="/search-configs")
@@ -157,11 +159,13 @@ def list_search_configs(
     offset: int = Query(default=0, ge=0),
     sort_by: str | None = Query(default=None),
     sort_order: str | None = Query(default="desc", pattern="^(asc|desc)$"),
+    search_term: str | None = Query(default=None, max_length=255),
     search_config_repo: SearchConfigRepository = Depends(get_search_config_repository),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
-    List all search configs with pagination. Regular users can only access their own search configs; staff can access all.
+    List all search configs with pagination (newest first). ``search_term``
+    keeps the configs whose term contains it, ignoring case and accents. Regular users can only access their own search configs; staff can access all.
 
     Returns:
         - 200: Collection of search configs with pagination meta
@@ -180,6 +184,7 @@ def list_search_configs(
         sort_order=sort_order,
         # Staff (incl. the Celery worker) see every config; users see their own.
         user_id=None if is_staff_or_superuser(current_user) else current_user.id,
+        search_term=search_term.strip() if search_term else None,
     )
     return SearchConfigPresenter.handle_collection_success(search_configs, total)
 
@@ -348,6 +353,7 @@ def update_search_config(
 def delete_search_config(
     search_config_id: int,
     search_config_repo: SearchConfigRepository = Depends(get_search_config_repository),
+    price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
     """
@@ -357,6 +363,7 @@ def delete_search_config(
         - 204: Deleted successfully (no content)
         - 403: Permission denied
         - 404: Search config not found
+        - 409: Price alerts still use this search
     """
     logger.warning(
         f"Deleting search config ID: {search_config_id}",
@@ -377,8 +384,28 @@ def delete_search_config(
             f"id {search_config_id}", "/data/id"
         )
 
-    delete_uc = DeleteSearchConfigUseCase(search_config_repo)
-    deleted = delete_uc.execute(search_config_id)
+    delete_uc = DeleteSearchConfigUseCase(search_config_repo, price_alert_repo)
+    try:
+        deleted = delete_uc.execute(search_config_id)
+    except SearchConfigInUseError as in_use:
+        return JSONResponse(
+            status_code=409,
+            content=JsonApiErrorResponse(
+                errors=[
+                    JsonApiError(
+                        status="409",
+                        code="SEARCH_CONFIG_IN_USE",
+                        title="Search in use",
+                        detail=(
+                            f"This search is used by {in_use.alert_count} price "
+                            "alert(s). Delete or change those alerts first."
+                        ),
+                        meta={"alert_count": in_use.alert_count},
+                    )
+                ]
+            ).model_dump(),
+            media_type="application/vnd.api+json",
+        )
 
     if not deleted:
         return SearchConfigPresenter.handle_not_found(
@@ -440,14 +467,16 @@ def trigger_search_config(
             f"id {search_config_id}", "/data/id"
         )
 
-    # Prevent concurrent runs: check latest log status
-    latest_log = log_repo.get_latest_by_search_config_id(search_config_id)
+    # Prevent concurrent runs: check the latest run (lost runs are closed)
+    latest_log = GetLatestSearchRunUseCase(log_repo).execute(search_config_id)
 
     if not is_staff_or_superuser(current_user):
+        # Paused alerts can still be run by hand: pausing stops the schedule
+        # and the emails, not the customer's own manual check.
         linked_alerts = [
             alert
             for alert in price_alert_repo.get_by_user_id(current_user.id)
-            if alert.search_config_id == search_config_id and alert.is_active
+            if alert.search_config_id == search_config_id
         ]
         if not linked_alerts:
             return SearchConfigPresenter.handle_not_found(
@@ -552,7 +581,7 @@ def get_execution_status(
             f"id {search_config_id}", "/data/id"
         )
 
-    latest_log = log_repo.get_latest_by_search_config_id(search_config_id)
+    latest_log = GetLatestSearchRunUseCase(log_repo).execute(search_config_id)
 
     if not latest_log:
         return {
@@ -564,6 +593,8 @@ def get_execution_status(
                     "started_at": None,
                     "finished_at": None,
                     "results_count": None,
+                    "listings_found": None,
+                    "listings_checked": None,
                     "error_message": None,
                 },
             }
@@ -582,6 +613,8 @@ def get_execution_status(
                 if latest_log.finished_at
                 else None,
                 "results_count": latest_log.results_count,
+                "listings_found": latest_log.listings_found,
+                "listings_checked": latest_log.listings_checked,
                 "error_message": latest_log.error_message,
             },
         }

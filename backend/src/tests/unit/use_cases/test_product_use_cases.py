@@ -236,7 +236,7 @@ class TestListProductsUseCase:
         assert result_products == products
         assert total == 1
         mock_product_repo.get_all.assert_called_once_with(
-            limit=10, offset=0, sort_by=None, sort_order=None
+            limit=10, offset=0, sort_by=None, sort_order=None, filters=None
         )
 
     def test_execute_with_pagination_params_should_pass_to_repository(
@@ -256,7 +256,7 @@ class TestListProductsUseCase:
 
         # Assert
         mock_product_repo.get_all.assert_called_once_with(
-            limit=5, offset=10, sort_by="title", sort_order="asc"
+            limit=5, offset=10, sort_by="title", sort_order="asc", filters=None
         )
 
     def test_execute_with_empty_repository_should_return_empty_list(

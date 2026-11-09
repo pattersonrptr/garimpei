@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 
 from src.app.domain.validators.product_validator import ProductValidator
 from src.app.entities.product import Product as ProductEntity
+from src.app.entities.product import ProductListFilters
 from src.app.entities.user import User as UserEntity
 from src.app.infrastructure.database_config import get_db
 from src.app.infrastructure.repositories.notification_log_repository import (
@@ -28,7 +29,11 @@ from src.app.interfaces.http.schemas.product_schema import (
     ProductUpdateRequest,
 )
 from src.app.interfaces.services.email_service import EmailServiceInterface
-from src.app.security.auth import get_current_active_user, get_current_staff_user
+from src.app.security.auth import (
+    get_current_active_user,
+    get_current_staff_user,
+    is_staff_or_superuser,
+)
 from src.app.use_cases.evaluate_product_alerts_use_case import (
     EvaluateProductAlertsUseCase,
 )
@@ -148,17 +153,33 @@ def list_products(
     offset: int = Query(default=0, ge=0),
     sort_by: str | None = Query(default=None),
     sort_order: str | None = Query(default="desc", pattern="^(asc|desc)$"),
+    title: str | None = Query(default=None, max_length=255),
+    condition: str | None = Query(
+        default=None, pattern="^(new|used|refurbished|undetermined)$"
+    ),
+    is_available: bool | None = Query(default=None),
+    source_website_id: int | None = Query(default=None),
+    opportunities_only: bool = Query(default=False),
     product_repo: ProductRepository = Depends(get_product_repository),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
-    List all products with pagination and sorting. Requires staff or superuser access.
+    List products with pagination, sorting and filters.
+
+    Regular users see the listings their own alerts found (search term in the
+    title, from one of the alert's sources). Staff see the whole catalog, and
+    with ``opportunities_only`` the listings under one of their own alerts.
 
     Query Parameters:
         - limit: Maximum number of products to return (1-100, default: 10)
         - offset: Number of products to skip (default: 0)
         - sort_by: Field name to sort by (e.g., 'title', 'created_at')
         - sort_order: Sort order 'asc' or 'desc' (default: 'desc')
+        - title: Text in the title (ignores case and accents)
+        - condition: new, used, refurbished or undetermined
+        - is_available: true or false
+        - source_website_id: Only listings from this site
+        - opportunities_only: Only listings at or below an alert's max price
 
     Returns:
         - 200: Collection of products with pagination meta
@@ -169,12 +190,24 @@ def list_products(
         extra={"action": "list_products", "user_id": current_user.id},
     )
 
+    sees_catalog = is_staff_or_superuser(current_user)
+    filters = ProductListFilters(
+        title=title.strip() if title and title.strip() else None,
+        condition=condition,
+        is_available=is_available,
+        source_website_id=source_website_id,
+        matching_user_id=None
+        if sees_catalog and not opportunities_only
+        else current_user.id,
+        opportunities_only=opportunities_only,
+    )
     use_case = ListProductsUseCase(product_repo)
     products, total = use_case.execute(
         limit=limit,
         offset=offset,
         sort_by=sort_by,
         sort_order=sort_order,
+        filters=filters,
     )
 
     return ProductPresenter.handle_collection_success(products, total)

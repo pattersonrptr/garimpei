@@ -251,9 +251,8 @@ class TestRunNow:
         assert response.status_code == 409
         dispatch.assert_not_called()
 
-    def test_cannot_trigger_search_of_inactive_alert(
-        self, client, auth_headers, user_alert
-    ):
+    def test_can_trigger_search_of_paused_alert(self, client, auth_headers, user_alert):
+        # Pausing stops the schedule and the emails, not a manual check.
         alert_id = user_alert["id"]
         deactivate = {
             "data": {
@@ -269,12 +268,12 @@ class TestRunNow:
             == 200
         )
         sc_id = user_alert["attributes"]["search_config_id"]
-        with patch(DISPATCH) as dispatch:
+        with patch(DISPATCH, return_value="task-paused") as dispatch:
             response = client.post(
                 f"/search-configs/{sc_id}/trigger", headers=auth_headers
             )
-        assert response.status_code == 404
-        dispatch.assert_not_called()
+        assert response.status_code == 202
+        dispatch.assert_called_once_with(int(sc_id))
 
 
 # ============================================================================
@@ -333,12 +332,20 @@ class TestOtherUsersAlert:
 
 
 class TestAdmin:
-    def test_lists_and_reads_every_alert(
+    def test_my_alerts_lists_only_own_alerts(
         self, client, superuser_auth_headers, user_alert
     ):
         listed = client.get("/price-alerts/", headers=superuser_auth_headers).json()[
             "data"
         ]
+        assert user_alert["id"] not in [a["id"] for a in listed]
+
+    def test_lists_and_reads_every_alert(
+        self, client, superuser_auth_headers, user_alert
+    ):
+        listed = client.get(
+            "/price-alerts/", params={"scope": "all"}, headers=superuser_auth_headers
+        ).json()["data"]
         assert user_alert["id"] in [a["id"] for a in listed]
         response = client.get(
             f"/price-alerts/{user_alert['id']}", headers=superuser_auth_headers
@@ -361,9 +368,11 @@ class TestServiceUser:
     """The scrapers authenticate as a staff user (CELERY_WORKER_USERNAME)."""
 
     def test_lists_every_active_alert(self, client, service_headers, user_alert):
-        # scrapers ApiClient.get_active_price_alerts -> GET /price-alerts/?limit=100
+        # scrapers ApiClient.get_active_price_alerts
         listed = client.get(
-            "/price-alerts/", params={"limit": 100}, headers=service_headers
+            "/price-alerts/",
+            params={"limit": 100, "scope": "all"},
+            headers=service_headers,
         ).json()["data"]
         assert user_alert["id"] in [a["id"] for a in listed]
 

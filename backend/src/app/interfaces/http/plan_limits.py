@@ -48,6 +48,7 @@ def to_jsonapi_error(violation: PlanLimitViolation | None) -> JsonApiError | Non
         title=violation.title,
         detail=violation.detail,
         source={"pointer": violation.pointer} if violation.pointer else None,
+        meta=violation.meta,
     )
 
 

@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 from src.app.entities.product import Product as ProductEntity
+from src.app.entities.product import ProductListFilters
 
 
 class ProductRepositoryInterface(ABC):
@@ -60,9 +61,10 @@ class ProductRepositoryInterface(ABC):
         offset: int = 0,
         sort_by: str | None = None,
         sort_order: str | None = None,
+        filters: ProductListFilters | None = None,
     ) -> tuple[list[ProductEntity], int]:
         """
-        Retrieve all products with pagination and sorting.
+        Retrieve all products with pagination, sorting and optional filters.
 
         Args:
             limit: Maximum number of products to return

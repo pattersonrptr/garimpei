@@ -46,6 +46,9 @@ from src.app.security.auth import (
     get_current_staff_user,
     is_staff_or_superuser,
 )
+from src.app.use_cases.evaluate_product_alerts_use_case import (
+    NotifyAlertOpportunitiesUseCase,
+)
 from src.app.use_cases.notification_log_use_cases import (
     SendPriceAlertNotificationUseCase,
 )
@@ -98,6 +101,21 @@ def get_notification_log_repository(
     return NotificationLogRepository(db)
 
 
+def get_alert_opportunities_use_case(
+    db=Depends(get_db),
+    email_service: EmailServiceInterface = Depends(get_email_service),
+) -> NotifyAlertOpportunitiesUseCase:
+    """The use case that checks collected listings when an alert changes."""
+    return NotifyAlertOpportunitiesUseCase(
+        product_repo=ProductRepository(db),
+        price_alert_repo=PriceAlertRepository(db),
+        notification_log_repo=NotificationLogRepository(db),
+        user_repo=UserRepository(db),
+        source_website_repo=SourceWebsiteRepository(db),
+        email_service=email_service,
+    )
+
+
 def get_price_alert_validator(
     price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
     source_website_repo: SourceWebsiteRepository = Depends(
@@ -116,6 +134,9 @@ def create_price_alert(
     price_alert_validator: PriceAlertValidator = Depends(get_price_alert_validator),
     current_user: UserEntity = Depends(get_current_active_user),
     plan_limits: PlanLimits = Depends(get_user_plan_limits),
+    opportunities: NotifyAlertOpportunitiesUseCase = Depends(
+        get_alert_opportunities_use_case
+    ),
     db: Session = Depends(get_db),
 ):
     """
@@ -178,6 +199,7 @@ def create_price_alert(
 
     use_case = CreatePriceAlertUseCase(price_alert_repo, search_config_repo)
     created = use_case.execute(price_alert_entity)
+    opportunities.execute(created)
 
     logger.info(
         f"Price alert created: '{created.search_term}' (ID: {created.id})",
@@ -196,14 +218,17 @@ def list_price_alerts(
     offset: int = Query(default=0, ge=0),
     sort_by: str | None = Query(default=None),
     sort_order: str | None = Query(default="desc", pattern="^(asc|desc)$"),
+    scope: str = Query(default="mine", pattern="^(mine|all)$"),
     price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
     List price alerts with pagination.
 
-    Regular users get their own alerts. Staff get every user's alerts: the
-    Celery service user relies on this to find the active alerts to check.
+    Everyone gets their own alerts by default ("My alerts"). Staff can ask
+    for every user's alerts with ``scope=all``: the Celery service user does
+    this to find the active alerts to check. ``scope=all`` is ignored for
+    regular users.
 
     Returns:
         - 200: Collection of price alerts with pagination meta
@@ -220,7 +245,9 @@ def list_price_alerts(
         offset=offset,
         sort_by=sort_by,
         sort_order=sort_order,
-        user_id=None if is_staff_or_superuser(current_user) else current_user.id,
+        user_id=None
+        if scope == "all" and is_staff_or_superuser(current_user)
+        else current_user.id,
     )
     return PriceAlertPresenter.handle_collection_success(price_alerts, total)
 
@@ -402,6 +429,11 @@ def update_price_alert(
     price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
     search_config_repo: SearchConfigRepository = Depends(get_search_config_repository),
     price_alert_validator: PriceAlertValidator = Depends(get_price_alert_validator),
+    plan_limits: PlanLimits = Depends(get_user_plan_limits),
+    opportunities: NotifyAlertOpportunitiesUseCase = Depends(
+        get_alert_opportunities_use_case
+    ),
+    db: Session = Depends(get_db),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
@@ -470,8 +502,26 @@ def update_price_alert(
         else existing.source_website_ids,
     )
 
+    if not is_staff_or_superuser(current_user):
+        limit_errors = [
+            check_alert_limit(db, existing.user_id, plan_limits)
+            if updated_entity.is_active and not existing.is_active
+            else None,
+            check_frequency_limit(updated_entity.frequency_minutes, plan_limits)
+            if updated_entity.frequency_minutes != existing.frequency_minutes
+            else None,
+            check_source_limit(len(updated_entity.source_website_ids), plan_limits)
+            if set(updated_entity.source_website_ids)
+            != set(existing.source_website_ids)
+            else None,
+        ]
+        limit_error = next((e for e in limit_errors if e), None)
+        if limit_error:
+            return PriceAlertPresenter.handle_validation_errors([limit_error])
+
     update_uc = UpdatePriceAlertUseCase(price_alert_repo, search_config_repo)
     updated = update_uc.execute(price_alert_id, updated_entity)
+    opportunities.execute(updated)
 
     logger.info(
         f"Price alert updated: '{updated.search_term}' (ID: {price_alert_id})",
