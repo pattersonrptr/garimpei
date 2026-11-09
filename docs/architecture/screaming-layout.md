@@ -38,7 +38,7 @@ shrink as modules move and are removed when empty.
 
 | Module | State |
 |---|---|
-| `catalog` | Moved. Entities are dataclasses. |
+| `catalog` | Moved. Entities are dataclasses. Canonical products and ISBN lookup added (see `catalog-model.md`). |
 | `alerts` (alerts, notification log, evaluation) | Moved. Entities are dataclasses. |
 | `accounts` (users, auth), `billing` (plans, subscriptions) | Later |
 | search configs, source websites, execution logs | Later; module name to decide |
