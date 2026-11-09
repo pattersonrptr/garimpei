@@ -31,25 +31,24 @@ prices from at least 2 stores, new and used**, matched to books by ISBN, so
 risk. Collectors only send plain DTOs; none writes to the database
 (architecture rule 5).
 
-## Decisions needed from the author
+## Decisions (Nov 2026)
 
-1. **Where does it run?** History only accumulates while a stack is up daily.
-   Today nothing runs on the VPS. Options: deploy the Docker Compose stack to the
-   VPS now (then 2e starts the clock), or build 2a-2d locally and deploy before 2e.
-2. **Second source.** Candidates:
-   - *Mercado Livre scraper*: exists, April notes say it works slowly, but it was
-     empty on Nov 3 and is paused. Needs a spike to see what changed.
-   - *Amazon*: best source of the **new** price, but scraping while being an
-     Associate may cost the affiliate account (plan, section 8).
-   - *Magalu*: unknown until the affiliate sign-up shows what data it gives.
-3. **Where does the new-price anchor come from?** (Open decision in the plan.) If
-   Estante Virtual's `novo` price is enough for the MVP, slice 2d can focus on
-   more used offers.
-4. **Seed list.** Which books, and how many to start (suggestion: 50 you care
-   about, to see real history quickly).
-5. **Scraping at a public scale.** The plan prefers feeds and APIs where they
-   exist and showing only price and link (no copied photos or descriptions).
-   Confirm that is the rule for these collectors.
+1. **Where it runs:** the author's Windows PC, which is on every day. Docker
+   Desktop in the background with CPU and memory limits, one Playwright browser
+   at a time, so games are not affected. A day with the PC off just misses that
+   day's point; the next run starts with the stalest books. AWS comes later as
+   its own track (main plan, track A).
+2. **New-price anchor:** Estante Virtual's `novo` price for now. Revisit when
+   there is a better source.
+3. **Second source:** not decided. Mercado Livre and Amazon are on hold. **No
+   scraper is touched without talking to the author first.**
+4. **Seed list:** the 50 best-selling books of all time, each ISBN validated
+   against BrasilAPI (title must match). Grows later.
+5. **Scraping rule:** store only price, link, condition, availability, store and
+   seller city. Title, authors and cover come from book metadata (BrasilAPI), not
+   from stores. Slow pace, one page at a time.
+6. **Affiliate accounts:** none yet, and not needed until the public pages are
+   live (Phases 3 and 4).
 
 ## Spikes before the collectors (hours, not days)
 

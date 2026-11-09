@@ -113,6 +113,7 @@ Each phase ends with something usable or observable.
 | 2 | **Offer collection** | Most viable sources feeding offers (new + used), matched to books by ISBN, on a schedule | A seed list of books gets daily prices from at least 2 stores, new and used. **History starts accumulating** |
 | 3 | **Public pages (Next.js)** | Search, book page with offers side by side, price chart, affiliate links | A visitor finds a book and goes to a store without logging in; pages render on the server |
 | 4 | **Verdict + alerts** | "Good price / wait" verdict; "warn me" button creates an alert on the book | **MVP ready to launch** |
+| A | **AWS track** (study, runs alongside) | Design how the stack runs on AWS (e.g. Celery broker on SQS, maybe SNS, managed Postgres, scheduled container tasks) and move pieces over in small, cost-capped steps | Planned in its own session before any resource is created; every step has a teardown |
 | 5+ | **After launch** | Logged-in area moves to Next.js (Vite retired), shopping list, ISBN scan, wishlist import, more categories | Prioritized from user feedback |
 
 Phases 1 and 2 have no visible UI. That is deliberate: history has to start
@@ -159,4 +160,6 @@ Each one becomes a short decision record when it is made.
 - [x] How `catalog` relates to today's `Product`: `Product` stays as the offer (renamed later); a nullable `canonical_product_id` links it to a `CanonicalProduct` (decided Nov 2026, see `docs/architecture/catalog-model.md`)
 - [ ] Source of the new-book price anchor (Phase 2)
 - [ ] Verdict rule: window, thresholds, minimum history (Phase 4)
-- [ ] Hosting for Next.js (same VPS as the API or separate) (Phase 3)
+- [x] Where daily collection runs: the author's Windows PC (Docker Desktop, in the background, resource-capped) until the AWS track is ready (decided Nov 2026). The VPS is not a target; it belongs to another project
+- [ ] AWS design (track A): broker (SQS?), notifications (SNS?), database, scheduling, cost guardrails. Note: an AWS Budget alerts, it does not stop charges
+- [ ] Hosting for Next.js (Phase 3; AWS track)
