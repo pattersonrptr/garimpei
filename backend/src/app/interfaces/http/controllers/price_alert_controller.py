@@ -2,6 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from src.app.catalog.http.product_presenter import ProductPresenter
+from src.app.catalog.http.product_schema import ProductsCollectionResponse
+from src.app.catalog.persistence.repositories import ProductRepository
 from src.app.domain.plan_limits import PlanLimits
 from src.app.domain.validators.price_alert_validator import PriceAlertValidator
 from src.app.entities.price_alert import PriceAlert as PriceAlertEntity
@@ -13,7 +16,6 @@ from src.app.infrastructure.repositories.notification_log_repository import (
 from src.app.infrastructure.repositories.price_alert_repository import (
     PriceAlertRepository,
 )
-from src.app.infrastructure.repositories.product_repository import ProductRepository
 from src.app.infrastructure.repositories.search_config_repository import (
     SearchConfigRepository,
 )
@@ -31,14 +33,12 @@ from src.app.interfaces.http.plan_limits import (
 from src.app.interfaces.http.presenters.price_alert_presenter import (
     PriceAlertPresenter,
 )
-from src.app.interfaces.http.presenters.product_presenter import ProductPresenter
 from src.app.interfaces.http.schemas.price_alert_schema import (
     PriceAlertCreateRequest,
     PriceAlertReadResponse,
     PriceAlertsCollectionResponse,
     PriceAlertUpdateRequest,
 )
-from src.app.interfaces.http.schemas.product_schema import ProductsCollectionResponse
 from src.app.interfaces.services.email_service import EmailServiceInterface
 from src.app.security.auth import (
     can_access_owned_resource,

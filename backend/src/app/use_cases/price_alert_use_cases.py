@@ -1,13 +1,13 @@
 from math import ceil
 
+from src.app.catalog.entities import Product as ProductEntity
+from src.app.catalog.ports import (
+    ProductRepositoryInterface,
+)
 from src.app.entities.price_alert import PriceAlert as PriceAlertEntity
-from src.app.entities.product import Product as ProductEntity
 from src.app.entities.search_config import SearchConfig as SearchConfigEntity
 from src.app.interfaces.repositories.price_alert_repository import (
     PriceAlertRepositoryInterface,
-)
-from src.app.interfaces.repositories.product_repository import (
-    ProductRepositoryInterface,
 )
 from src.app.interfaces.repositories.search_config_repository import (
     SearchConfigRepositoryInterface,

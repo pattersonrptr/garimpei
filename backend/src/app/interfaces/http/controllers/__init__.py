@@ -2,6 +2,12 @@
 HTTP Controllers (Adapters for HTTP requests/responses).
 """
 
+from src.app.catalog.http.price_history_controller import (
+    router as price_history_controller,
+)
+from src.app.catalog.http.product_controller import (
+    router as product_controller,
+)
 from src.app.interfaces.http.controllers.admin_controller import (
     router as admin_controller,
 )
@@ -19,12 +25,6 @@ from src.app.interfaces.http.controllers.plan_controller import (
 )
 from src.app.interfaces.http.controllers.price_alert_controller import (
     router as price_alert_controller,
-)
-from src.app.interfaces.http.controllers.price_history_controller import (
-    router as price_history_controller,
-)
-from src.app.interfaces.http.controllers.product_controller import (
-    router as product_controller,
 )
 from src.app.interfaces.http.controllers.search_config_controller import (
     router as search_config_controller,

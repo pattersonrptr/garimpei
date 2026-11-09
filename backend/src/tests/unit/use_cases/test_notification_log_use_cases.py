@@ -7,9 +7,9 @@ Tests CRUD use cases and SendPriceAlertNotificationUseCase with mocked repos + e
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
+from src.app.catalog.entities import Product as ProductEntity
 from src.app.entities.notification_log import NotificationLog as NotificationLogEntity
 from src.app.entities.price_alert import PriceAlert as PriceAlertEntity
-from src.app.entities.product import Product as ProductEntity
 from src.app.entities.source_website import SourceWebsite as SourceWebsiteEntity
 from src.app.entities.user import User as UserEntity
 from src.app.interfaces.services.email_service import EmailResult

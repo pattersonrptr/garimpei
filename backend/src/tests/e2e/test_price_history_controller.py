@@ -5,7 +5,7 @@ Tests the complete price history flow:
     HTTP Request → PriceHistoryController → PriceHistoryUseCases → PriceHistoryRepository → Database
 """
 
-from src.app.infrastructure.database.models.price_history_model import (
+from src.app.catalog.persistence.models import (
     PriceHistory as PriceHistoryModel,
 )
 

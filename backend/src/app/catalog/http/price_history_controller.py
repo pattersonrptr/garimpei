@@ -1,23 +1,20 @@
 from fastapi import APIRouter, Depends, Query
 
-from src.app.domain.validators.price_history_validator import PriceHistoryValidator
-from src.app.entities.price_history import PriceHistory as PriceHistoryEntity
-from src.app.entities.user import User as UserEntity
-from src.app.infrastructure.database_config import get_db
-from src.app.infrastructure.repositories.price_history_repository import (
-    PriceHistoryRepository,
-)
-from src.app.infrastructure.repositories.product_repository import ProductRepository
-from src.app.interfaces.http.presenters.price_history_presenter import (
+from src.app.catalog.entities import PriceHistory as PriceHistoryEntity
+from src.app.catalog.http.price_history_presenter import (
     PriceHistoryPresenter,
 )
-from src.app.interfaces.http.schemas.price_history_schema import (
+from src.app.catalog.http.price_history_schema import (
     PriceHistoriesCollectionResponse,
     PriceHistoryCreateRequest,
     PriceHistoryReadResponse,
 )
-from src.app.security.auth import get_current_active_user, get_current_staff_user
-from src.app.use_cases.price_history_use_cases import (
+from src.app.catalog.persistence.repositories import (
+    PriceHistoryRepository,
+    ProductRepository,
+)
+from src.app.catalog.rules import PriceHistoryValidator
+from src.app.catalog.use_cases import (
     CreatePriceHistoryUseCase,
     DeletePriceHistoryUseCase,
     GetLatestPriceByProductIdUseCase,
@@ -25,6 +22,9 @@ from src.app.use_cases.price_history_use_cases import (
     GetPriceHistoryByProductIdUseCase,
     ListPriceHistoriesUseCase,
 )
+from src.app.entities.user import User as UserEntity
+from src.app.infrastructure.database_config import get_db
+from src.app.security.auth import get_current_active_user, get_current_staff_user
 from src.config.logging_config import get_logger
 
 router = APIRouter(tags=["price_histories"], prefix="/price-histories")

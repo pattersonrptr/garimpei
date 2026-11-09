@@ -1,14 +1,14 @@
 from datetime import UTC, datetime, timedelta
 
+from src.app.catalog.ports import (
+    ProductRepositoryInterface,
+)
 from src.app.entities.notification_log import NotificationLog as NotificationLogEntity
 from src.app.interfaces.repositories.notification_log_repository import (
     NotificationLogRepositoryInterface,
 )
 from src.app.interfaces.repositories.price_alert_repository import (
     PriceAlertRepositoryInterface,
-)
-from src.app.interfaces.repositories.product_repository import (
-    ProductRepositoryInterface,
 )
 from src.app.interfaces.repositories.source_website_repository import (
     SourceWebsiteRepositoryInterface,

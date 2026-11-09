@@ -4,13 +4,13 @@ from unittest.mock import Mock
 
 import pytest
 
-from src.app.domain.validators.price_history_validator import PriceHistoryValidator
-from src.app.entities.product import Product as ProductEntity
-from src.app.interfaces.http.schemas.price_history_schema import (
+from src.app.catalog.entities import Product as ProductEntity
+from src.app.catalog.http.price_history_schema import (
     PriceHistoryAttributesForCreation,
     PriceHistoryCreateRequest,
     PriceHistoryResourceForCreation,
 )
+from src.app.catalog.rules import PriceHistoryValidator
 
 # ============================================================================
 # Helpers
@@ -28,7 +28,7 @@ def make_create_request(**overrides) -> PriceHistoryCreateRequest:
 
 
 def make_product_entity(id: int = 1) -> ProductEntity:
-    from src.app.entities.product import ProductCondition
+    from src.app.catalog.entities import ProductCondition
 
     return ProductEntity(
         id=id,

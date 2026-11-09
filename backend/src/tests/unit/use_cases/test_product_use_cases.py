@@ -10,9 +10,9 @@ from unittest.mock import Mock
 
 import pytest
 
-from src.app.entities.product import Product as ProductEntity
-from src.app.entities.product import ProductCondition
-from src.app.use_cases.product_use_cases import (
+from src.app.catalog.entities import Product as ProductEntity
+from src.app.catalog.entities import ProductCondition
+from src.app.catalog.use_cases import (
     CreateProductUseCase,
     DeleteProductUseCase,
     GetProductByIdUseCase,

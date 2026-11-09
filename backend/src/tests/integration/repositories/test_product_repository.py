@@ -9,8 +9,9 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from src.app.entities.product import Product as ProductEntity
-from src.app.entities.product import ProductCondition
+from src.app.catalog.entities import Product as ProductEntity
+from src.app.catalog.entities import ProductCondition
+from src.app.catalog.persistence.repositories import ProductRepository
 
 # Import models to register with Base.metadata
 from src.app.infrastructure.database.models import (  # noqa: F401
@@ -20,7 +21,6 @@ from src.app.infrastructure.database.models import (
     SourceWebsite as SourceWebsiteModel,
 )
 from src.app.infrastructure.database_config import Base
-from src.app.infrastructure.repositories.product_repository import ProductRepository
 
 # ============================================================================
 # Fixtures

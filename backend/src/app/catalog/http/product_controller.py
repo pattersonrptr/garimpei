@@ -1,9 +1,28 @@
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
-from src.app.domain.validators.product_validator import ProductValidator
-from src.app.entities.product import Product as ProductEntity
-from src.app.entities.product import ProductListFilters
+from src.app.catalog.entities import Product as ProductEntity
+from src.app.catalog.entities import ProductListFilters
+from src.app.catalog.http.product_presenter import ProductPresenter
+from src.app.catalog.http.product_schema import (
+    ProductCreateRequest,
+    ProductReadResponse,
+    ProductsCollectionResponse,
+    ProductUpdateRequest,
+)
+from src.app.catalog.persistence.repositories import (
+    PriceHistoryRepository,
+    ProductRepository,
+)
+from src.app.catalog.rules import ProductValidator
+from src.app.catalog.use_cases import (
+    CreateProductUseCase,
+    DeleteProductUseCase,
+    GetProductByIdUseCase,
+    GetProductByUrlUseCase,
+    ListProductsUseCase,
+    UpdateProductUseCase,
+)
 from src.app.entities.user import User as UserEntity
 from src.app.infrastructure.database_config import get_db
 from src.app.infrastructure.repositories.notification_log_repository import (
@@ -12,22 +31,11 @@ from src.app.infrastructure.repositories.notification_log_repository import (
 from src.app.infrastructure.repositories.price_alert_repository import (
     PriceAlertRepository,
 )
-from src.app.infrastructure.repositories.price_history_repository import (
-    PriceHistoryRepository,
-)
-from src.app.infrastructure.repositories.product_repository import ProductRepository
 from src.app.infrastructure.repositories.source_website_repository import (
     SourceWebsiteRepository,
 )
 from src.app.infrastructure.repositories.user_repository import UserRepository
 from src.app.infrastructure.services.email_service import get_email_service
-from src.app.interfaces.http.presenters.product_presenter import ProductPresenter
-from src.app.interfaces.http.schemas.product_schema import (
-    ProductCreateRequest,
-    ProductReadResponse,
-    ProductsCollectionResponse,
-    ProductUpdateRequest,
-)
 from src.app.interfaces.services.email_service import EmailServiceInterface
 from src.app.security.auth import (
     get_current_active_user,
@@ -36,14 +44,6 @@ from src.app.security.auth import (
 )
 from src.app.use_cases.evaluate_product_alerts_use_case import (
     EvaluateProductAlertsUseCase,
-)
-from src.app.use_cases.product_use_cases import (
-    CreateProductUseCase,
-    DeleteProductUseCase,
-    GetProductByIdUseCase,
-    GetProductByUrlUseCase,
-    ListProductsUseCase,
-    UpdateProductUseCase,
 )
 from src.common.jsonapi import JsonApiError, JsonApiErrorResponse
 from src.config.logging_config import get_logger

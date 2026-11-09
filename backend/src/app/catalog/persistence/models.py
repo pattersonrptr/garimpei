@@ -6,14 +6,16 @@ from sqlalchemy import (
     Column,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
+    Numeric,
     String,
     Text,
 )
 from sqlalchemy import Enum as SQLAlchemyEnum
 from sqlalchemy.orm import relationship
 
-from src.app.entities.product import ProductCondition
+from src.app.catalog.entities import ProductCondition
 from src.app.infrastructure.database_config import Base
 
 
@@ -81,4 +83,36 @@ class Product(Base):
         "PriceHistory",
         back_populates="product",
         cascade="all, delete-orphan",
+    )
+
+
+class PriceHistory(Base):
+    """PriceHistory SQLAlchemy model — append-only price records per product."""
+
+    __tablename__ = "price_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(
+        Integer,
+        ForeignKey("products.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        comment="Foreign key to the tracked product",
+    )
+    price = Column(
+        Numeric(10, 2),
+        nullable=False,
+        comment="Recorded price at this point in time",
+    )
+    created_at = Column(
+        DateTime,
+        default=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+
+    # Relationships
+    product = relationship("Product", back_populates="price_history")
+
+    __table_args__ = (
+        Index("ix_price_history_product_created", "product_id", "created_at"),
     )

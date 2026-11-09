@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 
+from src.app.catalog.persistence.repositories import ProductRepository
 from src.app.entities.user import User as UserEntity
 from src.app.infrastructure.database_config import get_db
 from src.app.infrastructure.repositories.notification_log_repository import (
@@ -8,7 +9,6 @@ from src.app.infrastructure.repositories.notification_log_repository import (
 from src.app.infrastructure.repositories.price_alert_repository import (
     PriceAlertRepository,
 )
-from src.app.infrastructure.repositories.product_repository import ProductRepository
 from src.app.infrastructure.repositories.source_website_repository import (
     SourceWebsiteRepository,
 )

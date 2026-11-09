@@ -5,8 +5,8 @@ from unittest.mock import Mock
 
 import pytest
 
-from src.app.entities.price_history import PriceHistory as PriceHistoryEntity
-from src.app.use_cases.price_history_use_cases import (
+from src.app.catalog.entities import PriceHistory as PriceHistoryEntity
+from src.app.catalog.use_cases import (
     CreatePriceHistoryUseCase,
     DeletePriceHistoryUseCase,
     GetLatestPriceByProductIdUseCase,

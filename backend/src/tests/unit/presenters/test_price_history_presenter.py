@@ -10,8 +10,8 @@ from datetime import datetime
 import pytest
 from fastapi.responses import JSONResponse
 
-from src.app.entities.price_history import PriceHistory as PriceHistoryEntity
-from src.app.interfaces.http.presenters.price_history_presenter import (
+from src.app.catalog.entities import PriceHistory as PriceHistoryEntity
+from src.app.catalog.http.price_history_presenter import (
     PriceHistoryPresenter,
 )
 from src.common.jsonapi import JsonApiError

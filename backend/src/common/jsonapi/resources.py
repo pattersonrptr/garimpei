@@ -44,7 +44,7 @@ class ResourceObject(BaseModel):
                 if not k.startswith("_")
             }
 
-        entity_id = attrs.get("id", None)
+        entity_id = attrs.get("id")
 
         # Prepare attributes data (removing id and excluded fields)
         attributes_data = {

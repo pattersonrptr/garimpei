@@ -1,7 +1,7 @@
 from fastapi.responses import JSONResponse
 
-from src.app.entities.product import Product as ProductEntity
-from src.app.interfaces.http.schemas.product_schema import (
+from src.app.catalog.entities import Product as ProductEntity
+from src.app.catalog.http.product_schema import (
     ProductReadResponse,
     ProductResource,
     ProductsCollectionResponse,
