@@ -49,6 +49,24 @@ def get_fixtures() -> dict:
                 "created_at": datetime(2023, 10, 10, 9, 0, 0, tzinfo=UTC),
                 "updated_at": datetime(2023, 10, 10, 9, 0, 0, tzinfo=UTC),
             },
+            # Bookstores fed only by the ISBN collectors (scrapers/src/collectors).
+            # Inactive: keyword alerts have no scraper for them.
+            {
+                "id": 5,
+                "name": "livraria_da_vila",
+                "base_url": "https://www.livrariadavila.com.br",
+                "is_active": False,
+                "created_at": datetime(2026, 11, 9, 9, 0, 0, tzinfo=UTC),
+                "updated_at": datetime(2026, 11, 9, 9, 0, 0, tzinfo=UTC),
+            },
+            {
+                "id": 6,
+                "name": "martins_fontes",
+                "base_url": "https://www.martinsfontespaulista.com.br",
+                "is_active": False,
+                "created_at": datetime(2026, 11, 9, 9, 0, 0, tzinfo=UTC),
+                "updated_at": datetime(2026, 11, 9, 9, 0, 0, tzinfo=UTC),
+            },
         ],
         # ------------------------------------------------------------------ #
         # Users                                                                #

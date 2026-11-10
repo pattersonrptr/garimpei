@@ -86,9 +86,9 @@ def test_asks_the_store_api_by_ean():
     url = base + SEARCH_PATH.format(ean=ISBN)
     fetcher = PagesByUrl({url: answer(product(seller(59.9)))})
 
-    source = VtexSource(fetcher, store_name="Martins Fontes", base_url=base + "/")
+    source = VtexSource(fetcher, store_name="martins_fontes", base_url=base + "/")
     offers = source.find_offers(ISBN)
 
     assert fetcher.calls == [url]
-    assert source.store_name == "Martins Fontes"
+    assert source.store_name == "martins_fontes"
     assert len(offers) == 1

@@ -30,12 +30,12 @@ STORES: dict[str, Callable[[], OfferSource]] = {
     "estante-virtual": lambda: EstanteVirtualSource(PoliteHttpClient()),
     "livraria-da-vila": lambda: VtexSource(
         PoliteHttpClient(),
-        store_name="Livraria da Vila",
+        store_name="livraria_da_vila",
         base_url="https://www.livrariadavila.com.br",
     ),
     "martins-fontes": lambda: VtexSource(
         PoliteHttpClient(),
-        store_name="Martins Fontes",
+        store_name="martins_fontes",
         base_url="https://www.martinsfontespaulista.com.br",
     ),
 }

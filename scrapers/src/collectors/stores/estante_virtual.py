@@ -24,7 +24,7 @@ _STATE_MARK = "window.__INITIAL_STATE__"
 
 
 class EstanteVirtualSource(OfferSource):
-    store_name = "Estante Virtual"
+    store_name = "estante_virtual"
 
     def __init__(self, fetcher: PageFetcher):
         self.fetcher = fetcher

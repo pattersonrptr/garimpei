@@ -7,6 +7,8 @@
 const BRANDS: Record<string, string> = {
   enjoei: 'Enjoei',
   estante_virtual: 'Estante Virtual',
+  livraria_da_vila: 'Livraria da Vila',
+  martins_fontes: 'Martins Fontes',
   mercado_livre: 'Mercado Livre',
   olx: 'OLX',
 }
