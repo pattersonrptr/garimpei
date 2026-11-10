@@ -2,7 +2,12 @@
 Load source website fixtures into the database.
 
 This script populates the database with the basic source websites
-(OLX, Enjoei, Mercado Livre, Estante Virtual) needed for product tracking.
+(OLX, Enjoei, Mercado Livre, Estante Virtual, Livraria da Vila, Martins Fontes)
+needed for product tracking.
+
+The bookstores are inactive: they only receive offers from the ISBN collectors
+(scrapers/src/collectors). An inactive store is not offered for keyword
+alerts, which need a keyword scraper they do not have.
 """
 
 from sqlalchemy.orm import Session
@@ -37,6 +42,18 @@ def load_source_websites():
             "name": "Estante Virtual",
             "base_url": "https://www.estantevirtual.com.br",
             "is_active": True,
+        },
+        {
+            "id": 5,
+            "name": "Livraria da Vila",
+            "base_url": "https://www.livrariadavila.com.br",
+            "is_active": False,
+        },
+        {
+            "id": 6,
+            "name": "Martins Fontes",
+            "base_url": "https://www.martinsfontespaulista.com.br",
+            "is_active": False,
         },
     ]
 
