@@ -103,8 +103,8 @@ question. The loader is idempotent and reports ISBNs it could not load.
   with no stock, the default seller's price is sent as unavailable.
 - `python -m src.collectors.run --store <name>|all` (default `all`): the
   stores run one after the other, each with its own polite client.
-- The bookstores are registered **inactive** (`load_source_websites`, ids 5
-  and 6): `POST /offers` accepts any existing store, and an inactive one is not
+- The bookstores are registered **inactive** (`livraria_da_vila` and
+  `martins_fontes`, ids 5 and 6, in the dev fixtures and `load_source_websites`): `POST /offers` accepts any existing store, and an inactive one is not
   offered for keyword alerts, which have no scraper for it.
 - Verified end to end on a throwaway Postgres (Nov 9): 3 seed books, 3 stores,
   12 offers. *Duna* ranged from R$ 30 (used, Estante Virtual) to R$ 109,90

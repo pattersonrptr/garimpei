@@ -41,11 +41,11 @@ def test_posts_a_jsonapi_offer_with_the_store_id():
     session = FakeSession()
     sink = ApiOfferSink("http://api/", "tok", session=session)
 
-    sink.send("Estante Virtual", OFFER)
-    sink.send("Estante Virtual", OFFER)
+    sink.send("estante_virtual", OFFER)
+    sink.send("estante_virtual", OFFER)
 
     assert session.headers["Authorization"] == "Bearer tok"
-    assert session.gets == ["http://api/source-websites/name/Estante Virtual"]
+    assert session.gets == ["http://api/source-websites/name/estante_virtual"]
     url, body = session.posts[0]
     assert url == "http://api/offers/"
     assert body == {
@@ -69,4 +69,4 @@ def test_a_rejected_offer_raises():
     sink = ApiOfferSink("http://api", "tok", session=FakeSession(post_status=422))
 
     with pytest.raises(RuntimeError, match="422"):
-        sink.send("Estante Virtual", OFFER)
+        sink.send("estante_virtual", OFFER)

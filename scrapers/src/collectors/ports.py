@@ -23,7 +23,7 @@ class PageFetcher(ABC):
 class OfferSource(ABC):
     """A store that can be asked for a product by its identifier."""
 
-    store_name: str
+    store_name: str  # the store's slug in the backend, e.g. "estante_virtual"
 
     @abstractmethod
     def find_offers(self, isbn13: str) -> list[CollectedOffer]:

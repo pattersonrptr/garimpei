@@ -8,6 +8,9 @@ needed for product tracking.
 The bookstores are inactive: they only receive offers from the ISBN collectors
 (scrapers/src/collectors). An inactive store is not offered for keyword
 alerts, which need a keyword scraper they do not have.
+
+Names are the slugs the scrapers, collectors and frontend use
+(``estante_virtual``); the frontend shows the brand (``src/lib/sources.ts``).
 """
 
 from sqlalchemy.orm import Session
@@ -21,37 +24,37 @@ def load_source_websites():
     fixtures = [
         {
             "id": 1,
-            "name": "OLX",
+            "name": "olx",
             "base_url": "https://www.olx.com.br/brasil",
             "is_active": True,
         },
         {
             "id": 2,
-            "name": "Enjoei",
+            "name": "enjoei",
             "base_url": "https://enjusearch.enjoei.com.br",
             "is_active": True,
         },
         {
             "id": 3,
-            "name": "Mercado Livre",
+            "name": "mercado_livre",
             "base_url": "https://lista.mercadolivre.com.br",
             "is_active": True,
         },
         {
             "id": 4,
-            "name": "Estante Virtual",
+            "name": "estante_virtual",
             "base_url": "https://www.estantevirtual.com.br",
             "is_active": True,
         },
         {
             "id": 5,
-            "name": "Livraria da Vila",
+            "name": "livraria_da_vila",
             "base_url": "https://www.livrariadavila.com.br",
             "is_active": False,
         },
         {
             "id": 6,
-            "name": "Martins Fontes",
+            "name": "martins_fontes",
             "base_url": "https://www.martinsfontespaulista.com.br",
             "is_active": False,
         },
