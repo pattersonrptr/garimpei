@@ -23,7 +23,7 @@ prices from at least 2 stores, new and used**, matched to books by ISBN, so
 | 2a | **Ingest contract** (done: `POST /offers`, `IngestOfferUseCase`). A staff/service endpoint takes a plain offer DTO (isbn, store, url, price, condition, availability), finds or creates the book, upserts the offer by URL, adds a price-history point | Posting the same offer twice updates it, adds history, creates no duplicate; tested at use-case level |
 | 2b | **Seed list** (done: `backend/seeds/books_bestsellers.csv`, `python -m src.scripts.load_seed_books`). A list of ISBNs the system keeps fresh (a file in the repo to start) | One command loads it into the catalog |
 | 2c | **Collector 1: Estante Virtual by ISBN** (done: `scrapers/src/collectors`, `python -m src.collectors.run`), new and used as separate offers | A seed book yields 1 new and/or used offers in the DB |
-| 2d | **Collector 2** (source to decide, see below) | Same, from a second store |
+| 2d | **Collector 2** (done: VTEX adapter for Livraria da Vila and Martins Fontes, `--store`) | Same, from a second store |
 | 2e | **Schedule.** A daily job runs the collectors over the seed list, stalest first | History grows by a point per offer per day without anyone clicking |
 | 2f | **Freshness.** Each offer records when it was last checked | The API can say "updated 3 h ago" |
 
@@ -92,6 +92,25 @@ question. The loader is idempotent and reports ISBNs it could not load.
   offers linked to their catalog books; a second run updated them and added a
   history point, with no duplicates.
 
+## 2d notes
+
+- One adapter, `scrapers/src/collectors/stores/vtex.py`, serves both
+  bookstores through VTEX's public catalog API
+  (`/api/catalog_system/pub/products/search?fq=alternateIds_Ean:<ean>`): JSON,
+  one request per book and store, no HTML. The query is by EAN, so the same
+  adapter works for non-book products later (decision 10).
+- Every offer is `new`. With several sellers, the cheapest one in stock wins;
+  with no stock, the default seller's price is sent as unavailable.
+- `python -m src.collectors.run --store <name>|all` (default `all`): the
+  stores run one after the other, each with its own polite client.
+- The bookstores are registered **inactive** (`load_source_websites`, ids 5
+  and 6): `POST /offers` accepts any existing store, and an inactive one is not
+  offered for keyword alerts, which have no scraper for it.
+- Verified end to end on a throwaway Postgres (Nov 9): 3 seed books, 3 stores,
+  12 offers. *Duna* ranged from R$ 30 (used, Estante Virtual) to R$ 109,90
+  (new, Livraria da Vila); *O Hobbit* was cheaper new than used on Estante
+  Virtual, and out of stock at Livraria da Vila.
+
 ## Decisions (Nov 2026)
 
 1. **Where it runs:** the author's Windows PC, which is on every day. Docker
@@ -101,8 +120,8 @@ question. The loader is idempotent and reports ISBNs it could not load.
    its own track (main plan, track A).
 2. **New-price anchor:** Estante Virtual's `novo` price for now. Revisit when
    there is a better source.
-3. **Second source:** a bookstore with a public catalog API (see the spike
-   results below). **No scraper is touched without talking to the author
+3. **Second source:** Livraria da Vila and Martins Fontes, both through the
+   VTEX public catalog API (2d). **No scraper is touched without talking to the author
    first.**
 4. **Seed list:** the 50 best-selling books of all time, each ISBN validated
    against BrasilAPI (title must match). Grows later.

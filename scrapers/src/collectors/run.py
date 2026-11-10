@@ -1,10 +1,13 @@
-"""Collect offers for some ISBNs from one store and send them to the backend.
+"""Collect offers for some ISBNs and send them to the backend.
 
-Composition root: wires the polite HTTP client, the store adapter and the API
-sink. Credentials come from the same variables the scraper worker uses.
+Composition root: wires the polite HTTP client, the store adapters and the API
+sink. Credentials come from the same variables the scraper worker uses. Each
+store gets its own HTTP client (its own pauses and robots.txt) and runs after
+the previous one, so only one request is ever in flight.
 
 Usage (from scrapers/):
     python -m src.collectors.run 9788535914849 9788532530271
+    python -m src.collectors.run --store martins-fontes 9788535914849
     python -m src.collectors.run --file ../backend/seeds/books_bestsellers.csv
 """
 
@@ -13,12 +16,29 @@ import csv
 import logging
 import os
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 from src.collectors.api_sink import ApiOfferSink, login
 from src.collectors.polite_http import PoliteHttpClient
+from src.collectors.ports import OfferSource
 from src.collectors.stores.estante_virtual import EstanteVirtualSource
+from src.collectors.stores.vtex import VtexSource
 from src.collectors.use_cases import CollectOffers
+
+STORES: dict[str, Callable[[], OfferSource]] = {
+    "estante-virtual": lambda: EstanteVirtualSource(PoliteHttpClient()),
+    "livraria-da-vila": lambda: VtexSource(
+        PoliteHttpClient(),
+        store_name="Livraria da Vila",
+        base_url="https://www.livrariadavila.com.br",
+    ),
+    "martins-fontes": lambda: VtexSource(
+        PoliteHttpClient(),
+        store_name="Martins Fontes",
+        base_url="https://www.martinsfontespaulista.com.br",
+    ),
+}
 
 
 def read_isbns(path: Path) -> list[str]:
@@ -32,6 +52,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("isbns", nargs="*")
     parser.add_argument("--file", type=Path, help="CSV with an isbn13 column")
+    parser.add_argument(
+        "--store",
+        choices=[*STORES, "all"],
+        default="all",
+        help="one store, or all of them in turn (default)",
+    )
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
@@ -45,18 +71,23 @@ def main() -> int:
         os.environ["CELERY_WORKER_USERNAME"],
         os.environ["CELERY_WORKER_PASSWORD"],
     )
-    source = EstanteVirtualSource(PoliteHttpClient())
-    report = CollectOffers(source, ApiOfferSink(base_url, token)).execute(isbns)
+    sink = ApiOfferSink(base_url, token)
+    names = list(STORES) if args.store == "all" else [args.store]
 
-    print(
-        f"{source.store_name}: {len(isbns)} ISBNs, {report.sent} offers sent, "
-        f"{len(report.not_found)} not found, {len(report.failed)} failed"
-    )
-    for isbn, reason in report.failed:
-        print(f"  failed {isbn}: {reason}")
-    if report.blocked:
-        print(f"  stopped: {report.blocked} ({len(report.skipped)} ISBNs skipped)")
-    return 1 if report.failed or report.blocked else 0
+    problems = False
+    for name in names:
+        source = STORES[name]()
+        report = CollectOffers(source, sink).execute(isbns)
+        print(
+            f"{source.store_name}: {len(isbns)} ISBNs, {report.sent} offers sent, "
+            f"{len(report.not_found)} not found, {len(report.failed)} failed"
+        )
+        for isbn, reason in report.failed:
+            print(f"  failed {isbn}: {reason}")
+        if report.blocked:
+            print(f"  stopped: {report.blocked} ({len(report.skipped)} ISBNs skipped)")
+        problems = problems or bool(report.failed or report.blocked)
+    return 1 if problems else 0
 
 
 if __name__ == "__main__":
