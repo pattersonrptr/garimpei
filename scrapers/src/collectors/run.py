@@ -66,12 +66,9 @@ def main() -> int:
         parser.error("give ISBNs or --file")
 
     base_url = os.getenv("API_URL", "http://localhost:8000")
-    token = login(
-        base_url,
-        os.environ["CELERY_WORKER_USERNAME"],
-        os.environ["CELERY_WORKER_PASSWORD"],
-    )
-    sink = ApiOfferSink(base_url, token)
+    username = os.environ["CELERY_WORKER_USERNAME"]
+    password = os.environ["CELERY_WORKER_PASSWORD"]
+    sink = ApiOfferSink(base_url, lambda: login(base_url, username, password))
     names = list(STORES) if args.store == "all" else [args.store]
 
     problems = False
