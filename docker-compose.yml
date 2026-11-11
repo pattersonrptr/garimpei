@@ -161,6 +161,8 @@ services:
     environment:
       # The server-side fetches go to the API inside the compose network.
       - API_URL=http://web:8000
+      # Amazon Associates tag for the "see on Amazon" link (empty: plain link).
+      - AMAZON_ASSOCIATE_TAG=${AMAZON_ASSOCIATE_TAG:-}
     restart: unless-stopped
 
   # ── Frontend ─────────────────────────────────────────────────────────────

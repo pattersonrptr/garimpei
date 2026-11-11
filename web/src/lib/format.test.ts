@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  amazonSearchUrl,
   bookPath,
   formatPrice,
   isbnFromSegment,
@@ -22,7 +23,7 @@ describe("formatPrice", () => {
 describe("updatedAgo", () => {
   const now = new Date("2026-11-10T15:00:00Z");
   it("says recent prices are fresh", () => {
-    expect(updatedAgo("2026-11-10T14:30:00Z", now)).toBe("agora há pouco");
+    expect(updatedAgo("2026-11-10T14:30:00Z", now)).toBe("há poucos minutos");
   });
   it("counts hours", () => {
     expect(updatedAgo("2026-11-10T12:00:00+00:00", now)).toBe("há 3 h");
@@ -64,5 +65,16 @@ describe("savingsPercent", () => {
     expect(savingsPercent(60, 54.9)).toBeNull();
     expect(savingsPercent(null, 54.9)).toBeNull();
     expect(savingsPercent(20, null)).toBeNull();
+  });
+});
+
+describe("amazonSearchUrl", () => {
+  it("searches books by ISBN", () => {
+    expect(amazonSearchUrl("9788501012074")).toBe(
+      "https://www.amazon.com.br/s?k=9788501012074&i=stripbooks",
+    );
+  });
+  it("adds the associate tag when there is one", () => {
+    expect(amazonSearchUrl("9788501012074", "garimpei-20")).toContain("&tag=garimpei-20");
   });
 });

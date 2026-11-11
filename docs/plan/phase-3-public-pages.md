@@ -17,8 +17,8 @@ a store without logging in; pages render on the server.**
 | # | Slice | Done when |
 |---|---|---|
 | 3a | **Public book API** (done, #80). `GET /books?q=`, `GET /books/{isbn}`, `GET /books/{isbn}/price-history`, no login | A client can search, open a book with its offers and get its daily lows without a token |
-| 3b | **Next.js app** (done: `web/`, service `site`): layout with the Phase 0 tokens, home with search, results page, Docker Compose service, CI job | `docker compose up` serves the search on port 3000, rendered on the server |
-| 3c | **Book page.** Savings block (used vs new), used and new columns, "updated X h ago", links to the stores, a "see on Amazon" link built from the ISBN | A visitor goes from search to a store in two clicks |
+| 3b | **Next.js app** (done, #81: `web/`, service `site`): layout with the Phase 0 tokens, home with search, results page, Docker Compose service, CI job | `docker compose up` serves the search on port 3000, rendered on the server |
+| 3c | **Book page** (done: `/livro/<isbn13>-<slug>`). Savings block (used vs new), used and new columns, "updated X h ago", links to the stores, a "see on Amazon" link built from the ISBN | A visitor goes from search to a store in two clicks |
 | 3d | **Price chart and SEO.** 90-day chart of the daily lows (server-rendered SVG), page metadata, `sitemap.xml` | The chart shows on the book page with no client JavaScript; search engines get a title, description and sitemap |
 
 The verdict ("buy now / wait") and the 90-day position bar are Phase 4. The
