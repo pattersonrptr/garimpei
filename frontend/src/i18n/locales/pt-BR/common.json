@@ -12,11 +12,7 @@
     "signOutCancel": "Ficar"
   },
   "nav": {
-    "dashboard": "Dashboard",
-    "alerts": "Meus alertas",
     "products": "Produtos",
-    "plans": "Planos",
-    "admin": "Admin",
     "adminDashboard": "Painel admin",
     "users": "Usuários",
     "searchConfigs": "Buscas",

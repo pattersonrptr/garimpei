@@ -11,11 +11,8 @@ import { ToSite } from '@/components/common/ToSite'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { useAuth } from '@/context/AuthContext'
 import { AdminDashboardPage } from '@/pages/AdminDashboardPage'
-import { AlertsPage } from '@/pages/AlertsPage'
-import { DashboardPage } from '@/pages/DashboardPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
-import { PlansPage } from '@/pages/PlansPage'
 import { ProductDetailPage } from '@/pages/ProductDetailPage'
 import { ProductsPage } from '@/pages/ProductsPage'
 import { SearchConfigsPage } from '@/pages/SearchConfigsPage'
@@ -91,14 +88,14 @@ export function AppRouter() {
         <Route path="/admin/search-configs" element={<SearchConfigsPage />} />
         <Route path="/admin/source-websites" element={<SourceWebsitesPage />} />
 
-        {/* Keyword alerts and plans in the menu; dashboard and products off it (Phase 5e) */}
-        <Route path="/alerts" element={<AlertsPage />} />
-        <Route path="/plans" element={<PlansPage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
+        {/* Collected offers: fix or remove what a collector got wrong */}
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/products/:id" element={<ProductDetailPage />} />
 
-        {/* Legacy redirects */}
+        {/* Legacy redirects (the old user pages left the back office) */}
+        <Route path="/alerts" element={<Navigate to={ADMIN_HOME} replace />} />
+        <Route path="/plans" element={<Navigate to={ADMIN_HOME} replace />} />
+        <Route path="/dashboard" element={<Navigate to={ADMIN_HOME} replace />} />
         <Route path="/users" element={<Navigate to="/admin/users" replace />} />
         <Route path="/search-configs" element={<Navigate to="/admin/search-configs" replace />} />
         <Route path="/source-websites" element={<Navigate to="/admin/source-websites" replace />} />

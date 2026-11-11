@@ -2,7 +2,7 @@
  * Administrator stories. Letters point to docs/qa/exploratory-report.md.
  */
 
-import { ADMIN_USER, PRODUCT_PREFIX, TERM_PREFIX, api, expect, test } from '../fixtures'
+import { PRODUCT_PREFIX, TERM_PREFIX, api, expect, test } from '../fixtures'
 
 test.describe('Administrator stories', () => {
   test.beforeEach(async () => {
@@ -11,16 +11,6 @@ test.describe('Administrator stories', () => {
 
   test.afterAll(async () => {
     await api.reset()
-  })
-
-  test('H: "My alerts" lists only my own alerts, not every customer\'s', async ({
-    authenticatedPage: page,
-  }) => {
-    await api.createCustomerAlert(`${TERM_PREFIX} customer only`, 50)
-    await api.createAlert(`${TERM_PREFIX} admin own`, 50, ['estante_virtual'], ADMIN_USER)
-    await page.goto('/alerts')
-    await expect(page.getByText(`${TERM_PREFIX} admin own`)).toBeVisible()
-    await expect(page.getByText(`${TERM_PREFIX} customer only`)).toHaveCount(0)
   })
 
   test('A: deleting a search still used by an alert explains why it cannot go', async ({

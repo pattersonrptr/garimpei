@@ -7,17 +7,14 @@
 
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
 import ManageSearchIcon from '@mui/icons-material/ManageSearch'
-import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive'
+import InventoryIcon from '@mui/icons-material/Inventory'
 import PeopleIcon from '@mui/icons-material/People'
 import PublicIcon from '@mui/icons-material/Public'
-import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium'
-import Divider from '@mui/material/Divider'
 import Drawer from '@mui/material/Drawer'
 import List from '@mui/material/List'
 import ListItemButton from '@mui/material/ListItemButton'
 import ListItemIcon from '@mui/material/ListItemIcon'
 import ListItemText from '@mui/material/ListItemText'
-import ListSubheader from '@mui/material/ListSubheader'
 import Tooltip from '@mui/material/Tooltip'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import { useTheme } from '@mui/material/styles'
@@ -35,15 +32,11 @@ interface SidebarProps {
 
 /**
  * The back office is for administrators only (Phase 5e). Users manage their
- * alerts on the site; dashboard and products left the menu.
+ * alerts and account on the site; the old user pages are gone.
  */
-const USER_ITEMS = [
-  { label: 'nav.alerts', path: '/alerts', icon: <NotificationsActiveIcon /> },
-  { label: 'nav.plans', path: '/plans', icon: <WorkspacePremiumIcon /> },
-] as const
-
 const ADMIN_ITEMS = [
   { label: 'nav.adminDashboard', path: '/admin', icon: <AdminPanelSettingsIcon /> },
+  { label: 'nav.products', path: '/products', icon: <InventoryIcon /> },
   { label: 'nav.users', path: '/admin/users', icon: <PeopleIcon /> },
   { label: 'nav.searchConfigs', path: '/admin/search-configs', icon: <ManageSearchIcon /> },
   { label: 'nav.sourceWebsites', path: '/admin/source-websites', icon: <PublicIcon /> },
@@ -60,7 +53,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   const isAdmin = isStaff || isSuperuser
 
   function renderItem(
-    labelKey: (typeof USER_ITEMS | typeof ADMIN_ITEMS)[number]['label'],
+    labelKey: (typeof ADMIN_ITEMS)[number]['label'],
     path: string,
     icon: React.ReactNode,
   ) {
@@ -97,27 +90,10 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
   const content = (
     <>
-      <List>
-        {USER_ITEMS.map(({ label, path, icon }) => renderItem(label, path, icon))}
-      </List>
-
       {isAdmin && (
-        <>
-          <Divider />
-          <List
-            subheader={
-              open ? (
-                <ListSubheader component="div" sx={{ lineHeight: '36px' }}>
-                  {t('nav.admin')}
-                </ListSubheader>
-              ) : undefined
-            }
-          >
-            {ADMIN_ITEMS.map(({ label, path, icon }) =>
-              renderItem(label, path, icon),
-            )}
-          </List>
-        </>
+        <List>
+          {ADMIN_ITEMS.map(({ label, path, icon }) => renderItem(label, path, icon))}
+        </List>
       )}
     </>
   )

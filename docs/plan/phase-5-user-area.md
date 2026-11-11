@@ -75,10 +75,12 @@ general comparator, so names and screens stay generic (product, user).
 - A user signs up, signs in (e-mail or username), creates alerts from the
   product page and manages them, changes the password and signs out, all on
   the Garimpei site. The Vite app only lets administrators in.
-- Admin back office: its pages (panel, users, searches, source sites,
-  keyword alerts, plans) came from the old app as they were. **Open:** the
-  author questions what several of them are for; review the back office
-  before adding to it (a later slice, not Phase 5).
+- Admin back office: its pages came from the old app as they were. Reviewed
+  right after Phase 5 with the author: "my alerts" (keyword alerts), "plans"
+  (a pricing table for users) and the user dashboard were removed from Vite;
+  the backend keeps those APIs. The menu is now admin panel, products
+  (collected offers, to fix or remove bad ones), users, searches and source
+  sites. A screen to *manage* plans would be new work, with billing (6+).
 - Proposed for after this phase, waiting for the author's OK:
   1. refresh the READMEs (root: screenshots and diagrams; `backend/`,
      `frontend/`, `scrapers/`, `web/`, `docs/architecture/`,

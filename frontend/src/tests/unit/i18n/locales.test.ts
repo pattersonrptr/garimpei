@@ -71,13 +71,13 @@ describe('language resolution', () => {
   afterAll(() => i18n.changeLanguage('en'))
 
   it.each([
-    ['pt-BR', 'pt-BR', 'Meus alertas'],
-    ['en', 'en', 'My Alerts'],
-    ['en-US', 'en', 'My Alerts'],
-    ['de-DE', 'pt-BR', 'Meus alertas'], // unsupported -> default language
+    ['pt-BR', 'pt-BR', 'Usuários'],
+    ['en', 'en', 'Users'],
+    ['en-US', 'en', 'Users'],
+    ['de-DE', 'pt-BR', 'Usuários'], // unsupported -> default language
   ])('%s resolves to %s', async (requested, resolved, text) => {
     await i18n.changeLanguage(requested)
     expect(i18n.resolvedLanguage).toBe(resolved)
-    expect(i18n.t('nav.alerts')).toBe(text)
+    expect(i18n.t('nav.users')).toBe(text)
   })
 })
