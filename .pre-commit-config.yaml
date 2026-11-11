@@ -37,6 +37,8 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
+        # Compose tags like !override are not plain YAML; `docker compose config` checks it
+        exclude: ^docker-compose\.override\.example\.yml$
       - id: check-added-large-files
         args: ['--maxkb=1000']
       - id: check-json
