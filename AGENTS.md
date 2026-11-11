@@ -54,6 +54,10 @@ and verifies. When in doubt about intent, ask a short round of questions.
 6. Commit messages end with a `Co-Authored-By:` line naming the agent and
    model; PR bodies say which tool generated them.
 7. Flag anything that grows the scope; propose, don't just do it.
+8. `docs/working-with-ai.md` (and its `.en.md` translation) is
+   written in the author's voice. When a change makes it stale (new
+   protection layer, test counts, a decision, something the author learned),
+   say so and propose the edit; change it only after the author reviews it.
 
 ## Verify
 
