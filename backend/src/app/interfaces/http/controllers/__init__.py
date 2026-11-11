@@ -2,6 +2,9 @@
 HTTP Controllers (Adapters for HTTP requests/responses).
 """
 
+from src.app.alerts.http.my_alerts_controller import (
+    router as my_alerts_controller,
+)
 from src.app.alerts.http.notification_log_controller import (
     router as notification_log_controller,
 )
@@ -53,6 +56,7 @@ __all__ = [
     "auth_controller",
     "dashboard_controller",
     "book_controller",
+    "my_alerts_controller",
     "offer_controller",
     "product_controller",
     "source_website_controller",

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from src.app.alerts.entities import BookRef
+from src.app.alerts.entities import BookRef, NoticeHistory, ProductSnapshot
 from src.app.alerts.entities import NotificationLog as NotificationLogEntity
 from src.app.alerts.entities import PriceAlert as PriceAlertEntity
 
@@ -164,6 +164,13 @@ class NotificationLogRepositoryInterface(ABC):
         ...
 
     @abstractmethod
+    def sent_history(
+        self, price_alert_ids: list[int], recent: int = 5
+    ) -> dict[int, NoticeHistory]:
+        """Per alert: the latest ``recent`` sent e-mails (with the store) and the total."""
+        ...
+
+    @abstractmethod
     def exists_for_alert_and_product(
         self, price_alert_id: int, product_id: int
     ) -> bool:
@@ -179,3 +186,12 @@ class NotificationLogRepositoryInterface(ABC):
             True if a 'sent' notification log exists for this pair, False otherwise.
         """
         ...
+
+
+class ProductSnapshotReader(ABC):
+    """The products "my alerts" shows (implemented over the catalog)."""
+
+    @abstractmethod
+    def snapshots(self, product_ids: list[int]) -> dict[int, ProductSnapshot]:
+        """Each known product by id; unknown ids are left out."""
+        raise NotImplementedError

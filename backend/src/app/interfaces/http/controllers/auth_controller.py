@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
@@ -12,6 +12,7 @@ from src.app.infrastructure.repositories.user_repository import UserRepository
 from src.app.interfaces.http.presenters.auth_presenter import AuthPresenter
 from src.app.interfaces.http.presenters.user_presenter import UserPresenter
 from src.app.interfaces.http.schemas.auth_schema import (
+    PasswordChangeRequest,
     TokenResponse,
     TokenValidationRequest,
     TokenValidationResponse,
@@ -66,13 +67,19 @@ async def login(
     """
     Authenticate user and return JWT token in JSON:API format.
 
+    The ``username`` field takes a username or an e-mail address (a value
+    with "@" is looked up as an e-mail).
+
     Returns:
         TokenResponse: JSON:API formatted token response with user metadata
     """
     logger.info(f"Login attempt for username: {form_data.username}")
 
-    get_user_by_username_uc = GetUserByUsernameUseCase(user_repo)
-    user = get_user_by_username_uc.execute(form_data.username)
+    login_name = form_data.username.strip()
+    if "@" in login_name:
+        user = GetUserByEmailUseCase(user_repo).execute(login_name)
+    else:
+        user = GetUserByUsernameUseCase(user_repo).execute(login_name)
 
     if not user:
         logger.warning(
@@ -270,3 +277,60 @@ async def register(
     )
 
     return UserPresenter.handle_success(created_user)
+
+
+@auth_router.get("/me", response_model=UserReadResponse)
+async def me(current_user: UserEntity = Depends(get_current_active_user)):
+    """The logged-in user's own account (no sensitive fields)."""
+    return UserPresenter.handle_success(current_user)
+
+
+@auth_router.put("/password", status_code=204)
+async def change_password(
+    password_in: PasswordChangeRequest,
+    current_user: UserEntity = Depends(get_current_active_user),
+    user_repo: UserRepository = Depends(get_user_repository),
+):
+    """
+    Change the logged-in user's password.
+
+    Returns:
+        - 204: changed
+        - 400: the current password is wrong
+        - 422: the new password is shorter than 8 characters
+    """
+    attrs = password_in.data.attributes
+    user = user_repo.get_by_id(current_user.id)
+    if user is None or not verify_password(
+        attrs.current_password, user.hashed_password or ""
+    ):
+        logger.warning(
+            "Password change refused: wrong current password",
+            extra={"action": "password_change_refused", "user_id": current_user.id},
+        )
+        errors = [
+            JsonApiError(
+                status="400",
+                code="WRONG_PASSWORD",
+                title="Wrong password",
+                detail="The current password is not correct.",
+                source={"pointer": "/data/attributes/current_password"},
+            )
+        ]
+        return JSONResponse(
+            status_code=400,
+            content=JsonApiErrorResponse(errors=errors).model_dump(),
+            media_type="application/vnd.api+json",
+        )
+
+    user_repo.update(
+        user.id,
+        user.model_copy(
+            update={"hashed_password": pwd_context.hash(attrs.new_password)}
+        ),
+    )
+    logger.info(
+        "Password changed",
+        extra={"action": "password_changed", "user_id": current_user.id},
+    )
+    return Response(status_code=204)
