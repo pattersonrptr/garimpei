@@ -17,7 +17,7 @@ general comparator, so names and screens stay generic (product, user).
 |---|---|---|
 | 5a | **Backend: account and "my alerts"** (done, #90). Login by e-mail or username, `GET /auth/me`, `PUT /auth/password`, `GET /me/alerts` | The API gives a user their account and their product alerts with today's price, the verdict and the e-mails sent |
 | 5b | **Next.js session** (done). `/entrar`, `/cadastro`, sign out, token in an httpOnly cookie, renewed in `proxy.ts` | A user signs up, signs in and out on the Garimpei site |
-| 5c | **"Warn me" and "My alerts" in Next.js.** `/alertas/novo`, `/alertas` (price vs target, verdict, notices; pause, change price, delete) | A user creates and manages alerts without the Vite app |
+| 5c | **"Warn me" and "My alerts" in Next.js** (done). `/alertas/novo`, `/alertas` (price vs target, verdict, notices; pause, change price, delete) | A user creates and manages alerts without the Vite app |
 | 5d | **Account.** `/conta`: username and e-mail, change password, sign out | |
 | 5e | **Vite admin-only.** Non-admins are sent to the site; register, landing and the user screens leave Vite; no "create user" in admin | A non-admin never lands in Vite |
 | 5f | **Close.** Plan updated; propose refreshing the READMEs (root has old screenshots and diagrams) | |
@@ -55,3 +55,10 @@ general comparator, so names and screens stay generic (product, user).
    least 8 characters. `/auth/me` and `/auth/password` live in the old auth
    controller until the `accounts` module is refactored.
 9. **Password reset** stays out (checklist before other people use it).
+10. **Only a 401 sends the user to sign in again** (5c). The site always
+    sends a token, so a 403 from the API means "not allowed" (for example
+    the plan's active-alert limit) and is shown as a message.
+11. **Alert actions are plain forms** (5c): pause/resume and delete work
+    without JavaScript; delete asks a second time inside a `<details>`, never
+    with `confirm()`. Changing the price uses a small client form for inline
+    errors.
