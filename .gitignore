@@ -101,3 +101,6 @@ conversa*.txt
 
 # Claude Code: personal settings stay local (shared ones are in .claude/settings.json)
 .claude/settings.local.json
+
+# Docker Compose: per-machine overrides stay local (see docker-compose.override.example.yml)
+docker-compose.override.yml

@@ -1,0 +1,9 @@
+# Per-machine Docker Compose overrides. Copy to docker-compose.override.yml
+# (gitignored); Compose reads it automatically on every `docker compose` call.
+#
+# Example: this machine already runs PostgreSQL on 5432, so the dev database
+# is published on 5434 instead.
+services:
+  db:
+    ports: !override
+      - "5434:5432"
