@@ -446,3 +446,50 @@ img {
     display: block;
   }
 }
+
+/* ── Verdict (Phase 4) ───────────────────────────────────────────────── */
+.verdict {
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: var(--radius-card);
+  padding: var(--s4) var(--s5);
+  display: grid;
+  gap: var(--s2);
+}
+.verdict-title {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: clamp(1.5rem, 5vw, 2rem);
+  letter-spacing: -0.02em;
+  color: var(--gold);
+}
+.verdict.learning .verdict-title {
+  font-size: 1.25rem;
+}
+.verdict-other {
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+.range-bar {
+  position: relative;
+  height: 10px;
+  margin: var(--s3) 0 var(--s1);
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--good), var(--gold), var(--bad));
+}
+.range-marker {
+  position: absolute;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--ink);
+  transform: translate(-50%, -50%);
+}
+.range-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
