@@ -19,7 +19,7 @@ general comparator, so names and screens stay generic (product, user).
 | 5b | **Next.js session** (done). `/entrar`, `/cadastro`, sign out, token in an httpOnly cookie, renewed in `proxy.ts` | A user signs up, signs in and out on the Garimpei site |
 | 5c | **"Warn me" and "My alerts" in Next.js** (done). `/alertas/novo`, `/alertas` (price vs target, verdict, notices; pause, change price, delete) | A user creates and manages alerts without the Vite app |
 | 5d | **Account** (done). `/conta`: username and e-mail, change password, sign out | A user changes their password and signs in with the new one |
-| 5e | **Vite admin-only.** Non-admins are sent to the site; register, landing and the user screens leave Vite; no "create user" in admin | A non-admin never lands in Vite |
+| 5e | **Vite admin-only** (done). Non-admins are sent to the site; register, landing and the user screens leave Vite; no "create user" in admin | A non-admin never lands in Vite |
 | 5f | **Close.** Plan updated; propose refreshing the READMEs (root has old screenshots and diagrams), a doc on how the project is built with Claude Code (decisions, corrections, guardrails, with links to PRs), and a Claude Code setup slice (`CLAUDE.md` in the repo, hooks, permissions) | The proposals are agreed with the author |
 
 ## Decisions (Nov 11, 2026)
@@ -62,3 +62,10 @@ general comparator, so names and screens stay generic (product, user).
     without JavaScript; delete asks a second time inside a `<details>`, never
     with `confirm()`. Changing the price uses a small client form for inline
     errors.
+12. **The back office opens on its login** (5e): `/` goes to `/login`
+    (or `/admin` when signed in), not to the site, so an administrator has a
+    way in. Non-admins who sign in there, `/register` and the old
+    `/alertas/novo` links go to the site (`VITE_SITE_URL`, from `SITE_URL`).
+    Dashboard and Products leave the menu but stay reachable for admins.
+    The Playwright customer stories (keyword alerts in Vite) were retired;
+    the "warn me" story now runs on the site.

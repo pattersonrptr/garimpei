@@ -6,8 +6,6 @@
  */
 
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
-import DashboardIcon from '@mui/icons-material/Dashboard'
-import InventoryIcon from '@mui/icons-material/Inventory'
 import ManageSearchIcon from '@mui/icons-material/ManageSearch'
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive'
 import PeopleIcon from '@mui/icons-material/People'
@@ -35,10 +33,12 @@ interface SidebarProps {
   onClose?: () => void
 }
 
+/**
+ * The back office is for administrators only (Phase 5e). Users manage their
+ * alerts on the site; dashboard and products left the menu.
+ */
 const USER_ITEMS = [
-  { label: 'nav.dashboard', path: '/dashboard', icon: <DashboardIcon /> },
   { label: 'nav.alerts', path: '/alerts', icon: <NotificationsActiveIcon /> },
-  { label: 'nav.products', path: '/products', icon: <InventoryIcon /> },
   { label: 'nav.plans', path: '/plans', icon: <WorkspacePremiumIcon /> },
 ] as const
 

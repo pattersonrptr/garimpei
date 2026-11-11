@@ -3,7 +3,8 @@
  *
  * Accounts come from the repository's `.env` (never hard-coded):
  *   E2E_ADMIN_USERNAME / E2E_ADMIN_PASSWORD  - a superuser
- *   E2E_USER_USERNAME  / E2E_USER_PASSWORD   - a regular customer (Free plan)
+ *   E2E_USER_USERNAME  / E2E_USER_PASSWORD   - a regular customer (Free plan),
+ *     who uses the public site (E2E_SITE_URL), not this back office
  * Environment variables with the same names take precedence.
  *
  * Provides:
@@ -56,6 +57,8 @@ export const CUSTOMER = {
 
 export const API_BASE = setting('E2E_API_URL', 'http://localhost:8000')
 export const MAILPIT_BASE = setting('E2E_MAILPIT_URL', 'http://localhost:8026')
+/** The public site (Next.js), where users sign in and manage alerts. */
+export const SITE_BASE = setting('E2E_SITE_URL', 'http://localhost:3000')
 
 /** Prefix for every product the stories create, so cleanup finds them. */
 export const PRODUCT_PREFIX = 'Garimpei E2E'
@@ -297,23 +300,18 @@ export async function login(
   await page.getByLabel('Username').fill(username)
   await page.getByRole('textbox', { name: 'Password' }).fill(password)
   await page.getByRole('button', { name: 'Sign In' }).click()
-  await expect(page).toHaveURL(/\/dashboard/, { timeout: 10_000 })
+  await expect(page).toHaveURL(/\/admin$/, { timeout: 10_000 })
 }
 
 /**
  * Extended test fixtures.
  *
- * `authenticatedPage` is logged in as the admin; `customerPage` as the
- * regular Free-plan customer.
+ * `authenticatedPage` is logged in as the admin. Customers no longer use
+ * this app (Phase 5e): their stories run on the site (book-alerts.spec.ts).
  */
-export const test = base.extend<{ authenticatedPage: Page; customerPage: Page }>({
+export const test = base.extend<{ authenticatedPage: Page }>({
   authenticatedPage: async ({ page }, use) => {
     await login(page)
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    await use(page)
-  },
-  customerPage: async ({ page }, use) => {
-    await login(page, CUSTOMER.username, CUSTOMER.password)
     // eslint-disable-next-line react-hooks/rules-of-hooks
     await use(page)
   },

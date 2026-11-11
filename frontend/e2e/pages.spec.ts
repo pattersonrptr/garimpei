@@ -5,6 +5,12 @@ import {
   cleanupTestConfigs,
 } from './fixtures'
 
+test('a mistyped address shows a "page not found" page', async ({ page }) => {
+  await page.goto('/this-page-does-not-exist')
+  await expect(page.getByRole('heading', { name: /page not found/i })).toBeVisible()
+  await expect(page.getByRole('link', { name: /go to the home page/i })).toBeVisible()
+})
+
 // ===========================================================================
 // Products page
 // ===========================================================================
@@ -97,8 +103,9 @@ test.describe('Products page', () => {
 test.describe('Admin pages', () => {
   test('users page loads for admin', async ({ authenticatedPage: page }) => {
     await page.goto('/admin/users')
-    await expect(page.getByText('Users')).toBeVisible()
-    await expect(page.getByRole('button', { name: /new user/i })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Users' })).toBeVisible()
+    // People sign up on the site; there is no "create user" here (Phase 5e)
+    await expect(page.getByRole('button', { name: /new user/i })).toHaveCount(0)
     await expect(page.getByRole('columnheader', { name: /username/i })).toBeVisible()
     await expect(page.getByRole('columnheader', { name: /email/i })).toBeVisible()
   })

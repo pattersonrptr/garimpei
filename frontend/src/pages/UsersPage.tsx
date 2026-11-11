@@ -33,11 +33,9 @@ import { formatDateTime } from '@/lib/formatters'
 import { logger } from '@/lib/logger'
 import { EMPTY_SELECTION, selectedRowIds } from '@/lib/selection'
 import {
-  createUser,
   deleteUser,
   updateUser,
   getUsers,
-  type UserCreatePayload,
   type UserUpdatePayload,
 } from '@/services/userService'
 import type { User } from '@/types/user'
@@ -45,12 +43,6 @@ import type { User } from '@/types/user'
 // ---------------------------------------------------------------------------
 // Form state helpers
 // ---------------------------------------------------------------------------
-
-interface CreateFormState {
-  username: string
-  email: string
-  password: string
-}
 
 interface EditFormState {
   username: string
@@ -60,7 +52,6 @@ interface EditFormState {
   isSuperuser: boolean
 }
 
-const defaultCreate: CreateFormState = { username: '', email: '', password: '' }
 const defaultEdit: EditFormState = {
   username: '',
   email: '',
@@ -89,11 +80,6 @@ export function UsersPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null)
   // Bulk delete confirmation
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
-
-  // Create modal
-  const [createOpen, setCreateOpen] = useState(false)
-  const [createForm, setCreateForm] = useState<CreateFormState>(defaultCreate)
-  const [creating, setCreating] = useState(false)
 
   // Edit modal
   const [editUser, setEditUser] = useState<User | null>(null)
@@ -141,31 +127,6 @@ export function UsersPage() {
       isStaff: user.isStaff,
       isSuperuser: user.isSuperuser,
     })
-  }
-
-  async function handleCreate() {
-    if (!createForm.username || !createForm.email || !createForm.password) {
-      enqueueSnackbar(t('toast.required'), { variant: 'warning' })
-      return
-    }
-    setCreating(true)
-    try {
-      const payload: UserCreatePayload = {
-        username: createForm.username,
-        email: createForm.email,
-        password: createForm.password,
-      }
-      await createUser(payload)
-      enqueueSnackbar(t('toast.created'), { variant: 'success' })
-      setCreateOpen(false)
-      setCreateForm(defaultCreate)
-      reload()
-    } catch (err) {
-      logger.error('Failed to create user', { username: createForm.username }, err)
-      enqueueSnackbar(t('toast.createFailed'), { variant: 'error' })
-    } finally {
-      setCreating(false)
-    }
   }
 
   async function handleEdit() {
@@ -287,11 +248,8 @@ export function UsersPage() {
 
   return (
     <Box>
-      <PageHeader
-        title={t('title')}
-        actionLabel={isSuperuser ? t('new') : undefined}
-        onAction={isSuperuser ? () => setCreateOpen(true) : undefined}
-      />
+      {/* No "create user" here: people sign up on the site (Phase 5e). */}
+      <PageHeader title={t('title')} />
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -328,47 +286,6 @@ export function UsersPage() {
         autoHeight
       />
 
-      {/* ── Create modal ─────────────────────────────────────────────── */}
-      <GenericFormModal
-        open={createOpen}
-        title={t('new')}
-        onClose={() => {
-          setCreateOpen(false)
-          setCreateForm(defaultCreate)
-        }}
-        onSave={handleCreate}
-        saving={creating}
-        saveLabel={tc('actions.create')}
-      >
-        <Stack spacing={2} sx={{ pt: 1 }}>
-          <TextField
-            label={t('fields.username')}
-            value={createForm.username}
-            onChange={(e) => setCreateForm((f) => ({ ...f, username: e.target.value }))}
-            required
-            fullWidth
-            size="small"
-          />
-          <TextField
-            label={t('fields.email')}
-            type="email"
-            value={createForm.email}
-            onChange={(e) => setCreateForm((f) => ({ ...f, email: e.target.value }))}
-            required
-            fullWidth
-            size="small"
-          />
-          <TextField
-            label={t('fields.password')}
-            type="password"
-            value={createForm.password}
-            onChange={(e) => setCreateForm((f) => ({ ...f, password: e.target.value }))}
-            required
-            fullWidth
-            size="small"
-          />
-        </Stack>
-      </GenericFormModal>
 
       {/* ── Edit modal ───────────────────────────────────────────────── */}
       <GenericFormModal

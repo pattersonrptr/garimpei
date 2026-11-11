@@ -1,5 +1,5 @@
 /**
- * Login page.
+ * Login page of the admin back office (Phase 5e). Users sign in on the site.
  */
 
 import Visibility from '@mui/icons-material/Visibility'
@@ -15,13 +15,13 @@ import Paper from '@mui/material/Paper'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { useState } from 'react'
-import { Link as RouterLink, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { useSnackbar } from 'notistack'
 import { useTranslation } from 'react-i18next'
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 import { useAuth } from '@/context/AuthContext'
 import { logger } from '@/lib/logger'
-import { withNext } from '@/lib/nextPath'
+import { siteUrl } from '@/lib/site'
 
 export function LoginPage() {
   const { login } = useAuth()
@@ -124,10 +124,8 @@ export function LoginPage() {
           <Divider sx={{ my: 2 }} />
 
           <Typography variant="body2" textAlign="center" color="text.secondary">
-            {t('login.noAccount')}{' '}
-            <Link component={RouterLink} to={withNext('/register', next)}>
-              {t('login.createAccount')}
-            </Link>
+            {t('login.adminOnly')}{' '}
+            <Link href={siteUrl('/entrar')}>{t('login.goToSite')}</Link>
           </Typography>
         </Box>
       </Paper>

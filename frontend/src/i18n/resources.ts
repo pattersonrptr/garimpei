@@ -16,7 +16,6 @@ export const DEFAULT_LANGUAGE = 'pt-BR'
 export const NAMESPACES = [
   'common',
   'auth',
-  'landing',
   'dashboard',
   'alerts',
   'products',
