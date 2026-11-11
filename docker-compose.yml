@@ -149,6 +149,20 @@ services:
       - redisdata:/data
     restart: unless-stopped
 
+  # ── Public pages (Next.js, Phase 3) ─────────────────────────────────────
+  site:
+    build:
+      context: ./web
+    container_name: site
+    ports:
+      - "3000:3000"
+    depends_on:
+      - web
+    environment:
+      # The server-side fetches go to the API inside the compose network.
+      - API_URL=http://web:8000
+    restart: unless-stopped
+
   # ── Frontend ─────────────────────────────────────────────────────────────
   frontend:
     build:
