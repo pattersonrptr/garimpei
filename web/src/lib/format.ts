@@ -6,11 +6,11 @@ export function formatPrice(value: number | null | undefined): string {
   return value == null ? "—" : BRL.format(value);
 }
 
-/** "agora há pouco", "há 3 h", "há 2 dias": how fresh a price is. */
+/** "há poucos minutos", "há 3 h", "há 2 dias": how fresh a price is. */
 export function updatedAgo(iso: string | null, now: Date = new Date()): string {
   if (!iso) return "ainda não verificado";
   const minutes = Math.floor((now.getTime() - new Date(iso).getTime()) / 60_000);
-  if (minutes < 60) return "agora há pouco";
+  if (minutes < 60) return "há poucos minutos";
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `há ${hours} h`;
   const days = Math.floor(hours / 24);
@@ -73,4 +73,22 @@ export function savingsPercent(
 /** "Livro" / "Livros" style counts in Portuguese. */
 export function plural(count: number, one: string, many: string): string {
   return `${count} ${count === 1 ? one : many}`;
+}
+
+/**
+ * A "see on Amazon" link: a search by ISBN, never a scraped price (Phase 2,
+ * decision 8). With an Associates tag it earns a commission from day one.
+ */
+export function amazonSearchUrl(isbn13: string, associateTag?: string): string {
+  const params = new URLSearchParams({ k: isbn13, i: "stripbooks" });
+  if (associateTag) params.set("tag", associateTag);
+  return `https://www.amazon.com.br/s?${params}`;
+}
+
+/** Offers in one condition: in stock first, cheapest first (as the API sends). */
+export function offersIn<T extends { condition: string }>(
+  offers: T[],
+  condition: string,
+): T[] {
+  return offers.filter((offer) => offer.condition === condition);
 }
