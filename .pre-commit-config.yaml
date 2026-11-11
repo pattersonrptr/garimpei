@@ -40,6 +40,8 @@ repos:
       - id: check-added-large-files
         args: ['--maxkb=1000']
       - id: check-json
+        # tsconfig files are JSONC (comments allowed); TypeScript checks them
+        exclude: (^|/)tsconfig[^/]*\.json$
       - id: check-toml
       - id: check-merge-conflict
       - id: debug-statements
