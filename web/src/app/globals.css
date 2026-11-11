@@ -543,6 +543,41 @@ img {
   color: #fff;
 }
 
+/* ── Account ───────────────────────────────────────────────────────────── */
+.header-links {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s4);
+}
+.header-links a {
+  color: var(--muted);
+}
+.account-facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--s2) var(--s4);
+  margin: var(--s5) 0 var(--s3);
+}
+.account-facts dt {
+  color: var(--muted);
+}
+.account-facts dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.account-section {
+  margin-top: var(--s6);
+  padding-top: var(--s5);
+  border-top: 1px solid var(--sand);
+}
+.account-section h2 {
+  font-size: 1.25rem;
+}
+.account-section .auth-form {
+  margin-top: var(--s4);
+}
+
 /* ── Book page ───────────────────────────────────────────────────────── */
 .book {
   padding-top: var(--s5);

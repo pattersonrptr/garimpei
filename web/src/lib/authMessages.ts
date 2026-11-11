@@ -39,3 +39,28 @@ export function signUpProblem(fields: SignUpFields): string | null {
   }
   return null;
 }
+
+export interface PasswordChangeFields {
+  current: string;
+  next: string;
+  confirm: string;
+}
+
+/** Checks done before calling the backend; null when the form is fine. */
+export function passwordChangeProblem(fields: PasswordChangeFields): string | null {
+  if (!fields.current || !fields.next || !fields.confirm) return "Preencha os três campos.";
+  if (fields.next.length < MIN_PASSWORD_LENGTH) {
+    return `A nova senha precisa de pelo menos ${MIN_PASSWORD_LENGTH} caracteres.`;
+  }
+  if (fields.next !== fields.confirm) return "A confirmação não bate com a nova senha.";
+  if (fields.next === fields.current) return "A nova senha precisa ser diferente da atual.";
+  return null;
+}
+
+export function passwordChangeMessage(error: ApiError): string {
+  if (error.code === "WRONG_PASSWORD") return "A senha atual não está certa.";
+  if (error.status === 422) {
+    return `A nova senha precisa de pelo menos ${MIN_PASSWORD_LENGTH} caracteres.`;
+  }
+  return "Não foi possível trocar a senha agora. Tente de novo em instantes.";
+}

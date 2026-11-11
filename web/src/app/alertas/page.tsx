@@ -119,11 +119,14 @@ export default async function MyAlertsPage({ searchParams }: Props) {
       <main className="container my-alerts">
         <div className="my-alerts-header">
           <h1>Meus alertas</h1>
-          <form action={signOutAction}>
-            <button className="link-button small" type="submit">
-              Sair ({session.claims.sub})
-            </button>
-          </form>
+          <div className="header-links small">
+            <Link href="/conta">Minha conta</Link>
+            <form action={signOutAction}>
+              <button className="link-button" type="submit">
+                Sair
+              </button>
+            </form>
+          </div>
         </div>
         {flash && (
           <p className="notice" role="status">
