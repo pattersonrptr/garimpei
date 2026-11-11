@@ -101,6 +101,25 @@ test.describe('Products page', () => {
 // ===========================================================================
 
 test.describe('Admin pages', () => {
+  test('the menu lists only back-office pages; old user pages go to the panel', async ({
+    authenticatedPage: page,
+  }) => {
+    const menu = page.locator('.MuiDrawer-root').first()
+    await expect(menu.locator('.MuiListItemButton-root')).toHaveCount(5)
+    await page.getByRole('button', { name: /toggle|menu|sidebar/i }).first().click()
+    for (const name of ['Admin Dashboard', 'Products', 'Users', 'Search Configs', 'Source Websites']) {
+      await expect(menu.getByText(name, { exact: true })).toBeVisible()
+    }
+    for (const gone of ['My Alerts', 'Plans', 'Dashboard']) {
+      await expect(menu.getByText(gone, { exact: true })).toHaveCount(0)
+    }
+    await page.screenshot({ path: 'test-results/admin-menu.png' })
+    for (const old of ['/alerts', '/plans', '/dashboard']) {
+      await page.goto(old)
+      await expect(page).toHaveURL(/\/admin$/)
+    }
+  })
+
   test('users page loads for admin', async ({ authenticatedPage: page }) => {
     await page.goto('/admin/users')
     await expect(page.getByRole('heading', { name: 'Users' })).toBeVisible()

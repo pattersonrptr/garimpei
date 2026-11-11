@@ -12,11 +12,7 @@
     "signOutCancel": "Stay"
   },
   "nav": {
-    "dashboard": "Dashboard",
-    "alerts": "My Alerts",
     "products": "Products",
-    "plans": "Plans",
-    "admin": "Admin",
     "adminDashboard": "Admin Dashboard",
     "users": "Users",
     "searchConfigs": "Search Configs",
