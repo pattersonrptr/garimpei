@@ -493,3 +493,8 @@ img {
   font-size: 0.8rem;
   opacity: 0.85;
 }
+
+.warn-me {
+  display: inline-block;
+  margin-top: var(--s3);
+}

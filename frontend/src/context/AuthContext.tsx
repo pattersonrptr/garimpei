@@ -19,6 +19,7 @@ import { useNavigate } from 'react-router-dom'
 import { useSnackbar } from 'notistack'
 import { useTranslation } from 'react-i18next'
 import { setOnSessionExpired, setOnTokenUpdated } from '@/api/client'
+import { safeNextPath } from '@/lib/nextPath'
 import { login as loginService, logout as logoutService } from '@/services/authService'
 import { logger } from '@/lib/logger'
 import type { JwtPayload } from '@/types/auth'
@@ -30,7 +31,8 @@ interface AuthContextValue {
   isSuperuser: boolean
   username: string | null
   userId: number | null
-  login: (username: string, password: string) => Promise<void>
+  /** Logs in, then goes to ``next`` (a safe in-app path) or home. */
+  login: (username: string, password: string, next?: string | null) => Promise<void>
   logout: () => void
 }
 
@@ -90,12 +92,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [handleSessionExpired, handleTokenUpdated])
 
   const login = useCallback(
-    async (username: string, password: string) => {
+    async (username: string, password: string, next?: string | null) => {
       const auth = await loginService(username, password)
       setToken(auth.accessToken)
       sessionExpiredRef.current = false
       enqueueSnackbar(t('session.loggedIn'), { variant: 'success' })
-      navigate('/')
+      navigate(safeNextPath(next) ?? '/')
     },
     [navigate, enqueueSnackbar, t],
   )

@@ -90,3 +90,39 @@ export function barPosition(verdict: Verdict): number | null {
   if (high <= low) return null;
   return Math.min(1, Math.max(0, (current - low) / (high - low)));
 }
+
+/**
+ * The price the "warn me" link suggests, in whole reais: the usual low
+ * (25th percentile) once there is a verdict, 10% under today's lowest while
+ * still learning. Null when there is nothing to base it on.
+ */
+export function suggestedAlertPrice(verdict: Verdict | undefined): number | null {
+  if (!verdict) return null;
+  const base =
+    isJudged(verdict) && verdict.p25 != null
+      ? verdict.p25
+      : verdict.current != null
+        ? verdict.current * 0.9
+        : null;
+  if (base == null) return null;
+  const price = Math.floor(base);
+  return price >= 1 ? price : null;
+}
+
+const LINK_CONDITION: Record<string, string> = { used: "usado", new: "novo" };
+
+/**
+ * The logged-in app's "new book alert" page (Phase 4d), or null when the app
+ * address is not configured. The app asks for a login and comes back here.
+ */
+export function alertHref(
+  appUrl: string | undefined,
+  isbn13: string,
+  condition: "new" | "used",
+  price: number | null,
+): string | null {
+  if (!appUrl) return null;
+  const params = new URLSearchParams({ isbn: isbn13, condicao: LINK_CONDITION[condition] });
+  if (price != null) params.set("preco", String(price));
+  return `${appUrl.replace(/\/+$/, "")}/alertas/novo?${params}`;
+}

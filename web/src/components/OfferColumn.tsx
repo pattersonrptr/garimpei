@@ -6,10 +6,13 @@ export function OfferColumn({
   title,
   offers,
   empty,
+  alertHref,
 }: {
   title: string;
   offers: Offer[];
   empty: string;
+  /** "Warn me" link to the logged-in app (Phase 4d); hidden when null. */
+  alertHref?: string | null;
 }) {
   return (
     <section className="offer-column">
@@ -42,6 +45,11 @@ export function OfferColumn({
             </li>
           ))}
         </ul>
+      )}
+      {alertHref && (
+        <a className="button secondary small warn-me" href={alertHref} rel="nofollow">
+          🔔 Me avise quando baixar
+        </a>
       )}
     </section>
   );

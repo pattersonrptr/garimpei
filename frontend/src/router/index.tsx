@@ -3,7 +3,7 @@
  * Uses React Router v6 with lazy-loaded pages for better performance.
  */
 
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router-dom'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { useAuth } from '@/context/AuthContext'
 import { AdminDashboardPage } from '@/pages/AdminDashboardPage'
@@ -11,6 +11,7 @@ import { AlertsPage } from '@/pages/AlertsPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { LandingPage } from '@/pages/LandingPage'
 import { LoginPage } from '@/pages/LoginPage'
+import { NewBookAlertPage } from '@/pages/NewBookAlertPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { PlansPage } from '@/pages/PlansPage'
 import { RegisterPage } from '@/pages/RegisterPage'
@@ -19,11 +20,25 @@ import { ProductsPage } from '@/pages/ProductsPage'
 import { SearchConfigsPage } from '@/pages/SearchConfigsPage'
 import { SourceWebsitesPage } from '@/pages/SourceWebsitesPage'
 import { UsersPage } from '@/pages/UsersPage'
+import { safeNextPath, withNext } from '@/lib/nextPath'
 
-/** Wraps protected routes — redirects to /login if not authenticated. */
+/**
+ * Wraps protected routes — redirects to /login if not authenticated, keeping
+ * the address in ?next= so login (or sign-up) comes back here.
+ */
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth()
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />
+  const location = useLocation()
+  if (isAuthenticated) return <>{children}</>
+  return <Navigate to={withNext('/login', location.pathname + location.search)} replace />
+}
+
+/** Login and sign-up: a logged-in visitor goes to ?next= or the dashboard. */
+function GuestOnly({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuth()
+  const [params] = useSearchParams()
+  if (!isAuthenticated) return <>{children}</>
+  return <Navigate to={safeNextPath(params.get('next')) ?? '/dashboard'} replace />
 }
 
 /** Wraps admin routes — redirects to /dashboard if not staff/superuser. */
@@ -55,21 +70,17 @@ export function AppRouter() {
       <Route
         path="/login"
         element={
-          isAuthenticated ? (
-            <Navigate to="/dashboard" replace />
-          ) : (
+          <GuestOnly>
             <LoginPage />
-          )
+          </GuestOnly>
         }
       />
       <Route
         path="/register"
         element={
-          isAuthenticated ? (
-            <Navigate to="/dashboard" replace />
-          ) : (
+          <GuestOnly>
             <RegisterPage />
-          )
+          </GuestOnly>
         }
       />
 
@@ -84,6 +95,7 @@ export function AppRouter() {
         {/* User pages */}
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/alerts" element={<AlertsPage />} />
+        <Route path="/alertas/novo" element={<NewBookAlertPage />} />
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/products/:id" element={<ProductDetailPage />} />
         <Route path="/plans" element={<PlansPage />} />

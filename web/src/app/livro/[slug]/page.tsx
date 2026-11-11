@@ -10,6 +10,7 @@ import { TopBar } from "@/components/TopBar";
 import { VerdictBlock } from "@/components/VerdictBlock";
 import { getBook, getDailyLows } from "@/lib/api";
 import { bookJsonLd } from "@/lib/seo";
+import { alertHref, suggestedAlertPrice } from "@/lib/verdict";
 import {
   amazonSearchUrl,
   bookPath,
@@ -52,6 +53,15 @@ export default async function BookPage({ params }: Props) {
   const lows = await getDailyLows(book.isbn13);
   const used = offersIn(book.offers, "used");
   const fresh = offersIn(book.offers, "new");
+  const verdictOf = (condition: "new" | "used") =>
+    book.verdicts.find((v) => v.condition === condition);
+  const warnMe = (condition: "new" | "used") =>
+    alertHref(
+      process.env.APP_URL,
+      book.isbn13,
+      condition,
+      suggestedAlertPrice(verdictOf(condition)),
+    );
   const details = [book.publisher, book.year, book.pageCount && `${book.pageCount} páginas`]
     .filter(Boolean)
     .join(" · ");
@@ -85,8 +95,18 @@ export default async function BookPage({ params }: Props) {
         <SavingsBlock lowestUsed={book.lowestUsed} lowestNew={book.lowestNew} />
 
         <div className="offer-columns">
-          <OfferColumn title="Usados" offers={used} empty="Nenhum usado à venda agora." />
-          <OfferColumn title="Novos" offers={fresh} empty="Nenhum novo à venda agora." />
+          <OfferColumn
+            title="Usados"
+            offers={used}
+            empty="Nenhum usado à venda agora."
+            alertHref={warnMe("used")}
+          />
+          <OfferColumn
+            title="Novos"
+            offers={fresh}
+            empty="Nenhum novo à venda agora."
+            alertHref={warnMe("new")}
+          />
         </div>
 
         <PriceChart lows={lows} />

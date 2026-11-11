@@ -68,5 +68,23 @@
     "frequency": "Your {{plan}} plan checks every {{count}} minutes at most.",
     "sources_one": "Your plan allows {{count}} site per alert.",
     "sources_other": "Your plan allows up to {{count}} sites per alert."
+  },
+  "book": {
+    "title": "Warn me when it drops",
+    "subtitle": "You get an e-mail when any store sells this book at your price or less.",
+    "condition": "Condition",
+    "conditions": {
+      "used": "Used",
+      "new": "New",
+      "any": "New or used"
+    },
+    "lowestNow": "Today from {{price}}",
+    "priceHelp": "Suggestion: a good price for this book. Change it as you like.",
+    "submit": "Create alert",
+    "created": "Alert created! We will e-mail you.",
+    "duplicate": "You already have an alert for this book in this condition.",
+    "seeAlerts": "See my alerts",
+    "notFound": "We could not find this book in the catalog.",
+    "chip": "Book · {{condition}}"
   }
 }

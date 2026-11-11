@@ -530,7 +530,20 @@ export function AlertsPage() {
       field: 'sourceWebsiteIds',
       headerName: t('columns.sources'),
       width: 180,
-      renderCell: ({ value }) => {
+      renderCell: ({ value, row }) => {
+        if (row.canonicalProductId != null) {
+          return (
+            <Chip
+              size="small"
+              color="primary"
+              variant="outlined"
+              label={t('book.chip', {
+                condition: t(`book.conditions.${row.condition ?? 'any'}`),
+              })}
+              sx={{ height: 22, fontSize: '0.75rem' }}
+            />
+          )
+        }
         const ids = value as number[]
         if (!ids?.length) return '—'
         return (

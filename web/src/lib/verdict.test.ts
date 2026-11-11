@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import type { Verdict } from "@/lib/types";
 import {
+  alertHref,
   barPosition,
   headlineVerdict,
   secondaryVerdict,
+  suggestedAlertPrice,
   verdictShort,
   verdictText,
 } from "@/lib/verdict";
@@ -94,5 +96,41 @@ describe("barPosition", () => {
   it("is null without a price or history", () => {
     expect(barPosition(verdict({ current: null }))).toBeNull();
     expect(barPosition(verdict({ low: null, high: null }))).toBeNull();
+  });
+});
+
+describe("suggestedAlertPrice", () => {
+  it("is the usual low once judged, in whole reais", () => {
+    expect(suggestedAlertPrice(verdict({ status: "normal", current: 40 }))).toBe(34);
+  });
+
+  it("is 10% under today's lowest while learning", () => {
+    expect(suggestedAlertPrice(verdict({ status: "learning", current: 23, p25: 23 }))).toBe(20);
+  });
+
+  it("is null with nothing to base it on", () => {
+    expect(suggestedAlertPrice(undefined)).toBeNull();
+    expect(
+      suggestedAlertPrice(verdict({ status: "no_offer", current: null, p25: null })),
+    ).toBeNull();
+    expect(suggestedAlertPrice(verdict({ status: "learning", current: 0.5 }))).toBeNull();
+  });
+});
+
+describe("alertHref", () => {
+  it("links to the app's new book alert page", () => {
+    expect(alertHref("http://localhost/", "9788535914849", "used", 20)).toBe(
+      "http://localhost/alertas/novo?isbn=9788535914849&condicao=usado&preco=20",
+    );
+  });
+
+  it("leaves the price out when there is none", () => {
+    expect(alertHref("https://app", "9788535914849", "new", null)).toBe(
+      "https://app/alertas/novo?isbn=9788535914849&condicao=novo",
+    );
+  });
+
+  it("is null without the app address", () => {
+    expect(alertHref(undefined, "9788535914849", "used", 20)).toBeNull();
   });
 });
