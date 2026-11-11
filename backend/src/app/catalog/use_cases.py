@@ -24,8 +24,15 @@ from src.app.catalog.ports import (
 )
 
 # An update never touches these: the id and creation time identify the product,
-# the current price comes from price history, and updated_at is set on save.
-_PROTECTED_PRODUCT_FIELDS = {"id", "created_at", "updated_at", "current_price"}
+# the current price and last check come from price history, and updated_at is
+# set on save.
+_PROTECTED_PRODUCT_FIELDS = {
+    "id",
+    "created_at",
+    "updated_at",
+    "current_price",
+    "last_checked_at",
+}
 
 
 class CreateProductUseCase:
@@ -422,10 +429,11 @@ class IngestOfferUseCase:
             )
             created = True
 
-        self.prices.create(
+        point = self.prices.create(
             PriceHistoryEntity(product_id=offer.id, price=offer_in.price)
         )
         offer.current_price = offer_in.price
+        offer.last_checked_at = point.created_at
         return IngestOfferResult(offer=offer, book=book, created=created)
 
 

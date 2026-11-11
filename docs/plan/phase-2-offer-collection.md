@@ -25,7 +25,7 @@ prices from at least 2 stores, new and used**, matched to books by ISBN, so
 | 2c | **Collector 1: Estante Virtual by ISBN** (done: `scrapers/src/collectors`, `python -m src.collectors.run`), new and used as separate offers | A seed book yields 1 new and/or used offers in the DB |
 | 2d | **Collector 2** (done: VTEX adapter for Livraria da Vila and Martins Fontes, `--store`) | Same, from a second store |
 | 2e | **Schedule** (done: `collect_daily_offers` task, `GET /offers/collection-queue`). A daily job runs the collectors over the catalog, stalest first | History grows by a point per offer per day without anyone clicking |
-| 2f | **Freshness.** Each offer records when it was last checked | The API can say "updated 3 h ago" |
+| 2f | **Freshness** (done: `last_checked_at` on offers). Each offer records when it was last checked | The API can say "updated 3 h ago" |
 
 2a first: it is the contract every collector depends on, and it has no scraping
 risk. Collectors only send plain DTOs; none writes to the database
@@ -140,6 +140,19 @@ question. The loader is idempotent and reports ISBNs it could not load.
   Docker Desktop when you sign in").
 - `python -m src.collectors.run` still works for a manual run; both entry
   points share `src/collectors/wiring.py`.
+
+## 2f notes
+
+- No new column: every check adds a price point (2a), so an offer's last
+  check **is** its latest price point, the same row `current_price` comes
+  from. The products resource now has `last_checked_at` next to
+  `current_price`.
+- Timestamps are stored as naive UTC. The API now returns `last_checked_at`,
+  price-history `created_at` and the collection queue's `last_checked_at`
+  with their zone (`...Z`), so a browser can say "updated 3 h ago". Before,
+  the Vite UI read price-history times as local time (3 h off).
+- An offer the store stopped listing keeps its old `last_checked_at`, which is
+  the honest answer ("updated 5 days ago").
 
 ## Decisions (Nov 2026)
 

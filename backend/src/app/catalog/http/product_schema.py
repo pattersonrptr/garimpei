@@ -29,6 +29,10 @@ class ProductAttributes(BaseModel):
     source_metadata: dict | None = None
     canonical_product_id: int | None = None
     current_price: float | None = None
+    last_checked_at: datetime | None = Field(
+        default=None,
+        description="When a collector last saw this offer (its latest price point)",
+    )
     created_at: datetime | None = None
     updated_at: datetime | None = None
 

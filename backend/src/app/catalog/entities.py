@@ -42,8 +42,11 @@ class Product:
     # The product this offer is for, once matched (see CanonicalProduct)
     canonical_product_id: int | None = None
 
-    # Current price (calculated from price_history)
+    # Current price and when it was seen: the latest price_history point.
+    # Every check of an offer adds a point, so this is also the last check
+    # ("updated 3 h ago").
     current_price: float | None = None
+    last_checked_at: datetime | None = None
 
     # Timestamps
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))

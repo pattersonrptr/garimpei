@@ -1,5 +1,7 @@
 """IngestOfferUseCase with in-memory doubles (no database, no network)."""
 
+from datetime import UTC, datetime
+
 import pytest
 
 from src.app.catalog.entities import BookMetadata, ProductCondition
@@ -19,6 +21,7 @@ from src.tests.unit.catalog.test_get_or_create_book import (
 
 ISBN13 = "9788535914849"
 URL = "https://www.estantevirtual.com.br/livro/1984-usado-123"
+CHECKED_AT = datetime(2026, 11, 10, 3, 0, tzinfo=UTC)
 
 
 class InMemoryOffers:
@@ -43,6 +46,7 @@ class InMemoryPrices:
         self.points = []
 
     def create(self, point):
+        point.created_at = CHECKED_AT  # the database's clock
         self.points.append(point)
         return point
 
@@ -89,6 +93,7 @@ def test_a_new_offer_is_created_linked_to_its_book(world):
     assert (offer.city, offer.state) == ("São Paulo", "SP")
     assert [(p.product_id, p.price) for p in prices.points] == [(offer.id, 28.5)]
     assert result.offer.current_price == 28.5
+    assert result.offer.last_checked_at == CHECKED_AT  # "updated X h ago"
 
 
 def test_the_same_url_updates_the_offer_and_adds_a_price_point(world):

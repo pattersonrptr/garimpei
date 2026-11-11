@@ -339,3 +339,67 @@ class TestProductRepositoryDelete:
         Then: Should return False
         """
         assert product_repository.delete(999) is False
+
+
+# ============================================================================
+# Freshness: the latest price point says when the offer was last checked
+# ============================================================================
+
+
+class TestProductRepositoryFreshness:
+    @pytest.fixture
+    def offer_with_points(self, test_db, product_repository, sample_product_entity):
+        from datetime import datetime
+
+        from src.app.catalog.persistence.models import (
+            PriceHistory as PriceHistoryModel,
+        )
+
+        offer = product_repository.create(sample_product_entity)
+        test_db.add_all(
+            [
+                PriceHistoryModel(
+                    product_id=offer.id, price=30, created_at=datetime(2026, 11, 9, 3)
+                ),
+                PriceHistoryModel(
+                    product_id=offer.id, price=28, created_at=datetime(2026, 11, 10, 3)
+                ),
+            ]
+        )
+        test_db.commit()
+        return offer
+
+    def assert_latest_point(self, product):
+        from datetime import UTC, datetime
+
+        assert product.current_price == 28
+        assert product.last_checked_at == datetime(2026, 11, 10, 3, tzinfo=UTC)
+
+    def test_get_by_id_and_url_carry_the_last_check_in_utc(
+        self, product_repository, offer_with_points
+    ):
+        self.assert_latest_point(product_repository.get_by_id(offer_with_points.id))
+        self.assert_latest_point(product_repository.get_by_url(offer_with_points.url))
+
+    def test_get_all_carries_the_last_check(
+        self, product_repository, offer_with_points
+    ):
+        (product,), _ = product_repository.get_all()
+
+        self.assert_latest_point(product)
+
+    def test_search_carries_the_last_check(
+        self, product_repository, offer_with_points, sample_source_website
+    ):
+        (product,), _ = product_repository.search_by_term_and_sources(
+            "iPhone", [sample_source_website.id]
+        )
+
+        self.assert_latest_point(product)
+
+    def test_an_offer_never_priced_has_no_last_check(
+        self, product_repository, sample_product_entity
+    ):
+        offer = product_repository.create(sample_product_entity)
+
+        assert product_repository.get_by_id(offer.id).last_checked_at is None

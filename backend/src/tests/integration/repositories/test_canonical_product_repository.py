@@ -4,7 +4,7 @@ Integration tests for CanonicalProductRepository and the offer link.
 Uses SQLite in-memory, like the other repository tests.
 """
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy import create_engine
@@ -195,7 +195,7 @@ class TestListByStaleness:
             "9780000000002",
         ]
         assert queue[0].last_checked_at is None
-        assert queue[1].last_checked_at == datetime(2026, 11, 7, 12, 0)
+        assert queue[1].last_checked_at == datetime(2026, 11, 7, 12, 0, tzinfo=UTC)
 
     def test_uses_the_latest_point_across_the_books_offers(self, db, stores):
         repo = CanonicalProductRepository(db)
@@ -205,4 +205,4 @@ class TestListByStaleness:
 
         (item,) = repo.list_by_staleness(IdentifierKind.ISBN13, self.STORE)
 
-        assert item.last_checked_at == datetime(2026, 11, 9, 12, 0)
+        assert item.last_checked_at == datetime(2026, 11, 9, 12, 0, tzinfo=UTC)
