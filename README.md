@@ -1,302 +1,200 @@
-# 🏴‍☠️ Garimpei — Opportunity Hunter
+# Garimpei
 
-> Development name: `product-tracker`
+> 🇧🇷 [Leia em português](README.pt-BR.md)
 
-A price monitoring and opportunity detection system for Brazilian marketplaces.
-It tracks product prices across OLX, Mercado Livre, Enjoei and Estante Virtual,
-keeps the price history, sends email alerts when a product drops below a target
-price, and provides a dashboard to manage alerts and spot opportunities.
+A price comparator for Brazil. When I want to buy something, especially a book,
+I have to open several stores, compare new and used, and guess whether today's
+price is good. Garimpei puts new and used offers side by side, keeps the price
+history, says whether the price is good right now, and e-mails me when it
+reaches the value I want. Books come first because the ISBN makes it easy to
+know two listings are the same product; the model is generic, so other
+categories fit later. Every change goes through tests, CI and an end-to-end run
+in the browser before I approve the merge. Next: the admin on the new site, and
+moving to AWS.
 
-![Garimpei dashboard: active alerts, recent opportunities below the target price, next scheduled checks](docs/screenshots/en-03-dashboard.png)
+**[How I work with AI on this project →](docs/working-with-ai.en.md)**
 
-| Service | Tech | Directory |
-|---|---|---|
-| **Backend** | FastAPI · SQLAlchemy · Alembic · PostgreSQL | [`backend/`](backend/README.md) |
-| **Scrapers** | Celery · Playwright · BeautifulSoup · Redis | [`scrapers/`](scrapers/README.md) |
-| **Frontend** | React 19 · Vite · MUI · TypeScript | [`frontend/`](frontend/README.md) |
+![Book page: used from R$ 17.46, 55% less than the cheapest new copy; new and used offers side by side, price history and an Amazon link](docs/screenshots/site-book-page-desktop.png)
 
----
-
-## The problem
-
-Good deals on second-hand and marketplace listings disappear fast, and checking
-several sites by hand every day doesn't scale. I started Garimpei for my own
-price research: I wanted one place that searches several marketplaces, remembers
-past prices so I can see how they change over time, and warns me when something
-shows up below the price I'm willing to pay.
-
-It was designed so it could grow into a service, similar to existing price
-aggregators, but today it is a personal project and has never been offered to the
-public. Adding a new marketplace means writing one new scraper; the rest of the
-system stays the same.
+<sub>Real data collected locally. The price verdict (good, normal, expensive right now) shows up
+after 14 days of history; this book had 3. [Mobile version](docs/screenshots/site-book-page-mobile.png).</sub>
 
 ---
 
-## Features
+## What it does
 
-- 🔎 **Multi-marketplace scraping**: OLX, Mercado Livre, Enjoei, Estante Virtual
-- 🎯 **Price alerts**: set a target price; get notified when a product shows up at or below it
-- 📬 **Email notifications**: via SendGrid (or any SMTP server; Mailpit locally), with rate limiting and dedup
-- ⏱️ **Scheduled and on-demand checks**: frequency per alert, plus a manual trigger
-- 📊 **Dashboard**: manage alerts, follow price history, see opportunities
-- 👤 **Admin dashboard**: user and system management
-- 💳 **Freemium model**: plans, subscriptions and usage limits
-- 🌐 **Bilingual UI**: Portuguese (default) and English, type-checked keys; a new language is one folder of JSON files ([how](frontend/src/i18n/README.md))
-- 🧪 **Tested**: 900+ backend and scraper tests, frontend unit tests and Playwright E2E, CI on GitHub Actions
-
----
-
-## How it works, in screenshots
-
-**1. Set what you're hunting and the most you'll pay.** Each alert has a
-keyword, a maximum price, the marketplaces to search and how often to check.
-
-![My Alerts: keyword, max price, sources, check frequency and actions](docs/screenshots/en-04-alerts.png)
-
-The form explains each field and shows the plan's limits before you hit them.
-
-![Create alert form: help under each field, the Free plan's minimum frequency and site limit](docs/screenshots/en-05-alert-form.png)
-
-**2. Scrapers run in the background.** Celery Beat schedules each alert; one
-search fans out into tasks per marketplace, then into batches of product pages.
-Only listings whose title contains the search term are kept.
-
-![Flower: run_scraper_search, then run_search per marketplace, then scrape_batch for each batch of listings](docs/screenshots/tool-flower-tasks.png)
-
-*Run now* starts a search on demand and shows its progress until it ends.
-
-![Run now in progress: "Checking 1 of 13 listings…" in the alert's row](docs/screenshots/en-09-run-now.png)
-
-![Run now finished: "Search finished: 13 listings checked, 7 match your term"](docs/screenshots/en-09b-run-finished.png)
-
-**3. When a product shows up below your price, you get an email**, once per
-listing and alert. Raising an alert's max price also checks the listings
-already collected.
-
-![Alert email: product, price found, savings against the alert, link to the listing](docs/screenshots/tool-mailpit-email.png)
-
-In the app, each listing says which of your alerts found it and how much you save.
-
-![Product page: "Your alerts" with the matching alert, R$ 7.00 below the max price](docs/screenshots/en-07-product-detail.png)
-
-**4. Every check feeds the price history**, so you can see if a deal is really
-a deal.
-
-![Price history chart of a book dropping from R$ 89,90 to R$ 69,90 over a week](docs/screenshots/en-07b-price-chart.png)
-
-<sub>The chart above uses sample prices: real collection had only started when
-it was taken.</sub>
-
-**5. Plans set the limits, and the backend enforces them.** A Free user who
-goes over a limit (a 4th alert, a check below 360 minutes, *Run now* too soon)
-is told which rule applies, not left with a silent failure.
-
-![Plans: Free, Pro and Business with their limits](docs/screenshots/en-08-plans.png)
-
-**6. Every endpoint follows JSON:API**, documented with OpenAPI.
-
-![Swagger UI listing the API endpoints](docs/screenshots/tool-swagger.png)
-
-![One endpoint in Swagger: ownership rule and a JSON:API response with type, id, attributes and relationships](docs/screenshots/tool-swagger-endpoint.png)
-
-The UI is also in Portuguese (the default); screenshots in
-[`docs/screenshots/`](docs/screenshots/). A short silent demo of the customer
-journey is in [`docs/demo/`](docs/demo/) (English and Portuguese).
-
-The app was tested the way a customer uses it; what was found and fixed is in
-the [exploratory test report](docs/qa/exploratory-report.md), and each finding
-has a Playwright user story in [`frontend/e2e/stories/`](frontend/e2e/stories/).
-
----
+- **Search** by title, author or ISBN, with no sign-in.
+- **Product page:** new and used offers side by side, how much less the used
+  copy costs, when each price was checked, and a 90-day price chart.
+- **Price verdict:** good price, normal price or expensive right now, comparing
+  today's lowest price with the last 90 days.
+- **Alerts:** "Me avise quando baixar" (warn me when it drops) creates an alert
+  on the product; an e-mail arrives when an offer reaches the target.
+- **User area:** sign up, sign in, "Meus alertas" (my alerts: pause, change
+  the price, delete, see what was sent) and the account page.
+- **Daily collection:** Estante Virtual (new and used), Livraria da Vila and
+  Martins Fontes, collected politely once a day. Amazon only through an
+  affiliate link, never scraped.
+- **Admin back office** for stores, users and collection runs.
 
 ## Architecture
 
-C4 container view: the parts that run separately and how they talk. All four C4 levels (context, containers, backend and scraper components) are in [`docs/architecture`](docs/architecture/README.md).
-
 ```mermaid
 flowchart TB
-    user["<b>User or administrator</b><br/>[Person]"]
+    user["<b>User</b><br/>[Person]"]
+    admin["<b>Administrator</b><br/>[Person]"]
 
     subgraph garimpei["Garimpei"]
-        flower["<b>Flower</b><br/>[Container: Flower]<br/>Monitors Celery tasks"]
-        frontend["<b>Frontend</b><br/>[Container: React 19, Vite, MUI, nginx]<br/>Web interface"]
-        beat["<b>Scheduler</b><br/>[Container: Celery Beat]<br/>Builds the schedule from active alerts"]
-        api["<b>Backend API</b><br/>[Container: FastAPI, SQLAlchemy]<br/>Owns the data and business rules:<br/>auth, alerts, plans, notifications"]
-        redis[("<b>Redis</b><br/>[Container: Redis]<br/>Task broker, task results<br/>and search locks")]
-        db[("<b>Database</b><br/>[Container: PostgreSQL 13]<br/>Users, alerts, products,<br/>price history, logs")]
-        worker["<b>Scraper workers</b><br/>[Container: Celery, Playwright]<br/>Search marketplaces and<br/>collect product data"]
+        site["<b>Site</b><br/>[Next.js, server-rendered]<br/>Search, product pages,<br/>alerts, account"]
+        backoffice["<b>Admin</b><br/>[React, Vite, MUI]<br/>Back office"]
+        api["<b>Backend API</b><br/>[FastAPI, SQLAlchemy]<br/>Catalog, offers, verdict,<br/>alerts, accounts"]
+        db[("<b>Database</b><br/>[PostgreSQL]")]
+        redis[("<b>Redis</b><br/>Task broker,<br/>collection state")]
+        beat["<b>Scheduler</b><br/>[Celery Beat]"]
+        worker["<b>Collectors</b><br/>[Celery]<br/>Fetch offers from stores"]
     end
 
-    sendgrid["<b>Email provider</b><br/>[External system]<br/>SendGrid or SMTP"]
-    markets["<b>Marketplaces</b><br/>[External system]"]
+    stores["<b>Stores</b><br/>[External]"]
+    brasilapi["<b>BrasilAPI</b><br/>[External]<br/>Book metadata"]
+    email["<b>E-mail</b><br/>[External]<br/>SMTP or SendGrid"]
 
-    user -.->|"Monitors tasks, HTTP"| flower
-    user -->|"Uses, HTTP"| frontend
-    flower -->|"Reads task events"| redis
-    frontend -->|"Calls, JSON:API over HTTP"| api
-    beat -->|"Reads active alerts, HTTP"| api
-    beat -->|"Queues scheduled runs"| redis
-    api -->|"Queues manual runs"| redis
-    api -->|"Reads and writes, SQL"| db
-    api -->|"Sends email"| sendgrid
+    user -->|"HTTPS"| site
+    admin -->|"HTTPS"| backoffice
+    site -->|"JSON:API, server side"| api
+    backoffice -->|"JSON:API"| api
+    api -->|"SQL"| db
+    api -->|"Looks up ISBNs"| brasilapi
+    api -->|"Sends alerts"| email
+    beat -->|"Daily collection"| redis
     redis -->|"Delivers tasks"| worker
-    worker -->|"Reads configs and saves<br/>products, HTTP"| api
-    worker -->|"Scrapes, Playwright"| markets
+    worker -->|"Reads prices, polite HTTP"| stores
+    worker -->|"Posts offers, JSON:API"| api
 
     classDef person fill:#0B3D73,stroke:#082C54,color:#fff
     classDef container fill:#1F6FBF,stroke:#17578F,color:#fff
     classDef store fill:#17578F,stroke:#0B3D73,color:#fff
     classDef external fill:#6B7280,stroke:#4B5563,color:#fff
-    class user person
-    class frontend,api,beat,worker,flower container
+    class user,admin person
+    class site,backoffice,api,beat,worker container
     class db,redis store
-    class markets,sendgrid external
+    class stores,brasilapi,email external
     style garimpei fill:#F3F7FB,stroke:#1F6FBF,stroke-dasharray:6 4,color:#0B3D73
 ```
 
-**Alert flow:** the user creates a price alert. The search is queued on Redis
-either by Celery Beat, on the alert's schedule, or by the backend itself when the
-user clicks "Run Now". A scraper worker picks up the task, collects the listings
-and sends them to the backend through its HTTP API; the backend compares each
-price with the active alerts, emails the user when a price is at or below the
-target, and the opportunity shows up on the dashboard.
+**The main flow:** once a day the scheduler queues a collection per store. A
+collector fetches each book's offers and posts them to the API; the API
+matches them to the book by ISBN, adds a point to the price history and
+checks the alerts on that book. The site renders the pages on the server,
+reading the same API.
 
-### Design decisions
+**Key decisions** (the reasons are in the [AI workflow doc](docs/working-with-ai.en.md#5-some-decisions-explained)
+and in the [plan](docs/plan/README.md)):
 
-- **Scrapers talk to the backend only through its API, with no shared database.**
-  The backend owns the data and the business rules (alerts, limits,
-  notifications). Scrapers just collect and send. Letting the workers write
-  straight to the database would be simpler at first, but it would tie every
-  scraper to the schema and spread the rules across services. This way scrapers
-  can be scaled, replaced or added without touching the data layer.
-- **Clean architecture in the backend.** Entities and use cases don't depend on
-  FastAPI, SQLAlchemy or SendGrid; those live at the edges (`infrastructure/`,
-  `interfaces/`). Email, for example, goes through an interface with a SendGrid
-  implementation, so changing the provider doesn't touch the alert logic.
-- **Gentle scraping instead of fighting the anti-bot.** Mercado Livre blocks
-  scrapers based on IP reputation. Investigating it showed the block is
-  temporary and triggered by request frequency, not volume. So the scraper slows
-  down: delays with jitter between pages, URL shuffling and a fresh browser
-  context every few requests. It was validated on 492 products with zero blocks.
-  Residential proxy support stays available as a fallback. Details in
-  [`scrapers/MERCADO_LIVRE_NOTES.md`](scrapers/MERCADO_LIVRE_NOTES.md).
-- **Notifications with rate limiting and dedup.** At most one email per alert
-  per hour (configurable), and the same product doesn't trigger the same alert
-  twice, so a busy search doesn't flood the user's inbox.
-- **JSON:API for every endpoint**, so the frontend handles all resources the
-  same way.
-
----
-
-## What this project taught me
-
-- Clean architecture in practice, while reading Uncle Bob's book: architectural
-  boundaries, pure entities, and seeing that SOLID applies to how services
-  relate to each other, not only to classes.
-- FastAPI from scratch. I had used Django and Flask before; this was the first
-  project I started from zero with FastAPI.
-- The front end, with React, Vite and TypeScript. I'm a backend engineer, but I
-  wanted to build the whole thing myself.
-
----
-
-## Next steps
-
-- [ ] Move it to AWS, using the project to practice AWS services
-- [ ] Load testing: many users and many scrapers running at the same time
-- [ ] Run Celery workers on separate machines
-- [ ] Social login (Google)
-- [ ] More notification channels and a better front end
-- [ ] More scrapers (Shopee, Amazon BR)
-
-Full roadmap in [`ROADMAP.md`](ROADMAP.md).
-
----
+- Collectors never touch the database: they send plain offers to the API,
+  which owns the data and the rules.
+- Clean Architecture, organized by domain (`catalog`, `alerts`, …): pure
+  entities, ports owned by the module that needs them.
+- Only collect from stores that allow it; plain HTTP first, a browser only
+  when the page needs JavaScript, long pauses, stop at the first block.
+- Public pages in Next.js, rendered on the server for SEO and speed; the
+  session lives in an `httpOnly` cookie.
+- Refactor in small steps, one module per PR, never all at once.
 
 ## Quick start
 
+Requires Docker with Compose.
+
 ```bash
-# Clone
 git clone https://github.com/pattersonrptr/garimpei.git
 cd garimpei
-
-# Copy env file and adjust as needed
 cp .env.example .env
-
-# Start everything
-make up
-
-# Or without Make:
-docker compose up --build
+docker compose up -d --build
 ```
 
-The services will be available at:
+The backend runs the migrations and loads development data on start. To fill
+the catalog with the seed books (metadata from BrasilAPI):
+
+```bash
+docker compose exec web python -m src.scripts.load_seed_books
+```
 
 | Service | URL |
 |---|---|
-| Backend API | http://localhost:8000 |
-| Frontend | http://localhost |
+| Site | http://localhost:3000 |
+| Admin | http://localhost |
+| API and Swagger docs | http://localhost:8000 · http://localhost:8000/docs |
+| Mailpit (local inbox) | http://localhost:8026 |
 | Flower (Celery monitor) | http://localhost:5555 |
-| Mailpit (local email inbox) | http://localhost:8026 |
-| API Docs (Swagger) | http://localhost:8000/docs |
 
----
+If port 5432 is already taken by a local PostgreSQL, copy
+`docker-compose.override.example.yml` to `docker-compose.override.yml` (not
+committed): it publishes the database on 5434.
 
 ## Development
 
-```bash
-# Run only infrastructure (db + redis)
-make infra
+Each folder has its own checks; they are the same ones CI runs.
 
-# Backend dev server (outside Docker)
-make backend-dev
+| Folder | Commands |
+|---|---|
+| `backend/` | `pytest src/tests` · `ruff check src` · `ruff format --check src` |
+| `scrapers/` | `poetry run pytest src/tests` · `poetry run ruff check src` |
+| `web/` | `npm test` · `npm run typecheck` · `npm run build` |
+| `frontend/` | `npm run lint` · `npm test` · `npx tsc -b` |
 
-# Frontend dev server (outside Docker)
-make frontend-dev
-
-# Run all tests
-make test
-
-# Run tests for a specific service
-make backend-test
-make scrapers-test
-make frontend-test
-
-# Lint
-make lint
-```
-
-See the [`Makefile`](Makefile) for all available commands.
-
----
+End-to-end tests (Playwright) run from `frontend/` against the local stack.
+The [`Makefile`](Makefile) has shortcuts for the older commands.
 
 ## Project structure
 
 ```
 garimpei/
-├── backend/          ← FastAPI application + database
-├── scrapers/         ← Celery workers + web scraping engines
-├── frontend/         ← React SPA
-├── docker-compose.yml
-├── Makefile
-├── .github/workflows/ci.yml
-└── ROADMAP.md        ← Product roadmap
+├── backend/     FastAPI API, domain modules under src/app/<module>/
+├── scrapers/    Celery collectors that post offers to the API
+├── web/         Public site (Next.js): everything a user does
+├── frontend/    Admin back office (Vite + React + MUI) and the E2E tests
+├── docs/
+│   ├── plan/          The plan and one file per phase, with decisions
+│   ├── architecture/  Architecture decisions
+│   └── working-with-ai.en.md
+├── AGENTS.md    Working agreement for AI coding agents
+└── docker-compose.yml
 ```
 
----
+## What this project taught me
 
-## Status and usage
+- **Clean Architecture in practice.** I read Uncle Bob's book while writing
+  the first version, and the repositories, use cases and presenters were there
+  before any AI. Now the code is moving to modules named after the domain, and
+  I see that the rules apply between modules and services, not only to classes.
+- **FastAPI from scratch.** I had used Django and Flask; this was the first
+  project I started from zero with FastAPI.
+- **Building the whole thing.** I am a backend engineer, but I wanted to do the
+  front end too: first React with Vite, now Next.js with server rendering.
+- **Working with AI without losing control.** I decide the product and the
+  architecture; the AI proposes and implements, and tests, CI, hooks and my
+  review catch its mistakes. That is in its own [document](docs/working-with-ai.en.md).
 
-Active personal project, still evolving (already functional). Built for personal
-use and as a portfolio project. Scraping targets public marketplace listings;
-respect each platform's Terms of Service before any non-personal use.
+## Next steps
 
----
+The full plan is in [`docs/plan/README.md`](docs/plan/README.md).
+
+- [ ] Run the E2E tests in CI
+- [ ] Move the admin to Next.js and retire the Vite app
+- [ ] Password reset and a welcome e-mail
+- [ ] Move to AWS, within a cost limit
+- [ ] More stores, through affiliate feeds and APIs where they exist
+
+## Status
+
+A personal project, working locally, with no production deployment and no
+commercial launch planned yet. Collection targets public store pages, slowly
+and only where the terms allow it.
 
 ## License
 
 [GNU Affero General Public License v3.0](LICENSE) (AGPL-3.0-only).
 
-You may use, study, modify and share this code, but if you run a modified version as a
-network service, you must make its complete source code available under the same license.
-For commercial licensing under different terms, contact the author.
+You may use, study, modify and share this code, but if you run a modified
+version as a network service, you must make its complete source code available
+under the same license. For commercial licensing under different terms, contact
+the author.
