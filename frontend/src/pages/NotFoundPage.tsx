@@ -42,7 +42,7 @@ export function NotFoundPage() {
       <Button
         variant="contained"
         component={RouterLink}
-        to={isAuthenticated ? '/dashboard' : '/'}
+        to="/"
       >
         {isAuthenticated ? t('notFound.dashboard') : t('notFound.home')}
       </Button>

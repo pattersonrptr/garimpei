@@ -70,21 +70,11 @@
     "sources_other": "Seu plano permite até {{count}} sites por alerta."
   },
   "book": {
-    "title": "Me avise quando baixar",
-    "subtitle": "Você recebe um e-mail quando alguma loja vender este livro pelo seu preço ou menos.",
-    "condition": "Condição",
     "conditions": {
       "used": "Usado",
       "new": "Novo",
       "any": "Novo ou usado"
     },
-    "lowestNow": "Hoje a partir de {{price}}",
-    "priceHelp": "Sugestão: um preço bom para este livro. Ajuste como quiser.",
-    "submit": "Criar alerta",
-    "created": "Alerta criado! Vamos avisar por e-mail.",
-    "duplicate": "Você já tem um alerta para este livro nesta condição.",
-    "seeAlerts": "Ver meus alertas",
-    "notFound": "Não encontramos este livro no catálogo.",
     "chip": "Livro · {{condition}}"
   }
 }

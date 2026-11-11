@@ -3,7 +3,6 @@
  * Handles user registration (public) and user management (staff/superuser).
  */
 
-import axios from 'axios'
 import { apiClient } from '@/api/client'
 import { ENDPOINTS } from '@/api/endpoints'
 import { unwrapCollection, unwrapSingle, wrapPayload } from '@/api/jsonapi'
@@ -47,52 +46,6 @@ export interface UserUpdatePayload {
   isActive?: boolean
   isStaff?: boolean
   isSuperuser?: boolean
-}
-
-/**
- * Create a user (superuser only).
- */
-export async function createUser(payload: UserCreatePayload): Promise<User> {
-  logger.info('Creating user', { username: payload.username })
-
-  const body = wrapPayload('users', {
-    username: payload.username,
-    email: payload.email,
-    password: payload.password,
-    is_active: true,
-    is_staff: false,
-    is_superuser: false,
-  })
-
-  const response = await apiClient.post(ENDPOINTS.users.list, body)
-  const raw = unwrapSingle<RawUserAttributes>(response.data)
-  logger.info('User created', { username: payload.username })
-  return toUser(raw)
-}
-
-/**
- * Public registration — no auth required.
- * Returns the created user (without password).
- */
-export async function register(payload: UserCreatePayload): Promise<User> {
-  logger.info('Registering new user', { username: payload.username })
-
-  const body = wrapPayload('users', {
-    username: payload.username,
-    email: payload.email,
-    password: payload.password,
-    is_active: true,
-    is_staff: false,
-    is_superuser: false,
-  })
-
-  const response = await axios.post(ENDPOINTS.auth.register, body, {
-    headers: { 'Content-Type': 'application/vnd.api+json' },
-  })
-
-  const raw = unwrapSingle<RawUserAttributes>(response.data)
-  logger.info('Registration successful', { username: payload.username })
-  return toUser(raw)
 }
 
 /** List users (staff or superuser only). */

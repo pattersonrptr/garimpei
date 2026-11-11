@@ -1,9 +1,8 @@
 /**
- * Where to go after login or sign-up.
+ * Where to go after an administrator logs in.
  *
- * The public book pages (Next.js) send visitors to /alertas/novo?isbn=…;
- * when they are not logged in, the app keeps that address in `?next=` and
- * returns there afterwards. Only paths inside this app are accepted, so a
+ * A back-office address opened while logged out is kept in `?next=` and
+ * reopened after login. Only paths inside this app are accepted, so a
  * crafted link cannot send someone to another site after they log in.
  */
 

@@ -11,7 +11,6 @@ import type alerts from './locales/pt-BR/alerts.json'
 import type auth from './locales/pt-BR/auth.json'
 import type common from './locales/pt-BR/common.json'
 import type dashboard from './locales/pt-BR/dashboard.json'
-import type landing from './locales/pt-BR/landing.json'
 import type plans from './locales/pt-BR/plans.json'
 import type products from './locales/pt-BR/products.json'
 
@@ -24,7 +23,6 @@ declare module 'i18next' {
       auth: typeof auth
       common: typeof common
       dashboard: typeof dashboard
-      landing: typeof landing
       plans: typeof plans
       products: typeof products
     }
