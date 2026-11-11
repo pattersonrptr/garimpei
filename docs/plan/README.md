@@ -20,7 +20,7 @@ The existing alert system **stays**. It becomes the retention feature
 | Change or addition | **Addition.** Comparator is the way in; alerts keep users coming back |
 | First category | **Books** (ISBN makes matching nearly trivial). Generic model so other categories fit later |
 | New or used | **Both.** The new price is the anchor; the used offers are the differentiator ("used from R$ 38, 57% less") |
-| Audience | Everyone, designed for the **general reader** first |
+| Audience | Everyone. **Books are only the first category**: a general comparator later, so names and screens stay generic (product, not book; user, not reader) |
 | Features by priority | 1. Price verdict · 2. Shopping list · 3. ISBN barcode scan · 4. Wishlist import (Skoob/Goodreads) |
 | Platform | **Mobile-first web**, installable as a PWA |
 | Accounts | **Public** search and book pages; login only for alerts and lists |
@@ -35,7 +35,9 @@ The existing alert system **stays**. It becomes the retention feature
 - **~5 h/week**, with AI doing most of the coding, and a **token budget**
   shared with other work: phases are small, sessions are short, and this file
   is the shared memory between sessions.
-- **No deadline. Launch when it is usable.** Anything that makes the MVP
+- **No deadline. Launch when it is usable.** First goal: functional for the
+  author, built so other users can use it. Selling it comes only when it is
+  ready (decided Nov 11, 2026). Anything that makes the MVP
   bigger must be flagged. If a phase grows past ~4 weeks of work, split it.
 - **Sequence, not parallel.** Data first, screens later: the price verdict
   needs history, and history needs time, so collection starts before the UI.
@@ -47,7 +49,7 @@ The existing alert system **stays**. It becomes the retention feature
 
 Shopping list (needs shipping cost per store, which is hard to get), ISBN scan,
 wishlist import, categories other than books, push/WhatsApp notifications,
-mobile app, migrating the logged-in area.
+mobile app. (Migrating the logged-in area is Phase 5, right after the MVP.)
 
 ## 4. Architecture rules
 
@@ -112,9 +114,10 @@ Each phase ends with something usable or observable.
 | — | **Refactor remaining modules** | `alerts`, `accounts`, `billing`… moved one by one, between other phases | Old layer folders are gone |
 | 2 | **Offer collection** (done) | Most viable sources feeding offers (new + used), matched to books by ISBN, on a schedule | A seed list of books gets daily prices from at least 2 stores, new and used. **History starts accumulating** |
 | 3 | **Public pages (Next.js)** (done, see `phase-3-public-pages.md`) | Search, book page with offers side by side, price chart, affiliate links | A visitor finds a book and goes to a store without logging in; pages render on the server |
-| 4 | **Verdict + alerts** | "Good price / wait" verdict; "warn me" button creates an alert on the book | **MVP ready to launch** |
+| 4 | **Verdict + alerts** (done, see `phase-4-verdict-alerts.md`) | "Good price / wait" verdict; "warn me" button creates an alert on the book | **MVP usable** |
 | A | **AWS track** (study, runs alongside) | Design how the stack runs on AWS (e.g. Celery broker on SQS, maybe SNS, managed Postgres, scheduled container tasks) and move pieces over in small, cost-capped steps | Planned in its own session before any resource is created; every step has a teardown |
-| 5+ | **After launch** | Logged-in area moves to Next.js (Vite retired), shopping list, ISBN scan, wishlist import, more categories | Prioritized from user feedback |
+| 5 | **User area in Next.js** (next; plan in plan mode) | Sign in / sign up, "My alerts" (today's price vs target with a link to the product page, the verdict, notification history; pause, change price, delete), account. The Vite app becomes **admin-only** (non-admins are sent to the Next.js area; no "create user" in admin). Keyword alerts leave the user's screens (backend keeps them); Dashboard and Products leave the user's view | A user never sees the Vite app; everything a user does has the Garimpei look |
+| 6+ | **Later** | Plans and billing screens, shopping list, ISBN scan, wishlist import, more categories (a keyword may come back as a way to match offers to a product without a code, never as an alert type) | Prioritized when Phase 5 is done |
 
 Phases 1 and 2 have no visible UI. That is deliberate: history has to start
 accumulating before there is anything to show.
@@ -159,7 +162,7 @@ Each one becomes a short decision record when it is made.
 - [x] Module list and folder layout: one module per domain, `catalog` first (decided Nov 2026; record in `docs/architecture/screaming-layout.md` on branch `refactor/screaming-layout`)
 - [x] How `catalog` relates to today's `Product`: `Product` stays as the offer (renamed later); a nullable `canonical_product_id` links it to a `CanonicalProduct` (decided Nov 2026, see `docs/architecture/catalog-model.md`)
 - [ ] Source of the new-book price anchor (Phase 2)
-- [ ] Verdict rule: window, thresholds, minimum history (Phase 4)
+- [x] Verdict rule: 90 days, outliers out (Tukey), 14 days minimum, good <= P25, high >= P75 (decided Nov 2026, see [phase-4-verdict-alerts.md](phase-4-verdict-alerts.md))
 - [x] Where daily collection runs: the author's Windows PC (Docker Desktop, in the background, resource-capped) until the AWS track is ready (decided Nov 2026). The VPS is not a target; it belongs to another project
 - [ ] AWS design (track A): broker (SQS?), notifications (SNS?), database, scheduling, cost guardrails. Note: an AWS Budget alerts, it does not stop charges
 - [ ] Hosting for Next.js (Phase 3; AWS track)

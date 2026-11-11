@@ -1,6 +1,6 @@
-# Phase 4: price verdict and book alerts (plan)
+# Phase 4: price verdict and book alerts
 
-Draft, Nov 2026. Goal from the main plan: **a "good price / wait" verdict and
+**Done Nov 11, 2026** (#85-#88). Planned the same day. Goal from the main plan: **a "good price / wait" verdict and
 a "warn me" button that creates an alert on the book. MVP ready to launch.**
 
 ## What exists
@@ -21,7 +21,7 @@ a "warn me" button that creates an alert on the book. MVP ready to launch.**
 | 4b | **Verdict on the book page** (done, #86).  Badge and 90-day range bar at the top, server-rendered | A visitor sees whether to buy now, with no client JavaScript |
 | 4c | **Book alerts** (done, #87). `PriceAlert` targets a book and a condition; ingesting an offer evaluates that book's alerts | An offer under an alert's price sends the e-mail |
 | 4d | **"Warn me"** (done). Button on the book page opens the logged-in app with book, condition and suggested price filled in | A visitor creates a book alert in two steps after login |
-| 4e | **Close.** Main plan updated; launch checklist listed | Phase 4 marked done |
+| 4e | **Close** (done). Main plan updated; Phase 5 defined | Phase 4 marked done |
 
 ## Decisions (Nov 11, 2026)
 
@@ -76,3 +76,26 @@ a "warn me" button that creates an alert on the book. MVP ready to launch.**
 
 - Notifications are deduplicated per alert and offer (as today): if the same
   offer drops further, no second e-mail.
+
+## After 4d: what changed for Phase 5 (Nov 11, 2026)
+
+Trying "warn me" in the browser showed the jump into the old Vite app (other
+look, screens made for keyword alerts). Decided with the author:
+
+- Phase 5 starts with the **user area in Next.js**: sign in / sign up, "My
+  alerts", account. "My alerts" shows today's price against the target
+  (link to the product page), the verdict badge and the notification history.
+- The Vite app becomes **admin-only**. Dashboard and Products leave the
+  user's view; admin keeps users (no "create user"), stores, search configs,
+  scraper status and Flower.
+- **Keyword alerts leave the user's screens.** Every alert targets a
+  product. For categories without a code, a keyword may come back as a way
+  to match offers to a product, not as a kind of alert.
+- Books are the first category, not the product: names and screens stay
+  generic.
+- No commercial launch yet: the goal is a Garimpei that works for the author
+  and could work for other users.
+
+Open checklist before other people use it (not scheduled): hosting (AWS
+track), affiliate links on offers, password reset, the e-mail sender on a
+real domain, rate limiting on the public API.
