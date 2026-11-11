@@ -18,8 +18,8 @@ a "warn me" button that creates an alert on the book. MVP ready to launch.**
 | # | Slice | Done when |
 |---|---|---|
 | 4a | **Verdict in the catalog** (done, #85).  Pure rule (`catalog/verdict.py`), `JudgeBookPricesUseCase`, `verdicts` on `GET /books/{isbn}` | The book API says good / normal / high / learning per condition |
-| 4b | **Verdict on the book page** (done).  Badge and 90-day range bar at the top, server-rendered | A visitor sees whether to buy now, with no client JavaScript |
-| 4c | **Book alerts.** `PriceAlert` targets a book and a condition; ingesting an offer evaluates that book's alerts | An offer under an alert's price sends the e-mail |
+| 4b | **Verdict on the book page** (done, #86).  Badge and 90-day range bar at the top, server-rendered | A visitor sees whether to buy now, with no client JavaScript |
+| 4c | **Book alerts** (done). `PriceAlert` targets a book and a condition; ingesting an offer evaluates that book's alerts | An offer under an alert's price sends the e-mail |
 | 4d | **"Warn me".** Button on the book page opens the logged-in app with book, condition and suggested price filled in | A visitor creates a book alert in two steps after login |
 | 4e | **Close.** Main plan updated; launch checklist listed | Phase 4 marked done |
 
@@ -41,6 +41,22 @@ a "warn me" button that creates an alert on the book. MVP ready to launch.**
 3. **A book alert is book + condition (new, used or any) + max price**, any
    store. The suggested price is the 25th percentile when there is history.
 4. The verdict is part of `GET /books/{isbn}` so the page makes one request.
+5. **Book alerts never get a SearchConfig.** A SearchConfig makes the old
+   keyword scrapers search its term; a book alert must not send them looking
+   for the book's title. The book's offers come from the collectors.
+6. **A book alert is checked when an offer for the book comes in** (`POST
+   /offers`, right after ingestion; a failure there is logged and never
+   loses the price point) and when the alert is created or changed. Its
+   frequency is always a day (books are collected daily), so the plan's
+   frequency limit never blocks it.
+7. **Wiring:** `offer_controller` (the composition root for ingestion) calls
+   the alerts use case, as `product_controller` already does for keyword
+   alerts. The planned `OfferIngestedListener` port was left out: one caller,
+   no second implementation in sight.
+8. Creating a book alert: `POST /price-alerts/` with `isbn` (10 or 13) and
+   `condition` instead of `search_term`. 404 `BOOK_NOT_FOUND` when the book
+   is not in the catalog; 409 `DUPLICATE_BOOK_ALERT` for a second alert on
+   the same book and condition.
 
 ## Expected
 

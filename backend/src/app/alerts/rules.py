@@ -1,4 +1,5 @@
 from src.app.alerts.ports import (
+    BookFinder,
     PriceAlertRepositoryInterface,
 )
 from src.app.interfaces.repositories.source_website_repository import (
@@ -14,9 +15,11 @@ class PriceAlertValidator:
         self,
         price_alert_repo: PriceAlertRepositoryInterface,
         source_website_repo: SourceWebsiteRepositoryInterface,
+        book_finder: BookFinder | None = None,
     ):
         self.price_alert_repo = price_alert_repo
         self.source_website_repo = source_website_repo
+        self.book_finder = book_finder
 
     def validate_create_request(self, price_alert_in) -> list[JsonApiError]:
         """
@@ -39,8 +42,19 @@ class PriceAlertValidator:
 
         attrs = price_alert_in.data.attributes
 
-        # Validation 2: search_term required and non-empty
-        if not attrs.search_term or not attrs.search_term.strip():
+        # Validation 2: a keyword (search_term) or a book (isbn), not both
+        if attrs.isbn is not None:
+            if attrs.search_term:
+                errors.append(
+                    JsonApiError(
+                        status="422",
+                        code="INVALID_FIELD",
+                        title="Validation error",
+                        detail="Send either 'search_term' or 'isbn', not both",
+                        source={"pointer": "/data/attributes/isbn"},
+                    )
+                )
+        elif not attrs.search_term or not attrs.search_term.strip():
             errors.append(
                 JsonApiError(
                     status="422",
@@ -108,6 +122,9 @@ class PriceAlertValidator:
         if errors:
             return errors
 
+        if attrs.isbn is not None:
+            return self._validate_book_alert(attrs)
+
         # Validation 7: search_term must be unique per user_id
         existing = self.price_alert_repo.get_by_search_term_and_user_id(
             attrs.search_term, attrs.user_id
@@ -124,6 +141,34 @@ class PriceAlertValidator:
             )
 
         return errors
+
+    def _validate_book_alert(self, attrs) -> list[JsonApiError]:
+        """The book must be in the catalog; one alert per user, book and condition."""
+        book = self.book_finder.find_by_isbn(attrs.isbn) if self.book_finder else None
+        if book is None:
+            return [
+                JsonApiError(
+                    status="404",
+                    code="BOOK_NOT_FOUND",
+                    title="Related resource not found",
+                    detail=f"No book with ISBN '{attrs.isbn}' in the catalog",
+                    source={"pointer": "/data/attributes/isbn"},
+                )
+            ]
+        existing = self.price_alert_repo.get_by_book_and_user_id(
+            book.id, attrs.user_id, attrs.condition or "any"
+        )
+        if existing:
+            return [
+                JsonApiError(
+                    status="409",
+                    code="DUPLICATE_BOOK_ALERT",
+                    title="Conflict",
+                    detail="This user already has an alert on this book and condition",
+                    source={"pointer": "/data/attributes/isbn"},
+                )
+            ]
+        return []
 
     def validate_update_request(
         self, price_alert_id: int, price_alert_in

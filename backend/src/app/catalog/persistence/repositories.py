@@ -223,6 +223,10 @@ class ProductRepository(ProductRepositoryInterface):
             conditions.append(
                 ProductModel.source_website_id == filters.source_website_id
             )
+        if filters.canonical_product_id is not None:
+            conditions.append(
+                ProductModel.canonical_product_id == filters.canonical_product_id
+            )
         if (
             filters.matching_user_id is not None
             or filters.matching_alert_id is not None

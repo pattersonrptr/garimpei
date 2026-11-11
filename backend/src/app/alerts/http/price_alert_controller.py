@@ -12,6 +12,7 @@ from src.app.alerts.http.price_alert_schema import (
     PriceAlertsCollectionResponse,
     PriceAlertUpdateRequest,
 )
+from src.app.alerts.persistence.book_finder import CatalogBookFinder
 from src.app.alerts.persistence.repositories import (
     NotificationLogRepository,
     PriceAlertRepository,
@@ -59,6 +60,8 @@ from src.common.jsonapi import JsonApiError, JsonApiErrorResponse
 from src.config.logging_config import get_logger
 
 router = APIRouter(tags=["price_alerts"], prefix="/price-alerts")
+
+BOOK_ALERT_FREQUENCY = 1440  # minutes
 
 logger = get_logger(__name__)
 
@@ -115,9 +118,12 @@ def get_price_alert_validator(
     source_website_repo: SourceWebsiteRepository = Depends(
         get_source_website_repository
     ),
+    db=Depends(get_db),
 ) -> PriceAlertValidator:
     """Dependency injection for PriceAlertValidator."""
-    return PriceAlertValidator(price_alert_repo, source_website_repo)
+    return PriceAlertValidator(
+        price_alert_repo, source_website_repo, CatalogBookFinder(db)
+    )
 
 
 @router.post("/", response_model=PriceAlertReadResponse, status_code=201)
@@ -148,7 +154,8 @@ def create_price_alert(
         - 422: Invalid field values
     """
     logger.info(
-        f"Creating new price alert: '{price_alert_in.data.attributes.search_term}'",
+        "Creating new price alert: "
+        f"'{price_alert_in.data.attributes.search_term or price_alert_in.data.attributes.isbn}'",
         extra={"action": "create_price_alert", "user_id": current_user.id},
     )
 
@@ -170,7 +177,10 @@ def create_price_alert(
     if alert_limit_err:
         return PriceAlertPresenter.handle_validation_errors([alert_limit_err])
 
-    freq_err = check_frequency_limit(attrs.frequency_minutes, plan_limits)
+    # A book alert is checked whenever an offer for the book comes in, and
+    # books are collected once a day: its frequency is always a day.
+    frequency_minutes = BOOK_ALERT_FREQUENCY if attrs.isbn else attrs.frequency_minutes
+    freq_err = check_frequency_limit(frequency_minutes, plan_limits)
     if freq_err:
         return PriceAlertPresenter.handle_validation_errors([freq_err])
 
@@ -178,11 +188,14 @@ def create_price_alert(
     if source_err:
         return PriceAlertPresenter.handle_validation_errors([source_err])
 
+    book = CatalogBookFinder(db).find_by_isbn(attrs.isbn) if attrs.isbn else None
     price_alert_entity = PriceAlertEntity(
-        search_term=attrs.search_term,
+        search_term=book.title[:255] if book else attrs.search_term,
+        canonical_product_id=book.id if book else None,
+        condition=(attrs.condition or "any") if book else None,
         max_price=attrs.max_price,
         is_active=attrs.is_active,
-        frequency_minutes=attrs.frequency_minutes,
+        frequency_minutes=frequency_minutes,
         # Regular users always own the alerts they create; staff may create
         # alerts on behalf of another user.
         user_id=attrs.user_id
@@ -494,6 +507,10 @@ def update_price_alert(
         source_website_ids=attrs.source_website_ids
         if attrs.source_website_ids is not None
         else existing.source_website_ids,
+        canonical_product_id=existing.canonical_product_id,
+        condition=attrs.condition
+        if existing.is_book_alert and attrs.condition is not None
+        else existing.condition,
     )
 
     if not is_staff_or_superuser(current_user):

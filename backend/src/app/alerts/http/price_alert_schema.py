@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -22,14 +23,22 @@ class PriceAlertAttributes(BaseModel):
     user_id: int | None = None
     search_config_id: int | None = None
     source_website_ids: list[int] = Field(default_factory=list)
+    canonical_product_id: int | None = None
+    condition: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
 
 class PriceAlertAttributesForCreation(BaseModel):
-    """Attributes for price alert creation."""
+    """Attributes for price alert creation.
 
-    search_term: str
+    A keyword alert sends ``search_term``; a book alert sends ``isbn`` (and
+    ``condition``, default "any") instead, and watches every store.
+    """
+
+    search_term: str | None = None
+    isbn: str | None = None
+    condition: Literal["new", "used", "any"] | None = None
     max_price: float
     user_id: int
     is_active: bool = True
@@ -45,6 +54,7 @@ class PriceAlertAttributesForUpdate(BaseModel):
     is_active: bool | None = None
     frequency_minutes: int | None = None
     source_website_ids: list[int] | None = None
+    condition: Literal["new", "used", "any"] | None = None  # book alerts only
 
 
 class PriceAlertResource(ResourceObject):

@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 
+from src.app.alerts.entities import BookRef
 from src.app.alerts.entities import NotificationLog as NotificationLogEntity
 from src.app.alerts.entities import PriceAlert as PriceAlertEntity
 
@@ -28,6 +29,18 @@ class PriceAlertRepositoryInterface(ABC):
         self, search_term: str, user_id: int
     ) -> PriceAlertEntity | None:
         """Return a price alert matching term + user (for uniqueness check)."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_by_book_and_user_id(
+        self, canonical_product_id: int, user_id: int, condition: str
+    ) -> PriceAlertEntity | None:
+        """A user's non-deleted alert on a book and condition (uniqueness check)."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_active_by_book(self, canonical_product_id: int) -> list[PriceAlertEntity]:
+        """Every active, non-deleted alert on a book."""
         raise NotImplementedError
 
     @abstractmethod
@@ -92,6 +105,15 @@ class PriceAlertRepositoryInterface(ABC):
         Returns:
             List of matching PriceAlert entities.
         """
+        raise NotImplementedError
+
+
+class BookFinder(ABC):
+    """Finds the book a book alert is created for (implemented over the catalog)."""
+
+    @abstractmethod
+    def find_by_isbn(self, isbn: str) -> BookRef | None:
+        """The catalog's book for an ISBN-10 or ISBN-13; None when unknown or invalid."""
         raise NotImplementedError
 
 
