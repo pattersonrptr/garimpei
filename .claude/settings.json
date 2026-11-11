@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr list:*)",
+      "Bash(docker compose ps:*)",
+      "Bash(docker compose logs:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run test:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(.venv/Scripts/python -m pytest:*)",
+      "Bash(backend/.venv/Scripts/python -m pytest:*)",
+      "Bash(.venv/Scripts/ruff:*)",
+      "Bash(backend/.venv/Scripts/ruff:*)",
+      "Bash(poetry run pytest:*)",
+      "Bash(poetry run ruff:*)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(docker compose down:*)",
+      "Bash(docker compose exec web alembic:*)",
+      "Bash(alembic upgrade:*)",
+      "Bash(alembic downgrade:*)"
+    ],
+    "deny": [
+      "Edit(/.env)",
+      "Write(/.env)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_files.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/ruff_on_edit.py\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
