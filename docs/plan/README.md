@@ -116,7 +116,7 @@ Each phase ends with something usable or observable.
 | 3 | **Public pages (Next.js)** (done, see `phase-3-public-pages.md`) | Search, book page with offers side by side, price chart, affiliate links | A visitor finds a book and goes to a store without logging in; pages render on the server |
 | 4 | **Verdict + alerts** (done, see `phase-4-verdict-alerts.md`) | "Good price / wait" verdict; "warn me" button creates an alert on the book | **MVP usable** |
 | A | **AWS track** (study, runs alongside) | Design how the stack runs on AWS (e.g. Celery broker on SQS, maybe SNS, managed Postgres, scheduled container tasks) and move pieces over in small, cost-capped steps | Planned in its own session before any resource is created; every step has a teardown |
-| 5 | **User area in Next.js** (next; plan in plan mode) | Sign in / sign up, "My alerts" (today's price vs target with a link to the product page, the verdict, notification history; pause, change price, delete), account. The Vite app becomes **admin-only** (non-admins are sent to the Next.js area; no "create user" in admin). Keyword alerts leave the user's screens (backend keeps them); Dashboard and Products leave the user's view | A user never sees the Vite app; everything a user does has the Garimpei look |
+| 5 | **User area in Next.js** (done, see `phase-5-user-area.md`) | Sign in / sign up, "My alerts" (today's price vs target with a link to the product page, the verdict, notification history; pause, change price, delete), account. The Vite app becomes **admin-only** (non-admins are sent to the Next.js area; no "create user" in admin). Keyword alerts leave the user's screens (backend keeps them); Dashboard and Products leave the user's view | A user never sees the Vite app; everything a user does has the Garimpei look |
 | 6+ | **Later** | Plans and billing screens, shopping list, ISBN scan, wishlist import, more categories (a keyword may come back as a way to match offers to a product without a code, never as an alert type) | Prioritized when Phase 5 is done |
 
 Phases 1 and 2 have no visible UI. That is deliberate: history has to start
@@ -150,7 +150,7 @@ Associados, Shopee, Awin.
 | No source for the new price (anchor) | Phase 2 spike: Amazon terms, Magalu, publisher list price from metadata. A very slow, human-paced Amazon scraper is technically plausible (same approach as the ML scraper), but the risk is contractual: scraping while being an Associate may cost the affiliate account. Weigh both |
 | Refactor stalls feature work | One module per small PR, behavior unchanged, interleaved with phases; never a big-bang rewrite |
 | Scope creep with 5 h/week | Section 3 guardrails; flag anything that grows the MVP |
-| Two front-ends for a while | Phase 5 has a fixed end: Vite is retired |
+| Two front-ends for a while | Settled in Phase 5: users only see Next.js; Vite stays as the admin back office (its value is reviewed later) |
 
 ## 9. Open decisions
 

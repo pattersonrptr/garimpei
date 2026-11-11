@@ -1,6 +1,6 @@
-# Phase 5: user area in Next.js (plan)
+# Phase 5: user area in Next.js (done)
 
-Draft, Nov 11, 2026. Goal from the main plan: **a user never sees the Vite
+Planned and delivered Nov 11, 2026 (#90–#94, closed in 5f). Goal from the main plan: **a user never sees the Vite
 app; everything a user does has the Garimpei look.** The Vite app becomes the
 admin back office.
 
@@ -20,7 +20,7 @@ general comparator, so names and screens stay generic (product, user).
 | 5c | **"Warn me" and "My alerts" in Next.js** (done). `/alertas/novo`, `/alertas` (price vs target, verdict, notices; pause, change price, delete) | A user creates and manages alerts without the Vite app |
 | 5d | **Account** (done). `/conta`: username and e-mail, change password, sign out | A user changes their password and signs in with the new one |
 | 5e | **Vite admin-only** (done). Non-admins are sent to the site; register, landing and the user screens leave Vite; no "create user" in admin | A non-admin never lands in Vite |
-| 5f | **Close.** Plan updated; propose refreshing the READMEs (root has old screenshots and diagrams), a doc on how the project is built with Claude Code (decisions, corrections, guardrails, with links to PRs), and a Claude Code setup slice (`CLAUDE.md` in the repo, hooks, permissions) | The proposals are agreed with the author |
+| 5f | **Close** (done). Plan updated; propose refreshing the READMEs (root has old screenshots and diagrams), a doc on how the project is built with Claude Code (decisions, corrections, guardrails, with links to PRs), and a Claude Code setup slice (`CLAUDE.md` in the repo, hooks, permissions) | The proposals are agreed with the author |
 
 ## Decisions (Nov 11, 2026)
 
@@ -69,3 +69,21 @@ general comparator, so names and screens stay generic (product, user).
     Dashboard and Products leave the menu but stay reachable for admins.
     The Playwright customer stories (keyword alerts in Vite) were retired;
     the "warn me" story now runs on the site.
+
+## Outcome (5f)
+
+- A user signs up, signs in (e-mail or username), creates alerts from the
+  product page and manages them, changes the password and signs out, all on
+  the Garimpei site. The Vite app only lets administrators in.
+- Admin back office: its pages (panel, users, searches, source sites,
+  keyword alerts, plans) came from the old app as they were. **Open:** the
+  author questions what several of them are for; review the back office
+  before adding to it (a later slice, not Phase 5).
+- Proposed for after this phase, waiting for the author's OK:
+  1. refresh the READMEs (root: screenshots and diagrams; `backend/`,
+     `frontend/`, `scrapers/`, `web/`, `docs/architecture/`,
+     `frontend/src/i18n/`);
+  2. a doc on how the project is built with Claude Code (decisions,
+     corrections, guardrails, where the AI erred and what caught it, with
+     links to plans and PRs);
+  3. a Claude Code setup slice: `CLAUDE.md` in the repo, hooks, permissions.
