@@ -104,6 +104,17 @@ img {
 .topbar .search {
   flex: 1 1 260px;
 }
+.topbar-link {
+  font-weight: 700;
+  white-space: nowrap;
+  margin-left: auto;
+}
+@media (max-width: 600px) {
+  .topbar .search {
+    order: 3;
+    flex-basis: 100%;
+  }
+}
 
 /* ── Search form ─────────────────────────────────────────────────────── */
 .search {
@@ -272,6 +283,49 @@ img {
 .button.secondary:hover {
   background: var(--ink);
   color: var(--gold);
+}
+
+/* ── Sign in / sign up ───────────────────────────────────────────────── */
+.auth {
+  max-width: 440px;
+  padding-top: var(--s6);
+  padding-bottom: var(--s6);
+}
+.auth h1 {
+  margin-bottom: var(--s2);
+}
+.auth-form {
+  display: grid;
+  gap: var(--s4);
+  margin-top: var(--s5);
+}
+.auth-form label {
+  display: grid;
+  gap: var(--s1);
+  font-weight: 600;
+}
+.auth-form label .small {
+  font-weight: 400;
+}
+.auth-form input {
+  font: inherit;
+  padding: var(--s3) var(--s4);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--ink);
+}
+.auth-form input:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+.auth-form .button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+.form-error {
+  color: var(--bad);
+  font-weight: 600;
 }
 
 /* ── Book page ───────────────────────────────────────────────────────── */

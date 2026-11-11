@@ -16,6 +16,10 @@ export function TopBar({
           Garimpei
         </Link>
         {withSearch && <SearchForm defaultValue={query} />}
+        {/* Fixed link: reading the session here would make every page dynamic. */}
+        <Link href="/alertas" className="topbar-link">
+          Meus alertas
+        </Link>
       </div>
     </header>
   );

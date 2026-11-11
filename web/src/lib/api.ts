@@ -10,7 +10,7 @@ import type {
 } from "@/lib/types";
 
 /** The backend, as the Next.js server reaches it (never the browser). */
-const API_URL = process.env.API_URL ?? "http://localhost:8000";
+export const API_URL = process.env.API_URL ?? "http://localhost:8000";
 
 /** Prices change once a day; a few minutes of cache costs nothing. */
 const REVALIDATE_SECONDS = 300;

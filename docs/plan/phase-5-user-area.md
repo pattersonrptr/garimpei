@@ -15,8 +15,8 @@ general comparator, so names and screens stay generic (product, user).
 
 | # | Slice | Done when |
 |---|---|---|
-| 5a | **Backend: account and "my alerts".** Login by e-mail or username, `GET /auth/me`, `PUT /auth/password`, `GET /me/alerts` | The API gives a user their account and their product alerts with today's price, the verdict and the e-mails sent |
-| 5b | **Next.js session.** `/entrar`, `/cadastro`, sign out, token in an httpOnly cookie, renewed in `proxy.ts` | A user signs up, signs in and out on the Garimpei site |
+| 5a | **Backend: account and "my alerts"** (done, #90). Login by e-mail or username, `GET /auth/me`, `PUT /auth/password`, `GET /me/alerts` | The API gives a user their account and their product alerts with today's price, the verdict and the e-mails sent |
+| 5b | **Next.js session** (done). `/entrar`, `/cadastro`, sign out, token in an httpOnly cookie, renewed in `proxy.ts` | A user signs up, signs in and out on the Garimpei site |
 | 5c | **"Warn me" and "My alerts" in Next.js.** `/alertas/novo`, `/alertas` (price vs target, verdict, notices; pause, change price, delete) | A user creates and manages alerts without the Vite app |
 | 5d | **Account.** `/conta`: username and e-mail, change password, sign out | |
 | 5e | **Vite admin-only.** Non-admins are sent to the site; register, landing and the user screens leave Vite; no "create user" in admin | A non-admin never lands in Vite |
