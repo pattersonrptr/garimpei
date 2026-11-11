@@ -1,9 +1,13 @@
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field, fields
+from datetime import UTC, datetime, timedelta
 
 from src.app.catalog.entities import (
+    BookDetail,
     BookMetadata,
+    BookSummary,
     CanonicalProduct,
+    DailyLow,
     IdentifierKind,
     ProductCategory,
     ProductCondition,
@@ -15,6 +19,7 @@ from src.app.catalog.entities import Product as ProductEntity
 from src.app.catalog.isbn import InvalidIsbnError, normalize_isbn
 from src.app.catalog.matching import IsbnMatcher
 from src.app.catalog.ports import (
+    BookCatalogReader,
     BookMetadataGateway,
     BookMetadataUnavailableError,
     CanonicalProductRepositoryInterface,
@@ -481,3 +486,88 @@ class LoadSeedBooksUseCase:
                 report.failed.append((isbn13, f"metadata source unavailable: {exc}"))
             self.pause()
         return report
+
+
+# ── Public pages (read model) ─────────────────────────────────────────────────
+
+MAX_PAGE_SIZE = 50
+MIN_SEARCH_TERM = 2
+MAX_HISTORY_DAYS = 365
+
+
+@dataclass(frozen=True)
+class BookSearchResult:
+    books: list[BookSummary]
+    total: int
+
+
+class SearchBooksUseCase:
+    """Find books by title, author or ISBN.
+
+    A valid ISBN (10 or 13 digits, with or without hyphens) is an exact lookup;
+    anything else searches titles and authors. A term shorter than two
+    characters finds nothing, rather than listing the whole catalog.
+    """
+
+    def __init__(self, books: BookCatalogReader):
+        self.books = books
+
+    def execute(self, term: str, limit: int = 20, offset: int = 0) -> BookSearchResult:
+        term = (term or "").strip()
+        limit = max(1, min(limit, MAX_PAGE_SIZE))
+        offset = max(0, offset)
+        try:
+            isbn13 = normalize_isbn(term)
+        except InvalidIsbnError:
+            isbn13 = None
+        if isbn13:
+            book = self.books.get_book(isbn13)
+            found = [book.summary()] if book and offset == 0 else []
+            return BookSearchResult(found, 1 if book else 0)
+        if len(term) < MIN_SEARCH_TERM:
+            return BookSearchResult([], 0)
+        books, total = self.books.search(term, limit, offset)
+        return BookSearchResult(books, total)
+
+
+class GetBookUseCase:
+    """A book page by ISBN (10 or 13 digits; the page's address uses the ISBN-13)."""
+
+    def __init__(self, books: BookCatalogReader):
+        self.books = books
+
+    def execute(self, isbn: str) -> BookDetail:
+        """
+        Raises:
+            InvalidIsbnError: not a valid ISBN
+            BookNotFoundError: the catalog has no such book
+        """
+        isbn13 = normalize_isbn(isbn)
+        book = self.books.get_book(isbn13)
+        if book is None:
+            raise BookNotFoundError(isbn13)
+        return book
+
+
+class GetDailyLowsUseCase:
+    """A book's lowest price per day and condition over the last ``days``."""
+
+    def __init__(
+        self,
+        books: BookCatalogReader,
+        now: Callable[[], datetime] = lambda: datetime.now(UTC),
+    ):
+        self.books = books
+        self.now = now
+
+    def execute(self, isbn: str, days: int = 90) -> list[DailyLow]:
+        """
+        Raises:
+            InvalidIsbnError: not a valid ISBN
+            BookNotFoundError: the catalog has no such book
+        """
+        isbn13 = normalize_isbn(isbn)
+        if self.books.get_book(isbn13) is None:
+            raise BookNotFoundError(isbn13)
+        days = max(1, min(days, MAX_HISTORY_DAYS))
+        return self.books.daily_lows(isbn13, self.now() - timedelta(days=days))

@@ -1,5 +1,5 @@
 from dataclasses import asdict
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta, timezone
 
 from sqlalchemy import and_, asc, desc, exists, func
 from sqlalchemy.exc import IntegrityError
@@ -14,13 +14,17 @@ from src.app.alerts.persistence.models import (
 from src.app.alerts.persistence.models import (
     price_alert_source_website,
 )
-from src.app.catalog.entities import CanonicalProduct as CanonicalProductEntity
 from src.app.catalog.entities import (
+    BookDetail,
+    BookSummary,
+    DailyLow,
     IdentifierKind,
     ProductCondition,
     ProductListFilters,
+    PublicOffer,
     QueuedProduct,
 )
+from src.app.catalog.entities import CanonicalProduct as CanonicalProductEntity
 from src.app.catalog.entities import PriceHistory as PriceHistoryEntity
 from src.app.catalog.entities import Product as ProductEntity
 from src.app.catalog.entities import ProductIdentifier as ProductIdentifierEntity
@@ -35,12 +39,16 @@ from src.app.catalog.persistence.models import (
     ProductIdentifier as ProductIdentifierModel,
 )
 from src.app.catalog.ports import (
+    BookCatalogReader,
     CanonicalProductRepositoryInterface,
     CollectionQueueRepositoryInterface,
     PriceHistoryRepositoryInterface,
     ProductRepositoryInterface,
 )
-from src.app.infrastructure.database.text_match import title_contains
+from src.app.infrastructure.database.models.source_website_model import (
+    SourceWebsite as SourceWebsiteModel,
+)
+from src.app.infrastructure.database.text_match import fold_text, title_contains
 
 
 def _as_utc(moment: datetime | None) -> datetime | None:
@@ -49,6 +57,36 @@ def _as_utc(moment: datetime | None) -> datetime | None:
     if moment is None or moment.tzinfo is not None:
         return moment
     return moment.replace(tzinfo=UTC)
+
+
+def _search_text(title: str, attributes: dict) -> str:
+    """What the public search matches: title and authors, folded."""
+    return fold_text(" ".join([title, *attributes.get("authors", [])]))
+
+
+def _latest_price_subquery(db: Session):
+    """product_id, price, created_at of each product's latest price point."""
+    latest = (
+        db.query(
+            PriceHistoryModel.product_id,
+            func.max(PriceHistoryModel.id).label("max_id"),
+        )
+        .group_by(PriceHistoryModel.product_id)
+        .subquery()
+    )
+    return (
+        db.query(
+            PriceHistoryModel.product_id,
+            PriceHistoryModel.price,
+            PriceHistoryModel.created_at,
+        )
+        .join(
+            latest,
+            (PriceHistoryModel.product_id == latest.c.product_id)
+            & (PriceHistoryModel.id == latest.c.max_id),
+        )
+        .subquery()
+    )
 
 
 def _persisted_fields(product: ProductEntity) -> dict:
@@ -90,28 +128,7 @@ class ProductRepository(ProductRepositoryInterface):
         return entity
 
     def _latest_price_subquery(self):
-        """product_id, price, created_at of each product's latest price point."""
-        latest = (
-            self.db.query(
-                PriceHistoryModel.product_id,
-                func.max(PriceHistoryModel.id).label("max_id"),
-            )
-            .group_by(PriceHistoryModel.product_id)
-            .subquery()
-        )
-        return (
-            self.db.query(
-                PriceHistoryModel.product_id,
-                PriceHistoryModel.price,
-                PriceHistoryModel.created_at,
-            )
-            .join(
-                latest,
-                (PriceHistoryModel.product_id == latest.c.product_id)
-                & (PriceHistoryModel.id == latest.c.max_id),
-            )
-            .subquery()
-        )
+        return _latest_price_subquery(self.db)
 
     def _rows_to_entities(self, rows) -> list[ProductEntity]:
         entities = []
@@ -456,6 +473,7 @@ class CanonicalProductRepository(
             category=product.category.value,
             title=product.title,
             attributes=product.attributes,
+            search_text=_search_text(product.title, product.attributes),
             identifiers=[
                 ProductIdentifierModel(kind=i.kind.value, value=i.value)
                 for i in product.identifiers
@@ -526,4 +544,136 @@ class CanonicalProductRepository(
             ],
             created_at=row.created_at,
             updated_at=row.updated_at,
+        )
+
+
+# Brazil has had no daylight saving since 2019; a fixed offset is exact.
+_BRAZIL = timezone(timedelta(hours=-3))
+
+
+class BookCatalogRepository(BookCatalogReader):
+    """SQLAlchemy read model for the public pages."""
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def search(
+        self, term: str, limit: int, offset: int
+    ) -> tuple[list[BookSummary], int]:
+        in_stock = exists().where(
+            ProductModel.canonical_product_id == CanonicalProductModel.id,
+            ProductModel.is_available.is_(True),
+        )
+        query = self.db.query(CanonicalProductModel).filter(
+            CanonicalProductModel.search_text.contains(fold_text(term), autoescape=True)
+        )
+        total = query.count()
+        rows = (
+            query.order_by(
+                desc(in_stock), CanonicalProductModel.title, CanonicalProductModel.id
+            )
+            .limit(limit)
+            .offset(offset)
+            .all()
+        )
+        offers = self._offers_by_book([row.id for row in rows])
+        return [
+            self._detail(row, offers.get(row.id, [])).summary() for row in rows
+        ], total
+
+    def get_book(self, isbn13: str) -> BookDetail | None:
+        row = self._by_isbn(isbn13)
+        if row is None:
+            return None
+        return self._detail(row, self._offers_by_book([row.id]).get(row.id, []))
+
+    def daily_lows(self, isbn13: str, since: datetime) -> list[DailyLow]:
+        row = self._by_isbn(isbn13)
+        if row is None:
+            return []
+        since_utc = since.astimezone(UTC).replace(tzinfo=None)  # stored naive UTC
+        points = (
+            self.db.query(
+                PriceHistoryModel.created_at,
+                ProductModel.condition,
+                PriceHistoryModel.price,
+            )
+            .join(ProductModel, ProductModel.id == PriceHistoryModel.product_id)
+            .filter(
+                ProductModel.canonical_product_id == row.id,
+                PriceHistoryModel.created_at >= since_utc,
+            )
+            .all()
+        )
+        lows: dict[tuple, float] = {}
+        for created_at, condition, price in points:
+            day = _as_utc(created_at).astimezone(_BRAZIL).date()
+            key = (day, ProductCondition(condition))
+            lows[key] = min(float(price), lows.get(key, float("inf")))
+        return [
+            DailyLow(day=day, condition=condition, price=price)
+            for (day, condition), price in sorted(
+                lows.items(), key=lambda item: (item[0][0], item[0][1].value)
+            )
+        ]
+
+    def _by_isbn(self, isbn13: str) -> CanonicalProductModel | None:
+        return (
+            self.db.query(CanonicalProductModel)
+            .join(ProductIdentifierModel)
+            .filter(
+                ProductIdentifierModel.kind == IdentifierKind.ISBN13.value,
+                ProductIdentifierModel.value == isbn13,
+            )
+            .first()
+        )
+
+    def _offers_by_book(self, book_ids: list[int]) -> dict[int, list[PublicOffer]]:
+        if not book_ids:
+            return {}
+        latest = _latest_price_subquery(self.db)
+        rows = (
+            self.db.query(
+                ProductModel,
+                SourceWebsiteModel.name,
+                latest.c.price,
+                latest.c.created_at,
+            )
+            .join(
+                SourceWebsiteModel,
+                SourceWebsiteModel.id == ProductModel.source_website_id,
+            )
+            .outerjoin(latest, latest.c.product_id == ProductModel.id)
+            .filter(ProductModel.canonical_product_id.in_(book_ids))
+            .all()
+        )
+        offers: dict[int, list[PublicOffer]] = {}
+        for product, store, price, checked_at in rows:
+            offers.setdefault(product.canonical_product_id, []).append(
+                PublicOffer(
+                    store=store,
+                    url=product.url,
+                    condition=ProductCondition(product.condition),
+                    price=float(price) if price is not None else None,
+                    is_available=product.is_available,
+                    last_checked_at=_as_utc(checked_at),
+                )
+            )
+        for book_offers in offers.values():
+            # In stock first, then cheapest; offers with no price last.
+            book_offers.sort(
+                key=lambda o: (not o.is_available, o.price is None, o.price or 0)
+            )
+        return offers
+
+    @staticmethod
+    def _detail(row: CanonicalProductModel, offers: list[PublicOffer]) -> BookDetail:
+        isbn13 = next(
+            i.value for i in row.identifiers if i.kind == IdentifierKind.ISBN13.value
+        )
+        return BookDetail(
+            isbn13=isbn13,
+            title=row.title,
+            attributes=dict(row.attributes or {}),
+            offers=tuple(offers),
         )

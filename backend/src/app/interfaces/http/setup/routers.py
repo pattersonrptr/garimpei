@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from src.app.interfaces.http.controllers import (
     admin_controller,
     auth_controller,
+    book_controller,
     dashboard_controller,
     notification_log_controller,
     offer_controller,
@@ -29,6 +30,7 @@ def setup_routers(app: FastAPI) -> None:
     - /users: User management endpoints (CRUD operations)
     - /products: Product tracking endpoints (CRUD operations)
     - /offers: Offer ingestion by ISBN for collectors
+    - /books: Public book pages (search, offers, daily lows), no login
     - /source-websites: Source website management endpoints (CRUD operations)
     - /price-histories: Price history tracking endpoints
     - /price-alerts: Price alert management endpoints (CRUD + notify)
@@ -47,6 +49,7 @@ def setup_routers(app: FastAPI) -> None:
     app.include_router(user_controller)
     app.include_router(product_controller)
     app.include_router(offer_controller)
+    app.include_router(book_controller)
     app.include_router(source_website_controller)
     app.include_router(price_history_controller)
     app.include_router(price_alert_controller)

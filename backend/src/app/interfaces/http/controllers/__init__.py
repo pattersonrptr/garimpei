@@ -8,6 +8,9 @@ from src.app.alerts.http.notification_log_controller import (
 from src.app.alerts.http.price_alert_controller import (
     router as price_alert_controller,
 )
+from src.app.catalog.http.book_controller import (
+    router as book_controller,
+)
 from src.app.catalog.http.offer_controller import (
     router as offer_controller,
 )
@@ -49,6 +52,7 @@ __all__ = [
     "user_controller",
     "auth_controller",
     "dashboard_controller",
+    "book_controller",
     "offer_controller",
     "product_controller",
     "source_website_controller",

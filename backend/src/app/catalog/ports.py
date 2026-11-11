@@ -1,8 +1,12 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
 
 from src.app.catalog.entities import (
+    BookDetail,
     BookMetadata,
+    BookSummary,
     CanonicalProduct,
+    DailyLow,
     IdentifierKind,
     ProductListFilters,
     QueuedProduct,
@@ -234,4 +238,28 @@ class CollectionQueueRepositoryInterface(ABC):
         """Every product with an identifier of this kind, the ones whose latest
         price point at this store is oldest first; products the store never
         priced come before all others."""
+        raise NotImplementedError
+
+
+class BookCatalogReader(ABC):
+    """What the public pages read: books with their matched offers. Only offers
+    linked to a book are public; keyword-alert listings never show."""
+
+    @abstractmethod
+    def search(
+        self, term: str, limit: int, offset: int
+    ) -> tuple[list[BookSummary], int]:
+        """Books whose title or authors contain ``term`` (case and accents
+        ignored), books with offers in stock first, then by title; and the total."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_book(self, isbn13: str) -> BookDetail | None:
+        """The book with this ISBN-13 and all its offers, cheapest first."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def daily_lows(self, isbn13: str, since: datetime) -> list[DailyLow]:
+        """The book's lowest price per day and condition from ``since`` on,
+        oldest day first (days in Brazil's time zone)."""
         raise NotImplementedError
