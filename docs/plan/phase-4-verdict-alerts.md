@@ -17,8 +17,8 @@ a "warn me" button that creates an alert on the book. MVP ready to launch.**
 
 | # | Slice | Done when |
 |---|---|---|
-| 4a | **Verdict in the catalog.** Pure rule (`catalog/verdict.py`), `JudgeBookPricesUseCase`, `verdicts` on `GET /books/{isbn}` | The book API says good / normal / high / learning per condition |
-| 4b | **Verdict on the book page.** Badge and 90-day range bar at the top, server-rendered | A visitor sees whether to buy now, with no client JavaScript |
+| 4a | **Verdict in the catalog** (done, #85).  Pure rule (`catalog/verdict.py`), `JudgeBookPricesUseCase`, `verdicts` on `GET /books/{isbn}` | The book API says good / normal / high / learning per condition |
+| 4b | **Verdict on the book page** (done).  Badge and 90-day range bar at the top, server-rendered | A visitor sees whether to buy now, with no client JavaScript |
 | 4c | **Book alerts.** `PriceAlert` targets a book and a condition; ingesting an offer evaluates that book's alerts | An offer under an alert's price sends the e-mail |
 | 4d | **"Warn me".** Button on the book page opens the logged-in app with book, condition and suggested price filled in | A visitor creates a book alert in two steps after login |
 | 4e | **Close.** Main plan updated; launch checklist listed | Phase 4 marked done |

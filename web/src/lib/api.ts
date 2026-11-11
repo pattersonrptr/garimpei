@@ -6,6 +6,7 @@ import type {
   DailyLow,
   Offer,
   SearchResult,
+  Verdict,
 } from "@/lib/types";
 
 /** The backend, as the Next.js server reaches it (never the browser). */
@@ -53,6 +54,21 @@ function toOffer(raw: Json): Offer {
   };
 }
 
+const num = (value: unknown): number | null => (value as number | null) ?? null;
+
+function toVerdict(raw: Json): Verdict {
+  return {
+    condition: raw.condition as Verdict["condition"],
+    status: raw.status as Verdict["status"],
+    current: num(raw.current),
+    days: (raw.days as number) ?? 0,
+    low: num(raw.low),
+    high: num(raw.high),
+    p25: num(raw.p25),
+    p75: num(raw.p75),
+  };
+}
+
 export async function searchBooks(query: string, page = 1): Promise<SearchResult> {
   const params = new URLSearchParams({
     q: query,
@@ -79,6 +95,7 @@ export async function getBook(isbn: string): Promise<BookDetail | null> {
     pageCount: (attributes.page_count as number | null) ?? null,
     synopsis: (attributes.synopsis as string | null) ?? null,
     offers: ((attributes.offers as Json[]) ?? []).map(toOffer),
+    verdicts: ((attributes.verdicts as Json[]) ?? []).map(toVerdict),
   };
 }
 

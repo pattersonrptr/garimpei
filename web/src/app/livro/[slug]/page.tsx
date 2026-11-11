@@ -7,6 +7,7 @@ import { OfferColumn } from "@/components/OfferColumn";
 import { PriceChart } from "@/components/PriceChart";
 import { SavingsBlock } from "@/components/SavingsBlock";
 import { TopBar } from "@/components/TopBar";
+import { VerdictBlock } from "@/components/VerdictBlock";
 import { getBook, getDailyLows } from "@/lib/api";
 import { bookJsonLd } from "@/lib/seo";
 import {
@@ -78,6 +79,8 @@ export default async function BookPage({ params }: Props) {
             </p>
           </div>
         </header>
+
+        <VerdictBlock verdicts={book.verdicts} />
 
         <SavingsBlock lowestUsed={book.lowestUsed} lowestNew={book.lowestNew} />
 

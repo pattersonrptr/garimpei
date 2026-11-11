@@ -21,6 +21,7 @@ const BOOK: BookDetail = {
     { store: "livraria_da_vila", url: "u2", condition: "new", price: 49.9, isAvailable: true, lastCheckedAt: null },
     { store: "martins_fontes", url: "u3", condition: "new", price: 20, isAvailable: false, lastCheckedAt: null },
   ],
+  verdicts: [],
 };
 
 describe("bookJsonLd", () => {
