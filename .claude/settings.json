@@ -22,10 +22,10 @@
       "Bash(.venv/Scripts/ruff:*)",
       "Bash(backend/.venv/Scripts/ruff:*)",
       "Bash(poetry run pytest:*)",
-      "Bash(poetry run ruff:*)"
+      "Bash(poetry run ruff:*)",
+      "Bash(git push:*)"
     ],
     "ask": [
-      "Bash(git push:*)",
       "Bash(gh pr merge:*)",
       "Bash(docker compose down:*)",
       "Bash(docker compose exec web alembic:*)",
@@ -34,10 +34,25 @@
     ],
     "deny": [
       "Edit(/.env)",
-      "Write(/.env)"
+      "Write(/.env)",
+      "WebFetch(domain:amazon.com.br)",
+      "WebFetch(domain:www.amazon.com.br)",
+      "WebFetch(domain:amazon.com)",
+      "WebFetch(domain:www.amazon.com)"
     ]
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/session_brief.py\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Edit|Write|MultiEdit|NotebookEdit",
@@ -45,6 +60,16 @@
           {
             "type": "command",
             "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_files.py\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_git.py\"",
             "timeout": 10
           }
         ]
