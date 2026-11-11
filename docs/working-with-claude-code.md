@@ -2,16 +2,16 @@
 
 > Rascunho em revisão. A versão em inglês vem depois que este texto for aprovado.
 
-**Em poucas linhas:** o Garimpei é um comparador de preços que estou construindo
+O Garimpei é um comparador de preços que estou construindo
 para mim e, se der certo, para outras pessoas. Comecei escrevendo o código à mão,
 com a arquitetura desenhada por mim. Hoje desenvolvo com o Claude Code: eu decido
 o produto e a arquitetura, a IA propõe, implementa e verifica, e nada entra na
-`main` sem passar por testes automáticos, pelo CI e pela minha aprovação. Este
-documento mostra o que é meu, o que veio da IA, como eu confiro o resultado e
-onde a IA errou.
+`main` sem passar por testes automáticos, pelo CI e pela minha validação.
 
-Não documento cada prompt. Isso seria inviável e diz pouco. O que interessa é o
-que eu decidi, o que eu corrigi e como eu verifico.
+**Por que este documento existe:** quero registrar como eu trabalho com IA, para
+aprender com isso e levar o que funciona para outros projetos. Ele também mostra,
+com exemplos reais, o que eu sei e como eu trabalho: o que é meu, o que veio da
+IA, como eu confiro o resultado e onde a IA errou.
 
 ---
 
@@ -30,15 +30,23 @@ metadados gratuitos (BrasilAPI) e um mercado de usados forte (Estante Virtual,
 OLX, Enjoei). O modelo de dados já nasceu genérico (produto, identificador,
 oferta) para outras categorias entrarem depois.
 
+**Também é um projeto de estudo:** escolhi FastAPI e Arquitetura Limpa para
+fixar esses dois conhecimentos, e a ida para a nuvem vai ser o meu caminho para
+aprender AWS.
+
 **Os limites, com honestidade:**
 
 - Ainda não há usuários reais nem deploy de produção; tudo roda localmente.
-  A ida para a AWS é um próximo passo, também como estudo.
 - Recuperação de senha e e-mail de boas-vindas não existem neste repositório.
-- Não há planos de lançamento comercial por enquanto: a meta é ter algo que
-  funcione para mim e esteja pronto para outras pessoas.
+- A meta, por enquanto, é ter algo que funcione para mim e esteja pronto para
+  outras pessoas, sem plano de lançamento comercial. Por isso, desde o começo,
+  a arquitetura comporta vários usuários (contas, planos, alertas por usuário):
+  quando chegarem mais pessoas, a base já está pronta para elas.
 
 ## 2. Como cheguei aqui
+
+É um projeto paralelo, feito em cerca de 5 horas por semana, ao lado do
+trabalho e de outros projetos pessoais. O ritmo da tabela reflete isso.
 
 | Quando | O que aconteceu |
 |---|---|
@@ -46,34 +54,42 @@ oferta) para outras categorias entrarem depois.
 | 13/dez/2025 | Reestruturação para ficar mais alinhada à Arquitetura Limpa, que eu estava estudando |
 | fev/2026 | Testes unitários, de integração e ponta a ponta, e o CI no GitHub Actions. Ideia e decisão minhas |
 | até abr/2026 | Usei o GitHub Copilot; em abril fiz um experimento com o Qwen |
-| abr/2026 | Juntei o back-end e o front-end, que eram repositórios separados, neste monorepo. Parte do histórico antigo ficou para trás |
-| out/2026 em diante | Passei a usar o Claude Code. O primeiro commit assinado por ele é de 24/out/2026 |
-| nov/2026 | Mudança de rumo: de "monitor de oportunidades por palavra-chave" para comparador de preços, com novo e usado lado a lado |
+| abr/2026 | Juntei o back-end e o front-end, que eram repositórios separados, neste monorepo |
+| out/2026 | Passei a usar o Claude Code (primeiro commit assinado por ele: 24/out) |
+| nov/2026 | Mudança de rumo: de "monitor de oportunidades por palavra-chave" para comparador de preços. Planejada em 9/nov e entregue em fatias pequenas, uma por PR, ao longo do mês |
 
 ## 3. Quem faz o quê
 
 **Eu:**
 
 - decido o produto: o que construir, em que ordem e o que fica de fora;
-- desenho e cuido da arquitetura (com a ajuda da IA para polir, mas a
-  responsabilidade é minha);
-- defino a estratégia de testes e as barreiras de proteção (seção 7);
+- desenho e cuido da arquitetura;
+- defino a estratégia de testes e as barreiras de proteção (seção 8);
 - respondo às rodadas de perguntas dos planos e aprovo cada um;
 - testo o resultado como usuário e aprovo cada merge.
 
 **O Claude Code:**
 
 - propõe planos com perguntas, para eu decidir;
+- sugere caminhos e aponta o que acha que está errado, inclusive no que eu
+  pedi;
 - implementa em fatias pequenas, um PR por fatia;
 - roda os testes, sobe o ambiente local, tira prints de celular e desktop;
 - só pede o merge com o CI verde e mostra a evidência.
 
+Na prática funciona como uma programação em par: eu tenho a palavra final, mas
+as decisões saem da conversa.
+
 ### A arquitetura
 
-O projeto segue a Arquitetura Limpa, que não é um molde com nome (como a
-hexagonal), e sim um conjunto de princípios: o domínio no centro, as
+O projeto é a minha implementação da Arquitetura Limpa: o domínio no centro, as
 dependências apontando para dentro, os detalhes (banco, framework, e-mail) nas
-bordas. Alguns desses princípios estão no código desde antes da IA:
+bordas. Mantenho anotações próprias sobre Arquitetura Limpa e outros temas de
+engenharia de software, e a IA lê essas anotações para entender como eu penso a
+arquitetura antes de propor mudanças. As regras que saem delas estão no
+[plano principal](plan/README.md#4-architecture-rules).
+
+Alguns desses princípios estão no código desde antes da IA:
 
 | Ideia | Onde está | Desde |
 |---|---|---|
@@ -91,9 +107,17 @@ isolados, porque qualquer um que implemente a interface pode ser plugado. É o
 protegem o domínio dos detalhes. Tudo isso facilita os testes: o caso de uso é
 testado com um adaptador falso, sem banco.
 
-Em 2026 o código passou a ser organizado por módulos de domínio (`catalog`,
-`alerts`), a chamada "screaming architecture", em passos pequenos, sem parar o
-resto do trabalho.
+Do Domain-Driven Design uso alguns padrões táticos (entidades, repositórios,
+módulos com nomes do domínio), não o DDD completo.
+
+Desde nov/2026 o back-end está sendo reorganizado por domínio (`catalog`,
+`alerts`), a chamada *screaming architecture*: as pastas dizem o que o sistema
+faz, não qual framework ele usa. A mudança vai em passos pequenos, um módulo por
+PR, sem parar o resto do trabalho.
+
+**Ferramentas:** FastAPI, SQLAlchemy e Alembic com PostgreSQL no back-end;
+Celery com Redis nos coletores; Next.js no site público; React com Vite no
+painel de administração; tudo rodando em Docker Compose.
 
 ## 4. O ciclo de trabalho
 
@@ -108,39 +132,66 @@ Exemplo real: a Fase 5, que moveu a área do usuário para o site novo.
    (#95).
 3. **Verificação antes de pedir o merge:** testes unitários, typecheck, build,
    testes ponta a ponta no navegador contra o ambiente local e prints.
-4. **Meu OK.** O merge só acontece depois que eu aprovo, e cada PR precisa de
-   uma aprovação nova.
+4. **Minha validação.** O merge só acontece depois que eu aprovo, e cada PR
+   precisa de uma aprovação nova.
 5. **O plano é atualizado** a cada fatia, com as decisões novas.
 
 Quando o rumo muda no meio do caminho, o plano muda junto. A própria Fase 5
 nasceu assim: testei o botão "Me avise" da Fase 4 e caí numa interface antiga,
 que não combinava com o resto. Parei e decidimos mover a área do usuário.
 
-## 5. Duas decisões explicadas
+## 5. Algumas decisões explicadas
 
-### A área do usuário no site novo (Next.js), não no app antigo (Vite)
+### Um site em Next.js, e não só o app em React (Vite)
 
-- **Contexto:** o app antigo foi feito para alertas por palavra-chave, com outra
-  aparência (azul, Material UI). O site novo, com a identidade do Garimpei, tinha
-  só as páginas públicas.
-- **Alternativa:** redesenhar o app antigo com a identidade nova.
-- **Por que não:** seriam duas bases de front-end para manter, com o usuário
-  pulando entre elas. Concentrar tudo o que o usuário faz no site novo deixa
-  uma única experiência.
+- **Contexto:** o projeto começou com um app em React (Vite) feito para alertas
+  por palavra-chave. Ele roda no navegador do usuário: as páginas nascem
+  vazias e o JavaScript as monta.
+- **Por que mudar:** um comparador vive de páginas públicas (busca, página do
+  livro) que o Google precisa ler e que precisam abrir rápido no celular. O
+  Next.js entrega essas páginas já prontas pelo servidor (SSR), o que ajuda no
+  SEO e na velocidade. Foi uma sugestão da IA no planejamento, e eu concordei.
+- **Como:** sem migração de uma vez só. O site começou só com as páginas
+  públicas (Fase 3); a área do usuário veio depois (Fase 5).
 - **Limitação que ficou:** o painel de administração continua no app antigo,
-  com outra aparência. **Próximo passo:** levar o admin também para o Next, com
-  a mesma identidade, e aposentar o Vite.
+  com outra aparência. **Próximo passo:** levar o admin para o Next, com a
+  mesma identidade, e aposentar o Vite.
 
-### Não raspar a Amazon (nem sites parecidos)
+### Só coletar de quem permite
 
-- **Contexto:** a Amazon seria a referência de preço de livro novo.
-- **Alternativa:** um coletor lento, imitando uma pessoa. Tecnicamente
-  possível.
-- **Por que não:** o risco é contratual. Raspar a loja enquanto participo do
-  programa de afiliados pode custar a conta de afiliado, e os termos de uso
-  proíbem. O mesmo vale para sites com regras parecidas.
+- **Regra:** não raspo lojas cujos termos proíbem a coleta, como a Amazon. A
+  Amazon entra pelo programa de afiliados: hoje com um link de busca, e com
+  preços pela API oficial quando a conta de afiliado cumprir os requisitos.
+- **Por quê:** além dos termos de uso, raspar uma loja da qual sou afiliado
+  pode custar a conta de afiliado.
 - **Limitação que ficou:** sem o preço novo da Amazon na comparação, a página
-  mostra um link de busca de afiliado no lugar.
+  mostra o link de busca de afiliado no lugar.
+
+### Coletar com educação
+
+- **Regra:** os coletores usam requisições HTTP simples sempre que o preço está
+  no HTML, e um navegador só quando a página depende de JavaScript. Respeitam o
+  `robots.txt`, fazem pausas de 5 a 15 segundos e param a loja no dia ao
+  primeiro bloqueio. Não burlam captcha nem usam proxies.
+- **Alternativa recusada:** contornar bloqueios para coletar mais lojas.
+- **Por quê:** evitar risco jurídico e bloqueio de IP. Prefiro menos lojas a
+  coletar de forma abusiva.
+
+### Sessão em cookie que o JavaScript não lê
+
+- **Decisão:** no site, o token de login fica num cookie `httpOnly`, gravado só
+  pelo servidor, e não no `localStorage`.
+- **Por quê:** um script malicioso na página não consegue ler o token.
+- **Custo:** a renovação do token passa pelo servidor do Next, o que deu mais
+  trabalho do que guardar no navegador.
+
+### Refatorar aos poucos, nunca de uma vez
+
+- **Decisão:** a reorganização por domínio vai um módulo por PR, sem mudar o
+  comportamento, e a mudança de front-end vai página por página.
+- **Alternativa recusada:** reescrever tudo de uma vez.
+- **Por quê:** cada passo pequeno é testável e reversível, e o projeto continua
+  funcionando no meio do caminho.
 
 ## 6. Como eu verifico
 
@@ -165,10 +216,11 @@ Decidi cedo que o projeto teria muitos testes. Hoje:
 - **Ainda não testado:** carga (muitos usuários ao mesmo tempo), entrega real de
   e-mail fora da caixa falsa e qualquer coisa de produção.
 
-## 7. Onde a IA errou e o que pegou
+## 7. Onde a IA errou e quem pegou
 
 A IA erra. O que importa é ter barreiras que peguem o erro antes da `main`.
-Alguns casos reais:
+
+### Erros pegos pelas barreiras automáticas
 
 | O erro | O que pegou | O que mudou |
 |---|---|---|
@@ -179,7 +231,14 @@ Alguns casos reais:
 | O hook do ruff (formatador) deixava uma linha em branco sobrando | Teste do hook antes de publicar | Ordem corrigida (#96) |
 | Testes E2E com rótulos chutados e o menu recolhido | O print da falha | Seletores pelos rótulos reais (#98) |
 | `pre-commit run --all-files` alterou arquivos antigos, inclusive uma migration já aplicada | `git status` antes de commitar | Alterações desfeitas; ajuste na configuração (#97) |
-| Enquadrou o produto como "para leitores" | Eu | Regra registrada: comparador geral, livros são só a primeira categoria |
+
+### Erros que eu peguei
+
+| O erro | Como eu percebi | O que mudou |
+|---|---|---|
+| A IA enquadrou o produto como "para leitores" | Lendo os textos e o plano | Regra registrada: comparador geral, livros são só a primeira categoria |
+| O "Me avise" levava para o app antigo, com outra cara e outra lógica | Usando o sistema como usuário | Virou a Fase 5: toda a área do usuário no site novo |
+| O painel de admin ainda mostrava "Meus alertas" e "Planos", telas de usuário | Navegando pelo painel | As telas saíram do admin (#98) |
 
 ### Um caso em detalhe: o alerta que o plano grátis barrava
 
@@ -198,15 +257,21 @@ Alguns casos reais:
 
 ## 8. As camadas de proteção
 
+Há uma diferença importante entre elas: o `AGENTS.md` é **instrução**. A IA
+segue, mas nada a impede de desviar, e eu mesmo posso pedir para ela ignorar
+uma regra. Permissões e hooks são **travas**: quem as aplica é o Claude Code,
+não o modelo, então a IA não consegue pular. E tudo isso só vale para a IA: as
+proteções no GitHub valem para qualquer pessoa.
+
 | Camada | O que pega | O que não pega |
 |---|---|---|
 | [`AGENTS.md`](../AGENTS.md) (lido pelo Claude via `CLAUDE.md`) | Desvios das regras da casa: arquitetura, uma fatia por PR, como verificar, armadilhas conhecidas | Nada à força: é instrução, não trava |
 | Permissões ([`.claude/settings.json`](../.claude/settings.json)) | Push, merge, `docker compose down` e migrations sempre pedem minha confirmação; editar o `.env` é negado | Comandos que não estão na lista |
 | Hooks ([`.claude/hooks/`](../.claude/hooks/)) | Edição de `.env` e de migrations que já estão na `main` (bloqueia); Python fora do padrão (corrige na hora) | Erros de lógica |
-| pre-commit | Formatação, JSON/YAML inválidos, conflitos esquecidos, nos meus commits e nos da IA | Comportamento |
-| CI | Lint, tipos, testes e build de cada parte, a cada PR | Fluxos completos no navegador (ainda não roda o E2E) |
+| pre-commit | Qualidade de código: formatação, JSON/YAML inválidos, conflitos esquecidos, nos meus commits e nos da IA | Comportamento |
+| CI (GitHub Actions) | Lint, tipos, testes e build de cada parte, a cada PR | Fluxos completos no navegador (ainda não roda o E2E) |
 | Testes E2E | Fluxos reais de usuário, do clique ao e-mail | Só rodam localmente, quando alguém os roda |
-| Meu OK | Se faz sentido para o produto; o que nenhum teste mede | Depende de eu revisar com atenção |
+| Minha validação | Se faz sentido para o produto; o que nenhum teste mede | Depende de eu revisar com atenção |
 
 ## 9. O que eu domino e o que ainda estou estudando
 
@@ -217,14 +282,18 @@ volto a ela antes de apresentá-la como algo que domino.
   o FastAPI funciona, e a arquitetura (casos de uso, repositórios, portas e
   adaptadores, injeção de dependência).
 - **Explico o conceito, mas preciso relembrar a ferramenta:** filas e broker
-  (Celery com Redis). Isso deve mudar na ida para a AWS.
+  (Celery com Redis).
 - **Preciso estudar:** a sessão por cookie no Next.js e a regra do veredito de
   preço (compara o menor preço de hoje com os percentis 25 e 75 dos últimos
   90 dias), que foi ideia da IA e que eu aprovei.
 
+Este documento vai mudar junto com o projeto e com o que eu aprender. Quando
+algo aqui ficar desatualizado, a IA propõe a alteração e eu reviso antes.
+
 ## 10. Próximos passos
 
-Cada um com um critério de "funcionou":
+Cada um com um critério de "funcionou". O plano completo está em
+[`docs/plan/README.md`](plan/README.md).
 
 | Próximo passo | Funcionou quando… |
 |---|---|
