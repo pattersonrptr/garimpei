@@ -107,8 +107,10 @@ isolados, porque qualquer um que implemente a interface pode ser plugado. É o
 protegem o domínio dos detalhes. Tudo isso facilita os testes: o caso de uso é
 testado com um adaptador falso, sem banco.
 
-Do Domain-Driven Design uso alguns padrões táticos (entidades, repositórios,
-módulos com nomes do domínio), não o DDD completo.
+O código tem alguns padrões táticos do Domain-Driven Design (entidades,
+repositórios, módulos com nomes do domínio), mas eles vieram da Arquitetura
+Limpa, que compartilha essas ideias, e não de um estudo de DDD. Ainda não li
+sobre DDD; está na minha lista.
 
 Desde nov/2026 o back-end está sendo reorganizado por domínio (`catalog`,
 `alerts`), a chamada *screaming architecture*: as pastas dizem o que o sistema
@@ -285,7 +287,8 @@ volto a ela antes de apresentá-la como algo que domino.
   (Celery com Redis).
 - **Preciso estudar:** a sessão por cookie no Next.js e a regra do veredito de
   preço (compara o menor preço de hoje com os percentis 25 e 75 dos últimos
-  90 dias), que foi ideia da IA e que eu aprovei.
+  90 dias), que foi ideia da IA e que eu aprovei. Também quero ler sobre
+  Domain-Driven Design.
 
 Este documento vai mudar junto com o projeto e com o que eu aprender. Quando
 algo aqui ficar desatualizado, a IA propõe a alteração e eu reviso antes.
