@@ -46,6 +46,9 @@ class TestProxyConfig:
 
 
 class TestLoadProxyConfig:
+    """Every test clears the environment: a local .env (even its placeholder
+    values) must not leak into the expectations."""
+
     @patch.dict("os.environ", {}, clear=True)
     def test_disabled_by_default(self):
         assert load_proxy_config() is None
@@ -53,6 +56,7 @@ class TestLoadProxyConfig:
     @patch.dict(
         "os.environ",
         {"PROXY_ENABLED": "false", "PROXY_SERVER": "http://proxy:8080"},
+        clear=True,
     )
     def test_disabled_explicitly(self):
         assert load_proxy_config() is None
@@ -60,6 +64,7 @@ class TestLoadProxyConfig:
     @patch.dict(
         "os.environ",
         {"PROXY_ENABLED": "true", "PROXY_SERVER": "http://proxy:8080"},
+        clear=True,
     )
     def test_enabled_without_auth(self):
         cfg = load_proxy_config()
@@ -76,6 +81,7 @@ class TestLoadProxyConfig:
             "PROXY_USERNAME": "user",
             "PROXY_PASSWORD": "pass",
         },
+        clear=True,
     )
     def test_enabled_with_auth(self):
         cfg = load_proxy_config()
@@ -87,6 +93,7 @@ class TestLoadProxyConfig:
     @patch.dict(
         "os.environ",
         {"PROXY_ENABLED": "yes", "PROXY_SERVER": "http://proxy:8080"},
+        clear=True,
     )
     def test_accepts_yes(self):
         assert load_proxy_config() is not None
@@ -94,6 +101,7 @@ class TestLoadProxyConfig:
     @patch.dict(
         "os.environ",
         {"PROXY_ENABLED": "true", "PROXY_SERVER": ""},
+        clear=True,
     )
     def test_enabled_but_no_server_returns_none(self):
         assert load_proxy_config() is None
@@ -106,6 +114,7 @@ class TestLoadProxyConfig:
             "PROXY_USERNAME": "  user  ",
             "PROXY_PASSWORD": "  pass  ",
         },
+        clear=True,
     )
     def test_strips_whitespace(self):
         cfg = load_proxy_config()
