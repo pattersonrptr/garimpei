@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { signInMessage, signUpMessage, signUpProblem } from "@/lib/authMessages";
+import {
+  passwordChangeMessage,
+  passwordChangeProblem,
+  signInMessage,
+  signUpMessage,
+  signUpProblem,
+} from "@/lib/authMessages";
 import { secondsLeft, tokenClaims } from "@/lib/jwt";
 import { safeNextPath, withNext } from "@/lib/nextPath";
 
@@ -71,5 +77,32 @@ describe("messages", () => {
     expect(signUpProblem({ ...ok, username: "ana maria" })).toMatch(/espaços/);
     expect(signUpProblem({ ...ok, email: "ana" })).toBe("Confira o e-mail.");
     expect(signUpProblem({ ...ok, email: "" })).toBe("Preencha todos os campos.");
+  });
+});
+
+describe("password change", () => {
+  const ok = { current: "old-password", next: "new-password", confirm: "new-password" };
+
+  it("accepts a good form", () => {
+    expect(passwordChangeProblem(ok)).toBeNull();
+  });
+
+  it("checks the form before calling the backend", () => {
+    expect(passwordChangeProblem({ ...ok, current: "" })).toBe("Preencha os três campos.");
+    expect(passwordChangeProblem({ ...ok, next: "short", confirm: "short" })).toContain("8");
+    expect(passwordChangeProblem({ ...ok, confirm: "other-password" })).toBe(
+      "A confirmação não bate com a nova senha.",
+    );
+    expect(passwordChangeProblem({ current: "same-pass", next: "same-pass", confirm: "same-pass" })).toBe(
+      "A nova senha precisa ser diferente da atual.",
+    );
+  });
+
+  it("explains the backend's answer", () => {
+    expect(passwordChangeMessage({ status: 400, code: "WRONG_PASSWORD" })).toBe(
+      "A senha atual não está certa.",
+    );
+    expect(passwordChangeMessage({ status: 422 })).toContain("8");
+    expect(passwordChangeMessage({ status: 500 })).toContain("Tente de novo");
   });
 });
