@@ -530,6 +530,18 @@ class SearchBooksUseCase:
         return BookSearchResult(books, total)
 
 
+class ListBooksUseCase:
+    """Every book in the catalog, a page at a time (for the sitemap)."""
+
+    def __init__(self, books: BookCatalogReader):
+        self.books = books
+
+    def execute(self, limit: int = MAX_PAGE_SIZE, offset: int = 0) -> BookSearchResult:
+        limit = max(1, min(limit, MAX_PAGE_SIZE))
+        books, total = self.books.search("", limit, max(0, offset))
+        return BookSearchResult(books, total)
+
+
 class GetBookUseCase:
     """A book page by ISBN (10 or 13 digits; the page's address uses the ISBN-13)."""
 

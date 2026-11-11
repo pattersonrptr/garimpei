@@ -250,7 +250,8 @@ class BookCatalogReader(ABC):
         self, term: str, limit: int, offset: int
     ) -> tuple[list[BookSummary], int]:
         """Books whose title or authors contain ``term`` (case and accents
-        ignored), books with offers in stock first, then by title; and the total."""
+        ignored; an empty term matches every book), books with offers in stock
+        first, then by title; and the total."""
         raise NotImplementedError
 
     @abstractmethod

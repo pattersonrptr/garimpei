@@ -18,8 +18,8 @@ a store without logging in; pages render on the server.**
 |---|---|---|
 | 3a | **Public book API** (done, #80). `GET /books?q=`, `GET /books/{isbn}`, `GET /books/{isbn}/price-history`, no login | A client can search, open a book with its offers and get its daily lows without a token |
 | 3b | **Next.js app** (done, #81: `web/`, service `site`): layout with the Phase 0 tokens, home with search, results page, Docker Compose service, CI job | `docker compose up` serves the search on port 3000, rendered on the server |
-| 3c | **Book page** (done: `/livro/<isbn13>-<slug>`). Savings block (used vs new), used and new columns, "updated X h ago", links to the stores, a "see on Amazon" link built from the ISBN | A visitor goes from search to a store in two clicks |
-| 3d | **Price chart and SEO.** 90-day chart of the daily lows (server-rendered SVG), page metadata, `sitemap.xml` | The chart shows on the book page with no client JavaScript; search engines get a title, description and sitemap |
+| 3c | **Book page** (done, #82: `/livro/<isbn13>-<slug>`). Savings block (used vs new), used and new columns, "updated X h ago", links to the stores, a "see on Amazon" link built from the ISBN | A visitor goes from search to a store in two clicks |
+| 3d | **Price chart and SEO** (done: SVG chart, JSON-LD, `sitemap.xml`, `robots.txt`). 90-day chart of the daily lows (server-rendered SVG), page metadata, `sitemap.xml` | The chart shows on the book page with no client JavaScript; search engines get a title, description and sitemap |
 
 The verdict ("buy now / wait") and the 90-day position bar are Phase 4. The
 book page leaves their place at the top.
@@ -54,3 +54,15 @@ book page leaves their place at the top.
    open decision).
 10. **Public API safety:** read-only, no personal data, page size capped at
     50. Rate limiting waits until there is a public deployment.
+
+## Notes from building it
+
+- The sitemap is built on request (`force-dynamic`), not at build time: the
+  Docker and CI builds have no API to ask. `GET /books/index` lists every
+  book a page at a time for it.
+- The chart is drawn twice (a narrow and a wide SVG, CSS shows one), because
+  SVG text scales with the drawing and a wide chart is unreadable on a phone.
+- Lines: used in ink, new in muted dashes. Green and red stay reserved for
+  good or expensive price (Phase 0 rule).
+- `SITE_URL` (canonical links, sitemap, structured data) and
+  `AMAZON_ASSOCIATE_TAG` are environment variables of the `site` service.

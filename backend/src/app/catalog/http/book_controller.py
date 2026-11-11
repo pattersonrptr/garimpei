@@ -18,6 +18,7 @@ from src.app.catalog.use_cases import (
     BookNotFoundError,
     GetBookUseCase,
     GetDailyLowsUseCase,
+    ListBooksUseCase,
     SearchBooksUseCase,
 )
 from src.app.infrastructure.database_config import get_db
@@ -110,6 +111,23 @@ def search_books(
 ):
     """Books matching a title, an author or an ISBN, books in stock first."""
     result = SearchBooksUseCase(books).execute(q, limit, offset)
+    return JSONResponse(
+        content={
+            "data": [_summary(b) for b in result.books],
+            "meta": {"total": result.total},
+        },
+        media_type=JSONAPI,
+    )
+
+
+@router.get("/index")
+def list_books(
+    limit: int = Query(MAX_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
+    offset: int = Query(0, ge=0),
+    books: BookCatalogReader = Depends(get_book_catalog),
+):
+    """Every book in the catalog, a page at a time (the public sitemap)."""
+    result = ListBooksUseCase(books).execute(limit, offset)
     return JSONResponse(
         content={
             "data": [_summary(b) for b in result.books],

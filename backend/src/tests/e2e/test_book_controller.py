@@ -84,3 +84,10 @@ class TestPublicBooks:
 
     def test_page_size_over_the_cap_is_refused(self, client):
         assert client.get("/books/", params={"q": "x", "limit": 51}).status_code == 422
+
+
+def test_index_lists_books_without_login(client, book_with_offer):
+    response = client.get("/books/index")
+
+    assert response.status_code == 200
+    assert [b["id"] for b in response.json()["data"]] == [ISBN13]
