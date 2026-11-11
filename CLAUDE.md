@@ -12,3 +12,10 @@
 - Instructions (`AGENTS.md`) can be ignored; hooks and permissions are
   enforced by Claude Code. GitHub branch protection on `main` applies to
   everyone.
+- `git push` is allowed without asking: `guard_git.py` and the branch
+  protection already stop pushes to `main` and force pushes. Merges still ask.
+- **Automate what repeats.** When a task is done by hand again and again
+  (same commands, same lookups, same checklist), propose turning it into a
+  skill, hook, subagent or permission, and say which model fits (Haiku for
+  mechanical steps, Sonnet for reviews, the main model for design). Only
+  for something already repeated here (YAGNI); propose, don't just add it.
