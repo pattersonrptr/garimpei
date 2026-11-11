@@ -76,6 +76,7 @@ class TestIngestOffer:
         assert attributes["title"] == "1984"
         assert attributes["condition"] == "used"
         assert attributes["current_price"] == 28.5
+        assert attributes["last_checked_at"].endswith("Z")  # UTC, explicit
         book = test_db.query(CanonicalProductModel).one()
         assert attributes["canonical_product_id"] == book.id
 

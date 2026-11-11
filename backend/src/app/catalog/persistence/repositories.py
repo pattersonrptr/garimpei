@@ -43,11 +43,21 @@ from src.app.catalog.ports import (
 from src.app.infrastructure.database.text_match import title_contains
 
 
+def _as_utc(moment: datetime | None) -> datetime | None:
+    """Timestamps are stored as naive UTC; give them their zone back so an API
+    client can tell how long ago they were."""
+    if moment is None or moment.tzinfo is not None:
+        return moment
+    return moment.replace(tzinfo=UTC)
+
+
 def _persisted_fields(product: ProductEntity) -> dict:
-    """The entity's columns as a dict (``id`` and ``current_price`` are not stored)."""
+    """The entity's columns as a dict (``id`` and the latest price point's
+    ``current_price`` and ``last_checked_at`` are not stored)."""
     data = asdict(product)
     data.pop("id")
     data.pop("current_price")
+    data.pop("last_checked_at")
     return data
 
 
@@ -65,15 +75,52 @@ class ProductRepository(ProductRepositoryInterface):
         self.db.refresh(db_product)
         return self._to_entity(db_product)
 
-    def _get_latest_price(self, product_id: int) -> float | None:
-        """Get the latest price for a product from price_history."""
-        result = (
-            self.db.query(PriceHistoryModel.price)
-            .filter(PriceHistoryModel.product_id == product_id)
+    def _with_latest_price(self, product: ProductModel) -> ProductEntity:
+        """The entity with its latest price point (price and when it was seen)."""
+        entity = self._to_entity(product)
+        point = (
+            self.db.query(PriceHistoryModel.price, PriceHistoryModel.created_at)
+            .filter(PriceHistoryModel.product_id == product.id)
             .order_by(desc(PriceHistoryModel.id))
             .first()
         )
-        return float(result[0]) if result else None
+        if point:
+            entity.current_price = float(point.price)
+            entity.last_checked_at = _as_utc(point.created_at)
+        return entity
+
+    def _latest_price_subquery(self):
+        """product_id, price, created_at of each product's latest price point."""
+        latest = (
+            self.db.query(
+                PriceHistoryModel.product_id,
+                func.max(PriceHistoryModel.id).label("max_id"),
+            )
+            .group_by(PriceHistoryModel.product_id)
+            .subquery()
+        )
+        return (
+            self.db.query(
+                PriceHistoryModel.product_id,
+                PriceHistoryModel.price,
+                PriceHistoryModel.created_at,
+            )
+            .join(
+                latest,
+                (PriceHistoryModel.product_id == latest.c.product_id)
+                & (PriceHistoryModel.id == latest.c.max_id),
+            )
+            .subquery()
+        )
+
+    def _rows_to_entities(self, rows) -> list[ProductEntity]:
+        entities = []
+        for product_model, price, checked_at in rows:
+            entity = self._to_entity(product_model)
+            entity.current_price = float(price) if price is not None else None
+            entity.last_checked_at = _as_utc(checked_at)
+            entities.append(entity)
+        return entities
 
     def get_by_id(self, product_id: int) -> ProductEntity | None:
         """Retrieve a product by ID with source_website relationship."""
@@ -83,11 +130,7 @@ class ProductRepository(ProductRepositoryInterface):
             .filter(ProductModel.id == product_id)
             .first()
         )
-        if product:
-            entity = self._to_entity(product)
-            entity.current_price = self._get_latest_price(product.id)
-            return entity
-        return None
+        return self._with_latest_price(product) if product else None
 
     def get_by_url(self, url: str) -> ProductEntity | None:
         """Retrieve a product by URL."""
@@ -97,11 +140,7 @@ class ProductRepository(ProductRepositoryInterface):
             .filter(ProductModel.url == url)
             .first()
         )
-        if product:
-            entity = self._to_entity(product)
-            entity.current_price = self._get_latest_price(product.id)
-            return entity
-        return None
+        return self._with_latest_price(product) if product else None
 
     def get_all(
         self,
@@ -112,33 +151,12 @@ class ProductRepository(ProductRepositoryInterface):
         filters: ProductListFilters | None = None,
     ) -> tuple[list[ProductEntity], int]:
         """Retrieve products with pagination, sorting, filters and current price."""
-        # Subquery: latest price per product
-        latest_price_sq = (
-            self.db.query(
-                PriceHistoryModel.product_id,
-                func.max(PriceHistoryModel.id).label("max_id"),
-            )
-            .group_by(PriceHistoryModel.product_id)
-            .subquery()
-        )
-
-        price_sq = (
-            self.db.query(
-                PriceHistoryModel.product_id,
-                PriceHistoryModel.price,
-            )
-            .join(
-                latest_price_sq,
-                (PriceHistoryModel.product_id == latest_price_sq.c.product_id)
-                & (PriceHistoryModel.id == latest_price_sq.c.max_id),
-            )
-            .subquery()
-        )
+        price_sq = self._latest_price_subquery()
 
         conditions = self._filter_conditions(filters, price_sq.c.price)
 
         query = (
-            self.db.query(ProductModel, price_sq.c.price)
+            self.db.query(ProductModel, price_sq.c.price, price_sq.c.created_at)
             .outerjoin(price_sq, ProductModel.id == price_sq.c.product_id)
             .options(joinedload(ProductModel.source_website))
             .filter(*conditions)
@@ -168,13 +186,7 @@ class ProductRepository(ProductRepositoryInterface):
         # Apply pagination
         results = query.limit(limit).offset(offset).all()
 
-        entities = []
-        for product_model, price in results:
-            entity = self._to_entity(product_model)
-            entity.current_price = float(price) if price is not None else None
-            entities.append(entity)
-
-        return entities, total
+        return self._rows_to_entities(results), total
 
     @staticmethod
     def _filter_conditions(filters: ProductListFilters | None, current_price) -> list:
@@ -296,32 +308,11 @@ class ProductRepository(ProductRepositoryInterface):
         offset: int = 0,
     ) -> tuple[list[ProductEntity], int]:
         """Search products by title (case/accent-insensitive) + source_website_ids, with latest price."""
-        # Subquery: latest price per product
-        latest_price_sq = (
-            self.db.query(
-                PriceHistoryModel.product_id,
-                func.max(PriceHistoryModel.id).label("max_id"),
-            )
-            .group_by(PriceHistoryModel.product_id)
-            .subquery()
-        )
-
-        price_sq = (
-            self.db.query(
-                PriceHistoryModel.product_id,
-                PriceHistoryModel.price,
-            )
-            .join(
-                latest_price_sq,
-                (PriceHistoryModel.product_id == latest_price_sq.c.product_id)
-                & (PriceHistoryModel.id == latest_price_sq.c.max_id),
-            )
-            .subquery()
-        )
+        price_sq = self._latest_price_subquery()
 
         # Base query: products matching search_term + source_website_ids
         query = (
-            self.db.query(ProductModel, price_sq.c.price)
+            self.db.query(ProductModel, price_sq.c.price, price_sq.c.created_at)
             .outerjoin(price_sq, ProductModel.id == price_sq.c.product_id)
             .filter(
                 title_contains(ProductModel.title, search_term),
@@ -344,13 +335,7 @@ class ProductRepository(ProductRepositoryInterface):
 
         results = query.offset(offset).limit(limit).all()
 
-        entities = []
-        for product_model, price in results:
-            entity = self._to_entity(product_model)
-            entity.current_price = float(price) if price is not None else None
-            entities.append(entity)
-
-        return entities, total
+        return self._rows_to_entities(results), total
 
 
 class PriceHistoryRepository(PriceHistoryRepositoryInterface):
@@ -364,7 +349,7 @@ class PriceHistoryRepository(PriceHistoryRepositoryInterface):
             id=model.id,
             product_id=model.product_id,
             price=float(model.price),
-            created_at=model.created_at,
+            created_at=_as_utc(model.created_at),
         )
 
     def create(self, price_history: PriceHistoryEntity) -> PriceHistoryEntity:
@@ -524,7 +509,7 @@ class CanonicalProductRepository(
             .all()
         )
         return [
-            QueuedProduct(kind=kind, value=value, last_checked_at=last)
+            QueuedProduct(kind=kind, value=value, last_checked_at=_as_utc(last))
             for value, last in rows
         ]
 
