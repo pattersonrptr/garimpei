@@ -140,6 +140,13 @@ class CanonicalProduct(Base):
         default=dict,
         comment="Category-specific data (author, publisher, ...)",
     )
+    search_text = Column(
+        Text,
+        nullable=False,
+        default="",
+        server_default="",
+        comment="Title and authors, lowercase and without accents",
+    )
     created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
     updated_at = Column(
         DateTime,

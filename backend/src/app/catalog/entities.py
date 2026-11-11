@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from enum import Enum
 
 
@@ -153,3 +153,72 @@ class QueuedProduct:
     kind: IdentifierKind
     value: str
     last_checked_at: datetime | None = None
+
+
+# ── Public read model (the comparator pages) ──────────────────────────────────
+
+
+@dataclass(frozen=True, kw_only=True)
+class PublicOffer:
+    """One store's offer for a book, as a visitor sees it."""
+
+    store: str  # the store's slug, e.g. "estante_virtual"
+    url: str
+    condition: ProductCondition
+    price: float | None
+    is_available: bool
+    last_checked_at: datetime | None
+
+
+@dataclass(frozen=True, kw_only=True)
+class BookSummary:
+    """A book in search results: who wrote it and how cheap it is in stock."""
+
+    isbn13: str
+    title: str
+    authors: tuple[str, ...] = ()
+    cover_url: str | None = None
+    lowest_new: float | None = None
+    lowest_used: float | None = None
+    offer_count: int = 0
+
+
+@dataclass(frozen=True, kw_only=True)
+class BookDetail:
+    """A book page: the book's metadata and every store's offer."""
+
+    isbn13: str
+    title: str
+    attributes: dict = field(default_factory=dict)
+    offers: tuple[PublicOffer, ...] = ()
+
+    def lowest(self, condition: ProductCondition) -> float | None:
+        """The cheapest offer in stock in this condition (rule: out-of-stock
+        offers are listed, but never count as "from R$ X")."""
+        prices = [
+            o.price
+            for o in self.offers
+            if o.condition == condition and o.is_available and o.price is not None
+        ]
+        return min(prices, default=None)
+
+    def summary(self) -> "BookSummary":
+        """The book reduced to a search result."""
+        return BookSummary(
+            isbn13=self.isbn13,
+            title=self.title,
+            authors=tuple(self.attributes.get("authors", ())),
+            cover_url=self.attributes.get("cover_url"),
+            lowest_new=self.lowest(ProductCondition.NEW),
+            lowest_used=self.lowest(ProductCondition.USED),
+            offer_count=len(self.offers),
+        )
+
+
+@dataclass(frozen=True, kw_only=True)
+class DailyLow:
+    """The lowest price seen for a book on one day, per condition."""
+
+    day: date
+    condition: ProductCondition
+    price: float
