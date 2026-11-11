@@ -71,6 +71,15 @@ class TestPublicBooks:
         assert offer["price"] == 17.5
         assert offer["last_checked_at"].endswith("+00:00")
 
+    def test_book_page_has_a_verdict_per_condition(self, client, book_with_offer):
+        attributes = client.get(f"/books/{ISBN13}").json()["data"]["attributes"]
+
+        verdicts = {v["condition"]: v for v in attributes["verdicts"]}
+        assert verdicts["used"]["status"] == "learning"  # one day of history
+        assert verdicts["used"]["current"] == 17.5
+        assert verdicts["used"]["days"] == 1
+        assert verdicts["new"]["status"] == "no_offer"
+
     def test_unknown_or_invalid_isbn_is_404(self, client, book_with_offer):
         assert client.get("/books/9780306406157").status_code == 404
         assert client.get("/books/not-an-isbn").status_code == 404
