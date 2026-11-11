@@ -11,7 +11,7 @@ export function OfferColumn({
   title: string;
   offers: Offer[];
   empty: string;
-  /** "Warn me" link to the logged-in app (Phase 4d); hidden when null. */
+  /** "Warn me" link to the new alert page (Phase 5c); hidden when null. */
   alertHref?: string | null;
 }) {
   return (

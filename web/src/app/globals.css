@@ -328,6 +328,221 @@ img {
   font-weight: 600;
 }
 
+/* ── Alerts ──────────────────────────────────────────────────────────── */
+.notice {
+  background: #fff6d6;
+  border: 1px solid var(--gold);
+  border-radius: var(--radius);
+  padding: var(--s3) var(--s4);
+  display: grid;
+  gap: var(--s3);
+  justify-items: start;
+  margin: var(--s4) 0;
+}
+.choices {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s4);
+}
+.choices legend {
+  font-weight: 600;
+  margin-bottom: var(--s2);
+}
+.auth-form .choice {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  font-weight: 400;
+}
+.auth-form .choice input {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--ink);
+}
+.money-input {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  font-weight: 700;
+}
+.auth-form .money-input input,
+.money-input input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  padding: var(--s2) var(--s3);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--ink);
+}
+.alert-product {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: var(--s3);
+  align-items: start;
+}
+.alert-product img {
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.15);
+}
+.alert-product > div:only-child {
+  grid-column: 1 / -1;
+}
+.alert-title {
+  font-weight: 700;
+  line-height: 1.3;
+}
+.my-alerts {
+  max-width: 720px;
+  padding-top: var(--s5);
+  padding-bottom: var(--s6);
+}
+.my-alerts-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+.link-button {
+  font: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.empty {
+  margin-top: var(--s5);
+  padding: var(--s5);
+  border: 2px dashed var(--sand);
+  border-radius: var(--radius-card);
+  display: grid;
+  gap: var(--s2);
+}
+.alert-list {
+  list-style: none;
+  padding: 0;
+  margin: var(--s4) 0 0;
+  display: grid;
+  gap: var(--s4);
+}
+.alert-card {
+  background: #fff;
+  border: 1px solid var(--sand);
+  border-radius: var(--radius-card);
+  padding: var(--s4);
+  display: grid;
+  gap: var(--s3);
+}
+.alert-card.paused {
+  background: var(--paper);
+}
+.alert-card.paused .alert-product {
+  opacity: 0.65;
+}
+.alert-card .target {
+  margin-top: var(--s1);
+}
+.alert-card .target.good {
+  font-weight: 700;
+}
+.tag {
+  margin-left: var(--s2);
+  padding: 0 var(--s2);
+  border-radius: 999px;
+  background: var(--sand);
+  color: var(--ink);
+  font-weight: 600;
+}
+.badge {
+  display: inline-block;
+  margin-top: var(--s2);
+  padding: 2px var(--s3);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.badge.good {
+  background: #dff1e4;
+  color: var(--good);
+}
+.badge.normal {
+  background: var(--sand);
+  color: var(--ink);
+}
+.badge.high {
+  background: #f8e0da;
+  color: var(--bad);
+}
+.alert-notices summary {
+  cursor: pointer;
+}
+.alert-notices ul {
+  margin: var(--s2) 0 0;
+  padding-left: var(--s5);
+  color: var(--muted);
+}
+.alert-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  align-items: flex-start;
+  border-top: 1px solid var(--sand);
+  padding-top: var(--s3);
+}
+.inline-action > summary {
+  list-style: none;
+}
+.inline-action > summary::-webkit-details-marker {
+  display: none;
+}
+.inline-action[open] {
+  flex-basis: 100%;
+  order: 1;
+}
+.inline-action[open] > summary {
+  display: none;
+}
+.price-form,
+.confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--s2) var(--s3);
+  padding: var(--s3);
+  background: var(--paper);
+  border-radius: var(--radius);
+}
+.price-form label {
+  display: grid;
+  gap: var(--s1);
+  font-weight: 600;
+}
+.price-form .money-input input {
+  width: 8rem;
+  flex: none;
+}
+.price-form .form-error {
+  flex-basis: 100%;
+}
+.button.danger {
+  border-color: var(--bad);
+  color: var(--bad);
+}
+.button.danger:hover {
+  background: var(--bad);
+  color: #fff;
+}
+.button.danger-solid {
+  background: var(--bad);
+  color: #fff;
+}
+
 /* ── Book page ───────────────────────────────────────────────────────── */
 .book {
   padding-top: var(--s5);

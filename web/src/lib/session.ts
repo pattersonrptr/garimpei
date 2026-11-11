@@ -53,8 +53,9 @@ export async function requireSession(here: string): Promise<Session> {
 }
 
 /**
- * A call to the backend as the signed-in user. A refused token (401, or 403
- * with no token) sends the user to sign in again and come back to ``here``.
+ * A call to the backend as the signed-in user. A refused token (401) sends
+ * the user to sign in again and come back to ``here``. A 403 is left to the
+ * caller: with a token sent, it means "not allowed" (a plan limit, say).
  */
 export async function authedFetch(
   session: Session,
@@ -72,7 +73,7 @@ export async function authedFetch(
       Authorization: `Bearer ${session.token}`,
     },
   });
-  if (response.status === 401 || response.status === 403) {
+  if (response.status === 401) {
     redirect(withNext("/entrar", here));
   }
   return response;

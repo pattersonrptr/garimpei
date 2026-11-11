@@ -1,4 +1,5 @@
 import { formatPrice } from "@/lib/format";
+import { newAlertPath } from "@/lib/myAlerts";
 import type { Verdict } from "@/lib/types";
 
 /** Days of history the backend needs before it judges a price. */
@@ -109,20 +110,14 @@ export function suggestedAlertPrice(verdict: Verdict | undefined): number | null
   return price >= 1 ? price : null;
 }
 
-const LINK_CONDITION: Record<string, string> = { used: "usado", new: "novo" };
-
 /**
- * The logged-in app's "new book alert" page (Phase 4d), or null when the app
- * address is not configured. The app asks for a login and comes back here.
+ * The site's "new alert" page (Phase 5c). Without a session it asks for a
+ * login and comes back with the same address.
  */
 export function alertHref(
-  appUrl: string | undefined,
   isbn13: string,
   condition: "new" | "used",
   price: number | null,
-): string | null {
-  if (!appUrl) return null;
-  const params = new URLSearchParams({ isbn: isbn13, condicao: LINK_CONDITION[condition] });
-  if (price != null) params.set("preco", String(price));
-  return `${appUrl.replace(/\/+$/, "")}/alertas/novo?${params}`;
+): string {
+  return newAlertPath(isbn13, condition, price);
 }

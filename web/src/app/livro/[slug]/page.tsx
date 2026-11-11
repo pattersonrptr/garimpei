@@ -57,7 +57,6 @@ export default async function BookPage({ params }: Props) {
     book.verdicts.find((v) => v.condition === condition);
   const warnMe = (condition: "new" | "used") =>
     alertHref(
-      process.env.APP_URL,
       book.isbn13,
       condition,
       suggestedAlertPrice(verdictOf(condition)),

@@ -118,19 +118,15 @@ describe("suggestedAlertPrice", () => {
 });
 
 describe("alertHref", () => {
-  it("links to the app's new book alert page", () => {
-    expect(alertHref("http://localhost/", "9788535914849", "used", 20)).toBe(
-      "http://localhost/alertas/novo?isbn=9788535914849&condicao=usado&preco=20",
+  it("links to the site's new alert page", () => {
+    expect(alertHref("9788535914849", "used", 20)).toBe(
+      "/alertas/novo?isbn=9788535914849&condicao=usado&preco=20",
     );
   });
 
   it("leaves the price out when there is none", () => {
-    expect(alertHref("https://app", "9788535914849", "new", null)).toBe(
-      "https://app/alertas/novo?isbn=9788535914849&condicao=novo",
+    expect(alertHref("9788535914849", "new", null)).toBe(
+      "/alertas/novo?isbn=9788535914849&condicao=novo",
     );
-  });
-
-  it("is null without the app address", () => {
-    expect(alertHref(undefined, "9788535914849", "used", 20)).toBeNull();
   });
 });
