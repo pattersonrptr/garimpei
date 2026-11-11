@@ -1,7 +1,5 @@
 # Como eu trabalho com IA neste projeto
 
-> Rascunho em revisão. A versão em inglês vem depois que este texto for aprovado.
-
 O Garimpei é um comparador de preços que estou construindo
 para mim e, se der certo, para outras pessoas. Comecei escrevendo o código à mão,
 com a arquitetura desenhada por mim. Hoje desenvolvo com o Claude Code: eu decido
