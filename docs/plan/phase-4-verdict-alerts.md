@@ -19,8 +19,8 @@ a "warn me" button that creates an alert on the book. MVP ready to launch.**
 |---|---|---|
 | 4a | **Verdict in the catalog** (done, #85).  Pure rule (`catalog/verdict.py`), `JudgeBookPricesUseCase`, `verdicts` on `GET /books/{isbn}` | The book API says good / normal / high / learning per condition |
 | 4b | **Verdict on the book page** (done, #86).  Badge and 90-day range bar at the top, server-rendered | A visitor sees whether to buy now, with no client JavaScript |
-| 4c | **Book alerts** (done). `PriceAlert` targets a book and a condition; ingesting an offer evaluates that book's alerts | An offer under an alert's price sends the e-mail |
-| 4d | **"Warn me".** Button on the book page opens the logged-in app with book, condition and suggested price filled in | A visitor creates a book alert in two steps after login |
+| 4c | **Book alerts** (done, #87). `PriceAlert` targets a book and a condition; ingesting an offer evaluates that book's alerts | An offer under an alert's price sends the e-mail |
+| 4d | **"Warn me"** (done). Button on the book page opens the logged-in app with book, condition and suggested price filled in | A visitor creates a book alert in two steps after login |
 | 4e | **Close.** Main plan updated; launch checklist listed | Phase 4 marked done |
 
 ## Decisions (Nov 11, 2026)
@@ -57,6 +57,15 @@ a "warn me" button that creates an alert on the book. MVP ready to launch.**
    `condition` instead of `search_term`. 404 `BOOK_NOT_FOUND` when the book
    is not in the catalog; 409 `DUPLICATE_BOOK_ALERT` for a second alert on
    the same book and condition.
+9. **"Warn me" link:** each offer column on the book page links to the
+   logged-in app at `APP_URL/alertas/novo?isbn=…&condicao=usado|novo&preco=…`
+   (no button when `APP_URL` is not set). Suggested price, in whole reais:
+   the 25th percentile once there is a verdict, 10 % under today's lowest
+   while learning, none when nothing is known.
+10. **Coming back after login:** a protected page sends visitors to
+    `/login?next=<path>`; login and sign-up keep `next` and return there.
+    Only in-app paths are accepted (no `//host`, no absolute URLs), so the
+    link cannot send anyone to another site.
 
 ## Expected
 

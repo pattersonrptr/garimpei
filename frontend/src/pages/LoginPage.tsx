@@ -15,12 +15,13 @@ import Paper from '@mui/material/Paper'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { useState } from 'react'
-import { Link as RouterLink } from 'react-router-dom'
+import { Link as RouterLink, useSearchParams } from 'react-router-dom'
 import { useSnackbar } from 'notistack'
 import { useTranslation } from 'react-i18next'
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 import { useAuth } from '@/context/AuthContext'
 import { logger } from '@/lib/logger'
+import { withNext } from '@/lib/nextPath'
 
 export function LoginPage() {
   const { login } = useAuth()
@@ -30,6 +31,7 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const next = useSearchParams()[0].get('next')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -39,7 +41,7 @@ export function LoginPage() {
     }
     setLoading(true)
     try {
-      await login(username, password)
+      await login(username, password, next)
     } catch (err) {
       logger.error('Login failed', { username }, err)
       enqueueSnackbar(t('login.invalidCredentials'), { variant: 'error' })
@@ -123,7 +125,7 @@ export function LoginPage() {
 
           <Typography variant="body2" textAlign="center" color="text.secondary">
             {t('login.noAccount')}{' '}
-            <Link component={RouterLink} to="/register">
+            <Link component={RouterLink} to={withNext('/register', next)}>
               {t('login.createAccount')}
             </Link>
           </Typography>

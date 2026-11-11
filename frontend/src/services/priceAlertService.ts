@@ -24,6 +24,8 @@ interface RawPriceAlertAttributes {
   user_id?: number | null
   search_config_id?: number | null
   source_website_ids: number[]
+  canonical_product_id?: number | null
+  condition?: PriceAlert['condition']
   created_at?: string
   updated_at?: string
 }
@@ -41,6 +43,8 @@ function toPriceAlert(
     userId: raw.user_id,
     searchConfigId: raw.search_config_id,
     sourceWebsiteIds: raw.source_website_ids ?? [],
+    canonicalProductId: raw.canonical_product_id ?? null,
+    condition: raw.condition ?? null,
     createdAt: raw.created_at,
     updatedAt: raw.updated_at,
   }
@@ -58,6 +62,8 @@ function toApiPayload(
     result.frequency_minutes = p.frequencyMinutes
   if ('sourceWebsiteIds' in p && p.sourceWebsiteIds !== undefined)
     result.source_website_ids = p.sourceWebsiteIds
+  if ('isbn' in p && p.isbn !== undefined) result.isbn = p.isbn
+  if ('condition' in p && p.condition !== undefined) result.condition = p.condition
   if ('userId' in p && (p as PriceAlertCreatePayload).userId !== undefined)
     result.user_id = (p as PriceAlertCreatePayload).userId
   return result

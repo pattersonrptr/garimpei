@@ -43,6 +43,9 @@ export const ENDPOINTS = {
     list: `${BASE}/source-websites/`,
     byId: (id: string) => `${BASE}/source-websites/${id}`,
   },
+  books: {
+    byIsbn: (isbn: string) => `${BASE}/books/${encodeURIComponent(isbn)}`,
+  },
   priceAlerts: {
     list: `${BASE}/price-alerts/`,
     byId: (id: string) => `${BASE}/price-alerts/${id}`,

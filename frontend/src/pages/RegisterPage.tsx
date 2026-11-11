@@ -15,15 +15,17 @@ import Paper from '@mui/material/Paper'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { useState } from 'react'
-import { Link as RouterLink, useNavigate } from 'react-router-dom'
+import { Link as RouterLink, useNavigate, useSearchParams } from 'react-router-dom'
 import { useSnackbar } from 'notistack'
 import { useTranslation } from 'react-i18next'
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 import { register } from '@/services/userService'
 import { logger } from '@/lib/logger'
+import { withNext } from '@/lib/nextPath'
 
 export function RegisterPage() {
   const navigate = useNavigate()
+  const next = useSearchParams()[0].get('next')
   const { t } = useTranslation('auth')
   const { enqueueSnackbar } = useSnackbar()
 
@@ -56,7 +58,7 @@ export function RegisterPage() {
     try {
       await register({ username, email, password })
       enqueueSnackbar(t('register.success'), { variant: 'success' })
-      navigate('/login')
+      navigate(withNext('/login', next))
     } catch (err: unknown) {
       logger.error('Registration failed', { username }, err)
 
@@ -175,7 +177,7 @@ export function RegisterPage() {
 
           <Typography variant="body2" textAlign="center" color="text.secondary" mt={2}>
             {t('register.hasAccount')}{' '}
-            <Link component={RouterLink} to="/login">
+            <Link component={RouterLink} to={withNext('/login', next)}>
               {t('register.signIn')}
             </Link>
           </Typography>
