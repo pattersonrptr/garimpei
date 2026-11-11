@@ -1,0 +1,255 @@
+/* Phase 0 tokens (docs/plan/visual-direction.md). Light theme only for now. */
+:root {
+  --gold: #ffc928;
+  --ink: #1a1712;
+  --paper: #fffdf6;
+  --sand: #ece5d2;
+  --muted: #6a6355;
+  --good: #1f7a3d;
+  --bad: #c2452f;
+
+  --radius: 12px;
+  --radius-card: 16px;
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+
+  --page: 960px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-text), system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3,
+.display {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 800;
+  line-height: 1.15;
+  margin: 0;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+.container {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 0 var(--s4);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ── Top bar ─────────────────────────────────────────────────────────── */
+.topbar {
+  background: var(--gold);
+}
+.topbar-inner {
+  display: flex;
+  align-items: center;
+  gap: var(--s3) var(--s4);
+  padding: var(--s3) var(--s4);
+  max-width: var(--page);
+  margin: 0 auto;
+  flex-wrap: wrap;
+}
+.brand {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 1.5rem;
+  text-decoration: none;
+  letter-spacing: -0.02em;
+}
+.topbar .search {
+  flex: 1 1 260px;
+}
+
+/* ── Search form ─────────────────────────────────────────────────────── */
+.search {
+  display: flex;
+  gap: var(--s2);
+}
+.search input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  padding: var(--s3) var(--s4);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--ink);
+}
+.search input:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.button {
+  font: inherit;
+  font-weight: 700;
+  padding: var(--s3) var(--s5);
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: var(--gold);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+.button:hover {
+  background: #000;
+}
+.button:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* ── Home ────────────────────────────────────────────────────────────── */
+.hero {
+  padding: var(--s6) var(--s4);
+}
+.hero h1 {
+  font-size: clamp(2rem, 7vw, 3.25rem);
+  letter-spacing: -0.03em;
+  max-width: 14ch;
+}
+.hero p {
+  font-size: 1.125rem;
+  max-width: 40ch;
+  margin: var(--s4) 0 var(--s5);
+}
+.hero .hints {
+  margin-top: var(--s4);
+  font-size: 0.9rem;
+}
+
+/* ── Results ─────────────────────────────────────────────────────────── */
+.results-header {
+  padding: var(--s5) 0 var(--s4);
+}
+.results-header h1 {
+  font-size: 1.5rem;
+}
+.results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--s3);
+}
+.book-card {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: var(--s4);
+  padding: var(--s4);
+  background: #fff;
+  border: 1px solid var(--sand);
+  border-radius: var(--radius-card);
+  text-decoration: none;
+}
+.book-card:hover {
+  border-color: var(--ink);
+}
+.cover {
+  width: 64px;
+  aspect-ratio: 2 / 3;
+  border-radius: 6px;
+  background: var(--sand);
+  object-fit: cover;
+}
+.cover-placeholder {
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 1.5rem;
+  color: var(--muted);
+}
+.book-card h2 {
+  font-size: 1.125rem;
+}
+.prices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s5);
+  margin-top: var(--s2);
+}
+.price-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.price {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 1.25rem;
+}
+.price.used {
+  color: var(--good);
+}
+
+.empty {
+  padding: var(--s6) 0;
+}
+
+.pager {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding: var(--s5) 0;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────── */
+.footer {
+  margin-top: var(--s6);
+  padding: var(--s5) 0 var(--s6);
+  border-top: 1px solid var(--sand);
+  font-size: 0.875rem;
+}
+.footer p + p {
+  margin-top: var(--s2);
+}
