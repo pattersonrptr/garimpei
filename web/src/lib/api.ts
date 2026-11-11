@@ -92,3 +92,15 @@ export async function getDailyLows(isbn: string, days = 90): Promise<DailyLow[]>
     price: raw.price as number,
   }));
 }
+
+/** Every book in the catalog (the sitemap), fetched a page at a time. */
+export async function listBooks(): Promise<BookSummary[]> {
+  const books: BookSummary[] = [];
+  for (let offset = 0; ; offset += 50) {
+    const body = await get(`/books/index?limit=50&offset=${offset}`);
+    const data = (body?.data as Json[]) ?? [];
+    books.push(...data.map((item) => toSummary(item.attributes as Json)));
+    const total = ((body?.meta as Json)?.total as number) ?? 0;
+    if (data.length === 0 || books.length >= total) return books;
+  }
+}

@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, DM_Sans } from "next/font/google";
 import Link from "next/link";
 
+import { siteUrl } from "@/lib/seo";
+
 import "./globals.css";
 
 const display = Bricolage_Grotesque({
@@ -16,6 +18,7 @@ const text = DM_Sans({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl()),
   title: {
     default: "Garimpei: preço de livro novo e usado",
     template: "%s · Garimpei",

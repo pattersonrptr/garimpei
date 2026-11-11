@@ -175,3 +175,10 @@ class TestDailyLows:
         assert (
             catalog.daily_lows("9780306406157", datetime(2026, 1, 1, tzinfo=UTC)) == []
         )
+
+
+def test_an_empty_term_lists_every_book(catalog):
+    books, total = catalog.search("", 50, 0)
+
+    assert total == 3
+    assert len(books) == 3

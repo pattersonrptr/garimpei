@@ -163,6 +163,8 @@ services:
       - API_URL=http://web:8000
       # Amazon Associates tag for the "see on Amazon" link (empty: plain link).
       - AMAZON_ASSOCIATE_TAG=${AMAZON_ASSOCIATE_TAG:-}
+      # Public address, for canonical links, the sitemap and structured data.
+      - SITE_URL=${SITE_URL:-http://localhost:3000}
     restart: unless-stopped
 
   # ── Frontend ─────────────────────────────────────────────────────────────

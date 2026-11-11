@@ -382,3 +382,67 @@ img {
   max-width: 70ch;
   white-space: pre-line;
 }
+
+/* ── Price chart ─────────────────────────────────────────────────────── */
+.chart h2 {
+  font-size: 1.25rem;
+}
+.chart svg[role="img"] {
+  width: 100%;
+  height: auto;
+  margin-top: var(--s3);
+  background: #fff;
+  border: 1px solid var(--sand);
+  border-radius: var(--radius);
+}
+.chart .grid {
+  stroke: var(--sand);
+  stroke-width: 1;
+}
+.chart .axis {
+  fill: var(--muted);
+  font-size: 11px;
+  font-family: var(--font-text), system-ui, sans-serif;
+}
+.line-used path,
+.line-used line {
+  stroke: var(--ink);
+  stroke-width: 2.5;
+}
+.line-used circle {
+  fill: var(--ink);
+}
+.line-new path,
+.line-new line {
+  stroke: var(--muted);
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+}
+.line-new circle {
+  fill: var(--muted);
+}
+.legend {
+  list-style: none;
+  margin: var(--s2) 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s5);
+  font-size: 0.85rem;
+}
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.chart .chart-wide {
+  display: none;
+}
+@media (min-width: 560px) {
+  .chart .chart-narrow {
+    display: none;
+  }
+  .chart .chart-wide {
+    display: block;
+  }
+}

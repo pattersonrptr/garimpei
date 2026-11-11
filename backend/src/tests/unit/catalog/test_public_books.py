@@ -16,6 +16,7 @@ from src.app.catalog.use_cases import (
     BookNotFoundError,
     GetBookUseCase,
     GetDailyLowsUseCase,
+    ListBooksUseCase,
     SearchBooksUseCase,
 )
 
@@ -157,3 +158,13 @@ class TestDailyLows:
     def test_an_unknown_book_is_not_found(self):
         with pytest.raises(BookNotFoundError):
             GetDailyLowsUseCase(InMemoryCatalog()).execute("9780306406157")
+
+
+class TestListBooks:
+    def test_lists_every_book_a_page_at_a_time(self):
+        catalog = InMemoryCatalog()
+
+        result = ListBooksUseCase(catalog).execute(limit=500, offset=-1)
+
+        assert [b.isbn13 for b in result.books] == [ISBN13]
+        assert catalog.searches == [("", 50, 0)]

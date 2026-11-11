@@ -4,9 +4,11 @@ import { cache } from "react";
 
 import { Cover } from "@/components/BookCard";
 import { OfferColumn } from "@/components/OfferColumn";
+import { PriceChart } from "@/components/PriceChart";
 import { SavingsBlock } from "@/components/SavingsBlock";
 import { TopBar } from "@/components/TopBar";
-import { getBook } from "@/lib/api";
+import { getBook, getDailyLows } from "@/lib/api";
+import { bookJsonLd } from "@/lib/seo";
 import {
   amazonSearchUrl,
   bookPath,
@@ -46,6 +48,7 @@ export default async function BookPage({ params }: Props) {
   const canonical = bookPath(book.isbn13, book.title);
   if (`/livro/${slug}` !== canonical) permanentRedirect(canonical);
 
+  const lows = await getDailyLows(book.isbn13);
   const used = offersIn(book.offers, "used");
   const fresh = offersIn(book.offers, "new");
   const details = [book.publisher, book.year, book.pageCount && `${book.pageCount} páginas`]
@@ -55,6 +58,13 @@ export default async function BookPage({ params }: Props) {
   return (
     <>
       <TopBar />
+      <script
+        type="application/ld+json"
+        // JSON.stringify output; "<" is escaped so the text cannot close the tag.
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(bookJsonLd(book, canonical)).replace(/</g, "\\u003c"),
+        }}
+      />
       <main className="container book">
         <header className="book-header">
           <Cover url={book.coverUrl} title={book.title} />
@@ -75,6 +85,8 @@ export default async function BookPage({ params }: Props) {
           <OfferColumn title="Usados" offers={used} empty="Nenhum usado à venda agora." />
           <OfferColumn title="Novos" offers={fresh} empty="Nenhum novo à venda agora." />
         </div>
+
+        <PriceChart lows={lows} />
 
         <aside className="elsewhere">
           <p>Também vale conferir:</p>
