@@ -98,3 +98,6 @@ scrapers/ml_threshold_experiment.py
 scrapers/ml_ip_monitor.py
 scrapers/test_scrapers_live.py
 conversa*.txt
+
+# Claude Code: personal settings stay local (shared ones are in .claude/settings.json)
+.claude/settings.local.json
