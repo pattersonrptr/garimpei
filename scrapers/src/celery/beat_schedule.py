@@ -111,6 +111,18 @@ class DynamicScheduler(Scheduler):
                 app=self.app,
             )
 
+        # Static task: daily offer collection. Every hour, so a PC that was
+        # off catches up when it comes back; each store still runs once a day.
+        self.schedule["collect_daily_offers"] = ScheduleEntry(
+            name="collect_daily_offers",
+            task="src.celery.tasks.collect_daily_offers",
+            schedule=crontab(minute=5),
+            args=(),
+            kwargs={},
+            options={},
+            app=self.app,
+        )
+
         # Static task: cleanup orphaned products daily at 04:00
         self.schedule["cleanup_orphaned_products"] = ScheduleEntry(
             name="cleanup_orphaned_products",

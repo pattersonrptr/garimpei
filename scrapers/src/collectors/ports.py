@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from datetime import date
 
 from src.collectors.offers import CollectedOffer
 
@@ -36,3 +38,35 @@ class OfferSink(ABC):
     @abstractmethod
     def send(self, store_name: str, offer: CollectedOffer) -> None:
         """Deliver one offer. Raises on failure."""
+
+
+class CollectionQueue(ABC):
+    """Which products a store should be asked for, stalest first (the backend's
+    GET /offers/collection-queue)."""
+
+    @abstractmethod
+    def isbns_for(self, store_name: str) -> list[str]:
+        """Every ISBN to look up at this store, the stalest first."""
+
+
+@dataclass(frozen=True)
+class StoreRunState:
+    """What the daily collection remembers about a store between runs."""
+
+    last_run: date | None = None  # the day the store's collection was done
+    last_blocked: date | None = None  # the last day the store blocked us
+    paused_until: date | None = None  # not asked again before this day
+    failed_on: date | None = None  # the day of the failed attempts below
+    failed_attempts: int = 0
+
+
+class StoreRunLog(ABC):
+    """Keeps each store's StoreRunState across runs (Redis today)."""
+
+    @abstractmethod
+    def get(self, store_name: str) -> StoreRunState:
+        """The store's state; a blank one if it never ran."""
+
+    @abstractmethod
+    def save(self, store_name: str, state: StoreRunState) -> None:
+        """Replace the store's state."""

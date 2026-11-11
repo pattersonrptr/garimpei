@@ -472,6 +472,52 @@ def cleanup_orphaned_products(days_old: int = 30):
 
 
 # ---------------------------------------------------------------------------
+# Daily offer collection (comparator, Phase 2e)
+# ---------------------------------------------------------------------------
+
+COLLECT_DAILY_LOCK = "collectors:daily_lock"
+# Longer than a full run (about an hour for 50 books and 3 stores at 5-15 s a
+# request), so two hourly ticks never collect at once; it still expires if
+# the worker dies mid-run.
+COLLECT_DAILY_LOCK_SECONDS = 4 * 60 * 60
+
+
+@app.task(name="src.celery.tasks.collect_daily_offers")
+def collect_daily_offers():
+    """Beat calls this every hour. Each store is collected once a day (the
+    first tick after the PC is on), stalest books first; see CollectDaily."""
+    from src.collectors.wiring import collect_daily
+
+    if not _redis.set(
+        COLLECT_DAILY_LOCK, "running", nx=True, ex=COLLECT_DAILY_LOCK_SECONDS
+    ):
+        logger.info("Daily collection already running, skipping this tick.")
+        return {"status": "skipped", "message": "already running"}
+    try:
+        outcomes = collect_daily(_redis)
+    finally:
+        _redis.delete(COLLECT_DAILY_LOCK)
+
+    summary = {}
+    for outcome in outcomes:
+        report = outcome.report
+        line = outcome.status
+        if report:
+            line += (
+                f": {report.sent} offers sent, {len(report.not_found)} not found, "
+                f"{len(report.failed)} failed"
+            )
+        if outcome.detail:
+            line += f" ({outcome.detail})"
+        if outcome.status in ("collected", "already_done", "paused"):
+            logger.info("Collection %s: %s", outcome.store_name, line)
+        else:
+            logger.warning("Collection %s: %s", outcome.store_name, line)
+        summary[outcome.store_name] = line
+    return {"status": "success", "stores": summary}
+
+
+# ---------------------------------------------------------------------------
 # Notification tasks
 # ---------------------------------------------------------------------------
 

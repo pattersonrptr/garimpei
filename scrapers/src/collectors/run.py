@@ -1,9 +1,8 @@
 """Collect offers for some ISBNs and send them to the backend.
 
-Composition root: wires the polite HTTP client, the store adapters and the API
-sink. Credentials come from the same variables the scraper worker uses. Each
-store gets its own HTTP client (its own pauses and robots.txt) and runs after
-the previous one, so only one request is ever in flight.
+For a manual run; the daily schedule is the collect_daily_offers Celery task.
+The wiring lives in src/collectors/wiring.py. The stores run one after the
+other, so only one request is ever in flight.
 
 Usage (from scrapers/):
     python -m src.collectors.run 9788535914849 9788532530271
@@ -14,31 +13,11 @@ Usage (from scrapers/):
 import argparse
 import csv
 import logging
-import os
 import sys
-from collections.abc import Callable
 from pathlib import Path
 
-from src.collectors.api_sink import ApiOfferSink, login
-from src.collectors.polite_http import PoliteHttpClient
-from src.collectors.ports import OfferSource
-from src.collectors.stores.estante_virtual import EstanteVirtualSource
-from src.collectors.stores.vtex import VtexSource
 from src.collectors.use_cases import CollectOffers
-
-STORES: dict[str, Callable[[], OfferSource]] = {
-    "estante-virtual": lambda: EstanteVirtualSource(PoliteHttpClient()),
-    "livraria-da-vila": lambda: VtexSource(
-        PoliteHttpClient(),
-        store_name="livraria_da_vila",
-        base_url="https://www.livrariadavila.com.br",
-    ),
-    "martins-fontes": lambda: VtexSource(
-        PoliteHttpClient(),
-        store_name="martins_fontes",
-        base_url="https://www.martinsfontespaulista.com.br",
-    ),
-}
+from src.collectors.wiring import STORES, offer_sink
 
 
 def read_isbns(path: Path) -> list[str]:
@@ -65,10 +44,7 @@ def main() -> int:
     if not isbns:
         parser.error("give ISBNs or --file")
 
-    base_url = os.getenv("API_URL", "http://localhost:8000")
-    username = os.environ["CELERY_WORKER_USERNAME"]
-    password = os.environ["CELERY_WORKER_PASSWORD"]
-    sink = ApiOfferSink(base_url, lambda: login(base_url, username, password))
+    sink = offer_sink()
     names = list(STORES) if args.store == "all" else [args.store]
 
     problems = False

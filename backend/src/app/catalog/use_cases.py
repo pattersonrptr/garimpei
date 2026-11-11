@@ -8,6 +8,7 @@ from src.app.catalog.entities import (
     ProductCategory,
     ProductCondition,
     ProductListFilters,
+    QueuedProduct,
 )
 from src.app.catalog.entities import PriceHistory as PriceHistoryEntity
 from src.app.catalog.entities import Product as ProductEntity
@@ -17,6 +18,7 @@ from src.app.catalog.ports import (
     BookMetadataGateway,
     BookMetadataUnavailableError,
     CanonicalProductRepositoryInterface,
+    CollectionQueueRepositoryInterface,
     PriceHistoryRepositoryInterface,
     ProductRepositoryInterface,
 )
@@ -311,6 +313,21 @@ class GetOrCreateBookByIsbnUseCase:
                 identifiers=[identifier],
             )
         )
+
+
+class ListCollectionQueueUseCase:
+    """The books a collector should look up at one store, stalest first.
+
+    A daily run walks the list in order, so a run cut short (the PC turned off,
+    the store blocked) leaves the freshest books for last, and the next run
+    starts where the gaps are.
+    """
+
+    def __init__(self, products: CollectionQueueRepositoryInterface):
+        self.products = products
+
+    def execute(self, source_website_id: int) -> list[QueuedProduct]:
+        return self.products.list_by_staleness(IdentifierKind.ISBN13, source_website_id)
 
 
 class InvalidOfferError(ValueError):

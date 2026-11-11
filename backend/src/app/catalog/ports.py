@@ -5,6 +5,7 @@ from src.app.catalog.entities import (
     CanonicalProduct,
     IdentifierKind,
     ProductListFilters,
+    QueuedProduct,
 )
 from src.app.catalog.entities import PriceHistory as PriceHistoryEntity
 from src.app.catalog.entities import Product as ProductEntity
@@ -219,4 +220,18 @@ class CanonicalProductRepositoryInterface(ABC):
         If another request created a product with the same identifier first,
         returns that one instead of failing.
         """
+        raise NotImplementedError
+
+
+class CollectionQueueRepositoryInterface(ABC):
+    """What the collection queue needs: products ordered by how long ago a
+    store last priced them."""
+
+    @abstractmethod
+    def list_by_staleness(
+        self, kind: IdentifierKind, source_website_id: int
+    ) -> list[QueuedProduct]:
+        """Every product with an identifier of this kind, the ones whose latest
+        price point at this store is oldest first; products the store never
+        priced come before all others."""
         raise NotImplementedError

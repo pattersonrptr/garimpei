@@ -19,6 +19,7 @@ from src.app.catalog.entities import (
     IdentifierKind,
     ProductCondition,
     ProductListFilters,
+    QueuedProduct,
 )
 from src.app.catalog.entities import PriceHistory as PriceHistoryEntity
 from src.app.catalog.entities import Product as ProductEntity
@@ -35,6 +36,7 @@ from src.app.catalog.persistence.models import (
 )
 from src.app.catalog.ports import (
     CanonicalProductRepositoryInterface,
+    CollectionQueueRepositoryInterface,
     PriceHistoryRepositoryInterface,
     ProductRepositoryInterface,
 )
@@ -442,8 +444,10 @@ class PriceHistoryRepository(PriceHistoryRepositoryInterface):
         return True
 
 
-class CanonicalProductRepository(CanonicalProductRepositoryInterface):
-    """SQLAlchemy implementation of CanonicalProductRepositoryInterface."""
+class CanonicalProductRepository(
+    CanonicalProductRepositoryInterface, CollectionQueueRepositoryInterface
+):
+    """SQLAlchemy implementation of the canonical product ports."""
 
     def __init__(self, db: Session):
         self.db = db
@@ -485,6 +489,44 @@ class CanonicalProductRepository(CanonicalProductRepositoryInterface):
             raise
         self.db.refresh(row)
         return self._to_entity(row)
+
+    def list_by_staleness(
+        self, kind: IdentifierKind, source_website_id: int
+    ) -> list[QueuedProduct]:
+        last_point = (
+            self.db.query(
+                ProductModel.canonical_product_id.label("canonical_product_id"),
+                func.max(PriceHistoryModel.created_at).label("last_checked_at"),
+            )
+            .join(PriceHistoryModel, PriceHistoryModel.product_id == ProductModel.id)
+            .filter(
+                ProductModel.source_website_id == source_website_id,
+                ProductModel.canonical_product_id.isnot(None),
+            )
+            .group_by(ProductModel.canonical_product_id)
+            .subquery()
+        )
+        rows = (
+            self.db.query(ProductIdentifierModel.value, last_point.c.last_checked_at)
+            .outerjoin(
+                last_point,
+                last_point.c.canonical_product_id
+                == ProductIdentifierModel.canonical_product_id,
+            )
+            .filter(ProductIdentifierModel.kind == IdentifierKind(kind).value)
+            # "IS NULL DESC" puts never-priced products first on SQLite and
+            # Postgres alike (their default NULL ordering differs).
+            .order_by(
+                last_point.c.last_checked_at.is_(None).desc(),
+                last_point.c.last_checked_at.asc(),
+                ProductIdentifierModel.value,
+            )
+            .all()
+        )
+        return [
+            QueuedProduct(kind=kind, value=value, last_checked_at=last)
+            for value, last in rows
+        ]
 
     @staticmethod
     def _to_entity(row: CanonicalProductModel) -> CanonicalProductEntity:
