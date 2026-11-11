@@ -234,6 +234,7 @@ A IA erra. O que importa é ter barreiras que peguem o erro antes da `main`.
 | Testes E2E com rótulos chutados e o menu recolhido | O print da falha | Seletores pelos rótulos reais (#98) |
 | `pre-commit run --all-files` alterou arquivos antigos, inclusive uma migration já aplicada | `git status` antes de commitar | Alterações desfeitas; ajuste na configuração (#97) |
 | O hook que bloqueia `--no-verify` barrou o próprio commit que o criava, porque a mensagem citava a flag | O próprio hook, ao entrar em vigor | Ele passou a olhar só os argumentos de comandos git de verdade (#101) |
+| O script de prints clicava no botão "Buscar" da barra do topo em vez do "Entrar" | O print de falha que o próprio script salva | Seletor restrito ao formulário de login (#102) |
 
 ### Erros que eu peguei
 
@@ -269,13 +270,26 @@ proteções no GitHub valem para qualquer pessoa.
 | Camada | O que pega | O que não pega |
 |---|---|---|
 | [`AGENTS.md`](../AGENTS.md) (lido pelo Claude via `CLAUDE.md`) | Desvios das regras da casa: arquitetura, uma fatia por PR, como verificar, armadilhas conhecidas | Nada à força: é instrução, não trava |
-| Permissões ([`.claude/settings.json`](../.claude/settings.json)) | Push, merge, `docker compose down` e migrations sempre pedem minha confirmação; editar o `.env` é negado | Comandos que não estão na lista |
+| Permissões ([`.claude/settings.json`](../.claude/settings.json)) | Merge, `docker compose down` e migrations pedem minha confirmação; editar o `.env` e acessar a Amazon são negados. O push de um branch de trabalho é livre, porque as travas abaixo já protegem a `main` | Comandos que não estão na lista (um `curl` para a Amazon, por exemplo) |
 | Hooks ([`.claude/hooks/`](../.claude/hooks/)) | Bloqueiam: edição de `.env` e de migrations que já estão na `main`; commit ou push na `main`, force push, pular o pre-commit e merge forçado. Pedem minha confirmação antes de qualquer mudança nas próprias travas (`.claude/`). Corrigem Python fora do padrão | Erros de lógica |
 | pre-commit | Qualidade de código: formatação, JSON/YAML inválidos, conflitos esquecidos, nos meus commits e nos da IA | Comportamento |
 | Proteção da `main` no GitHub | Vale para qualquer pessoa, inclusive eu: só entra por PR com o CI verde, sem force push e sem apagar a `main` | O conteúdo do PR |
 | CI (GitHub Actions) | Lint, tipos, testes e build de cada parte, a cada PR | Fluxos completos no navegador (ainda não roda o E2E) |
 | Testes E2E | Fluxos reais de usuário, do clique ao e-mail | Só rodam localmente, quando alguém os roda |
+| Skill [`e2e-local`](../.claude/skills/e2e-local/SKILL.md) | O teste ponta a ponta como receita: o que reconstruir, esperar os serviços, rodar o Playwright, tirar prints | Só roda quando é chamada |
+| Subagente [`architecture-reviewer`](../.claude/agents/architecture-reviewer.md) | Violações das minhas regras de arquitetura num diff (regra da dependência, portas, entidades puras) | Bugs e estilo; é uma segunda opinião, não uma trava |
 | Minha validação | Se faz sentido para o produto; o que nenhum teste mede | Depende de eu revisar com atenção |
+
+### Automatizar o que se repete
+
+Só transformo em skill, subagente ou hook o que eu já faço à mão várias vezes
+(YAGNI): nada entra só para mostrar que sei configurar. Além de evitar erros,
+isso economiza tokens. O resumo de início de sessão é um script que entrega,
+em quatro linhas, o branch, os PRs abertos e o que falta do plano, em vez de a
+IA levantar isso a cada sessão. A skill de teste ponta a ponta já traz os
+passos e as armadilhas conhecidas. Quando a IA percebe uma tarefa repetida,
+ela propõe a automação e o modelo adequado: um mais barato para passos
+mecânicos, um mais forte para revisões.
 
 ## 9. O que eu domino e o que ainda estou estudando
 
