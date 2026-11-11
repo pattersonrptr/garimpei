@@ -34,10 +34,25 @@
     ],
     "deny": [
       "Edit(/.env)",
-      "Write(/.env)"
+      "Write(/.env)",
+      "WebFetch(domain:amazon.com.br)",
+      "WebFetch(domain:www.amazon.com.br)",
+      "WebFetch(domain:amazon.com)",
+      "WebFetch(domain:www.amazon.com)"
     ]
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/session_brief.py\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Edit|Write|MultiEdit|NotebookEdit",
