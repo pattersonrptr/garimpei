@@ -140,3 +140,13 @@ class BookMetadata:
     page_count: int | None = None
     synopsis: str | None = None
     cover_url: str | None = None
+
+
+@dataclass(frozen=True, kw_only=True)
+class QueuedProduct:
+    """A product a collector should look up at a store, and when that store last
+    gave it a price (None: never). Collectors check the stalest first."""
+
+    kind: IdentifierKind
+    value: str
+    last_checked_at: datetime | None = None

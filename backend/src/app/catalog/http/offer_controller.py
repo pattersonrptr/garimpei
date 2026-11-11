@@ -1,10 +1,11 @@
 """POST /offers: collectors send one offer for a book, identified by ISBN.
+GET /offers/collection-queue: which books a collector should look up next.
 
 This module is the composition root for offer ingestion: it wires the
-database repositories and the BrasilAPI metadata adapter into the use case.
+database repositories and the BrasilAPI metadata adapter into the use cases.
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
 from src.app.catalog.adapters.brasilapi_books import BrasilApiBookMetadata
@@ -22,6 +23,7 @@ from src.app.catalog.use_cases import (
     GetOrCreateBookByIsbnUseCase,
     IngestOfferUseCase,
     InvalidOfferError,
+    ListCollectionQueueUseCase,
     OfferInput,
 )
 from src.app.entities.user import User as UserEntity
@@ -56,6 +58,10 @@ def get_ingest_offer_use_case(
 
 def get_source_website_repository(db=Depends(get_db)) -> SourceWebsiteRepository:
     return SourceWebsiteRepository(db)
+
+
+def get_collection_queue_use_case(db=Depends(get_db)) -> ListCollectionQueueUseCase:
+    return ListCollectionQueueUseCase(CanonicalProductRepository(db))
 
 
 def _error(status: int, code: str, title: str, detail: str, pointer: str):
@@ -156,5 +162,52 @@ def ingest_offer(
     return JSONResponse(
         status_code=201 if result.created else 200,
         content=body,
+        media_type="application/vnd.api+json",
+    )
+
+
+@router.get("/collection-queue")
+def collection_queue(
+    store: str = Query(description="The store's slug, e.g. estante_virtual"),
+    use_case: ListCollectionQueueUseCase = Depends(get_collection_queue_use_case),
+    source_websites: SourceWebsiteRepository = Depends(get_source_website_repository),
+    current_user: UserEntity = Depends(get_current_staff_user),
+):
+    """
+    The books a collector should look up at a store, stalest first: books the
+    store never priced, then the ones whose latest price point is oldest.
+    Requires staff access (collectors).
+
+    Returns:
+        - 200: collection of collection-queue-items (isbn, last_checked_at)
+        - 404: unknown store
+    """
+    source_website = source_websites.get_by_name(store)
+    if not source_website:
+        return _error(
+            404,
+            "UNKNOWN_SOURCE_WEBSITE",
+            "Unknown store",
+            f"No source website named {store!r}",
+            "/store",
+        )
+
+    queue = use_case.execute(source_website.id)
+    data = [
+        {
+            "type": "collection-queue-items",
+            "id": item.value,
+            "attributes": {
+                "isbn": item.value,
+                "last_checked_at": (
+                    item.last_checked_at.isoformat() if item.last_checked_at else None
+                ),
+            },
+        }
+        for item in queue
+    ]
+    return JSONResponse(
+        status_code=200,
+        content={"data": data, "meta": {"total": len(data)}},
         media_type="application/vnd.api+json",
     )

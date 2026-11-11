@@ -3,7 +3,14 @@
 import json
 
 from src.collectors.offers import CollectedOffer
-from src.collectors.ports import OfferSink, OfferSource, PageFetcher
+from src.collectors.ports import (
+    CollectionQueue,
+    OfferSink,
+    OfferSource,
+    PageFetcher,
+    StoreRunLog,
+    StoreRunState,
+)
 
 
 def page_with_state(state: dict) -> str:
@@ -48,3 +55,27 @@ class RecordingSink(OfferSink):
         if offer.url in self.failing_urls:
             raise RuntimeError("422")
         self.sent.append((store_name, offer))
+
+
+class FixedQueue(CollectionQueue):
+    """The same ISBNs for every store, or an error."""
+
+    def __init__(self, isbns=(), error=None):
+        self.isbns, self.error, self.asked = list(isbns), error, []
+
+    def isbns_for(self, store_name):
+        self.asked.append(store_name)
+        if self.error:
+            raise self.error
+        return self.isbns
+
+
+class InMemoryRunLog(StoreRunLog):
+    def __init__(self, states=None):
+        self.states = dict(states or {})
+
+    def get(self, store_name):
+        return self.states.get(store_name, StoreRunState())
+
+    def save(self, store_name, state):
+        self.states[store_name] = state

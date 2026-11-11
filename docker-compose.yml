@@ -31,6 +31,7 @@ services:
       - ./backend/alembic:/src/alembic
       - ./backend:/src
     command: ./start.sh
+    restart: unless-stopped
 
   # ── Scraper Workers ──────────────────────────────────────────────────────
   scraper:
@@ -53,10 +54,14 @@ services:
       - PROXY_SERVER=${PROXY_SERVER:-}
       - PROXY_USERNAME=${PROXY_USERNAME:-}
       - PROXY_PASSWORD=${PROXY_PASSWORD:-}
+    # Runs on the author's PC next to games: capped so collection never
+    # competes for the machine (Phase 2, decision 1).
     deploy:
       resources:
         limits:
+          cpus: "2"
           memory: 2G
+    restart: unless-stopped
     volumes:
       - ./scrapers:/src
     command:
@@ -96,6 +101,8 @@ services:
     volumes:
       - ./scrapers:/src
     command: celery -A src.celery.tasks beat --loglevel=info
+    # Beat starts the daily offer collection; it must come back after a reboot.
+    restart: unless-stopped
 
   # ── Flower (Celery Monitoring) ───────────────────────────────────────────
   flower:
@@ -122,6 +129,7 @@ services:
       - pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    restart: unless-stopped
 
   # ── Mailpit (local email inbox for development) ─────────────────────────
   mailpit:
@@ -136,6 +144,10 @@ services:
     container_name: redis
     ports:
       - "6379:6379"
+    # Keeps the collectors' per-store state (day done, week-long pauses).
+    volumes:
+      - redisdata:/data
+    restart: unless-stopped
 
   # ── Frontend ─────────────────────────────────────────────────────────────
   frontend:
@@ -153,3 +165,4 @@ services:
 
 volumes:
   pgdata:
+  redisdata:

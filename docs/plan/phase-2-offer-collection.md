@@ -24,7 +24,7 @@ prices from at least 2 stores, new and used**, matched to books by ISBN, so
 | 2b | **Seed list** (done: `backend/seeds/books_bestsellers.csv`, `python -m src.scripts.load_seed_books`). A list of ISBNs the system keeps fresh (a file in the repo to start) | One command loads it into the catalog |
 | 2c | **Collector 1: Estante Virtual by ISBN** (done: `scrapers/src/collectors`, `python -m src.collectors.run`), new and used as separate offers | A seed book yields 1 new and/or used offers in the DB |
 | 2d | **Collector 2** (done: VTEX adapter for Livraria da Vila and Martins Fontes, `--store`) | Same, from a second store |
-| 2e | **Schedule.** A daily job runs the collectors over the seed list, stalest first | History grows by a point per offer per day without anyone clicking |
+| 2e | **Schedule** (done: `collect_daily_offers` task, `GET /offers/collection-queue`). A daily job runs the collectors over the catalog, stalest first | History grows by a point per offer per day without anyone clicking |
 | 2f | **Freshness.** Each offer records when it was last checked | The API can say "updated 3 h ago" |
 
 2a first: it is the contract every collector depends on, and it has no scraping
@@ -110,6 +110,36 @@ question. The loader is idempotent and reports ISBNs it could not load.
   12 offers. *Duna* ranged from R$ 30 (used, Estante Virtual) to R$ 109,90
   (new, Livraria da Vila); *O Hobbit* was cheaper new than used on Estante
   Virtual, and out of stock at Livraria da Vila.
+
+## 2e notes
+
+- **Trigger:** Celery beat calls `collect_daily_offers` every hour (minute 5).
+  Each store is collected **once a day**: the first tick after the PC is on
+  does it, later ticks skip it. A PC that is off at night catches up when it is
+  turned on; no fixed time to miss. The task holds a Redis lock, so two ticks
+  never collect at once.
+- **Which books:** `GET /offers/collection-queue?store=<slug>` (staff) lists
+  every book in the catalog (not the seed file), books the store never priced
+  first, then the oldest latest price point. A run cut short leaves the
+  freshest books for last. Books a store does not sell stay at the top of its
+  queue every day; that costs one request each and is fine at 50 books.
+- **Per-store state** (`CollectDaily` use case, `StoreRunLog` port, Redis
+  adapter, kept in the `redisdata` volume):
+  - a block (captcha, 403, 429, empty page) ends the store's day;
+  - a block on two days in a row pauses the store for a week and logs an
+    `ERROR` line ("paused until ... Check the store by hand"), decision 11;
+  - a run that sent nothing and only failed (store or backend down) is not
+    counted as done: the next hourly tick tries again, up to 3 times a day;
+  - the "day" is Brazil's (UTC-3), not the container's UTC.
+- **Retries and dead-letter list** (decision 11) are left out: the hourly
+  catch-up retries a failed store, and the stalest-first queue retries a
+  failed book the next day. Revisit with the AWS track (SQS redrive).
+- **Running unattended:** `web`, `db`, `redis`, `scraper` and `celery-beat`
+  have `restart: unless-stopped`; the scraper worker is capped at 2 CPUs and
+  2 GB. Docker Desktop has to start with Windows (Settings → General → "Start
+  Docker Desktop when you sign in").
+- `python -m src.collectors.run` still works for a manual run; both entry
+  points share `src/collectors/wiring.py`.
 
 ## Decisions (Nov 2026)
 

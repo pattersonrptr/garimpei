@@ -9,10 +9,14 @@ from src.app.catalog.persistence.models import (
 )
 from src.app.catalog.persistence.models import PriceHistory as PriceHistoryModel
 from src.app.catalog.persistence.models import Product as ProductModel
+from src.app.catalog.persistence.models import (
+    ProductIdentifier as ProductIdentifierModel,
+)
 from src.app.catalog.ports import BookMetadataGateway, BookMetadataUnavailableError
 from src.main import app
 
 ISBN13 = "9788535914849"
+OTHER_ISBN = "9788576573135"
 URL = "https://www.estantevirtual.com.br/livro/1984-usado-123"
 
 
@@ -178,3 +182,54 @@ class TestIngestOffer:
         assert response.status_code == 503
         assert response.json()["errors"][0]["code"] == "METADATA_UNAVAILABLE"
         assert test_db.query(ProductModel).count() == 0
+
+
+class TestCollectionQueue:
+    def test_lists_books_the_store_never_priced_before_priced_ones(
+        self, client, staff_auth_headers, sample_source_website, known_book, test_db
+    ):
+        test_db.add(
+            CanonicalProductModel(
+                category="book",
+                title="Duna",
+                attributes={},
+                identifiers=[ProductIdentifierModel(kind="isbn13", value=OTHER_ISBN)],
+            )
+        )
+        test_db.commit()
+        client.post(
+            "/offers/",
+            json=payload(sample_source_website.id),
+            headers=staff_auth_headers,
+        )
+
+        response = client.get(
+            "/offers/collection-queue",
+            params={"store": sample_source_website.name},
+            headers=staff_auth_headers,
+        )
+
+        assert response.status_code == 200
+        items = response.json()["data"]
+        assert [i["attributes"]["isbn"] for i in items] == [OTHER_ISBN, ISBN13]
+        assert items[0]["attributes"]["last_checked_at"] is None
+        assert items[1]["attributes"]["last_checked_at"] is not None
+
+    def test_unknown_store_returns_404(self, client, staff_auth_headers):
+        response = client.get(
+            "/offers/collection-queue",
+            params={"store": "nowhere"},
+            headers=staff_auth_headers,
+        )
+
+        assert response.status_code == 404
+        assert response.json()["errors"][0]["code"] == "UNKNOWN_SOURCE_WEBSITE"
+
+    def test_requires_staff(self, client, auth_headers, sample_source_website):
+        response = client.get(
+            "/offers/collection-queue",
+            params={"store": sample_source_website.name},
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 403

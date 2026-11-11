@@ -853,3 +853,67 @@ def test_update_products_no_price_skips_price_history(mock_client_cls, mock_toke
     result = update_products(results, "enjoei")
     assert result["updated"] == 1
     client.create_price_history.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# collect_daily_offers
+# ---------------------------------------------------------------------------
+
+
+def test_daily_collection_runs_under_a_lock_and_releases_it():
+    from datetime import date
+
+    from src.celery.tasks import COLLECT_DAILY_LOCK, collect_daily_offers
+    from src.collectors.use_cases import CollectionReport, StoreOutcome
+
+    report = CollectionReport(sent=4, not_found=["x"])
+    outcomes = [
+        StoreOutcome("estante_virtual", "collected", report),
+        StoreOutcome("martins_fontes", "paused", detail=f"until {date(2026, 11, 17)}"),
+    ]
+    redis = MagicMock()
+    redis.set.return_value = True
+    with (
+        patch("src.celery.tasks._redis", redis),
+        patch("src.collectors.wiring.collect_daily", return_value=outcomes) as run,
+    ):
+        result = collect_daily_offers()
+
+    run.assert_called_once_with(redis)
+    assert redis.set.call_args.kwargs["nx"] is True
+    redis.delete.assert_called_once_with(COLLECT_DAILY_LOCK)
+    assert result["stores"] == {
+        "estante_virtual": "collected: 4 offers sent, 1 not found, 0 failed",
+        "martins_fontes": "paused (until 2026-11-17)",
+    }
+
+
+def test_daily_collection_skips_while_another_run_holds_the_lock():
+    from src.celery.tasks import collect_daily_offers
+
+    redis = MagicMock()
+    redis.set.return_value = False
+    with (
+        patch("src.celery.tasks._redis", redis),
+        patch("src.collectors.wiring.collect_daily") as run,
+    ):
+        result = collect_daily_offers()
+
+    run.assert_not_called()
+    redis.delete.assert_not_called()
+    assert result["status"] == "skipped"
+
+
+def test_daily_collection_releases_the_lock_when_it_fails():
+    from src.celery.tasks import COLLECT_DAILY_LOCK, collect_daily_offers
+
+    redis = MagicMock()
+    redis.set.return_value = True
+    with (
+        patch("src.celery.tasks._redis", redis),
+        patch("src.collectors.wiring.collect_daily", side_effect=KeyError("x")),
+        pytest.raises(KeyError),
+    ):
+        collect_daily_offers()
+
+    redis.delete.assert_called_once_with(COLLECT_DAILY_LOCK)

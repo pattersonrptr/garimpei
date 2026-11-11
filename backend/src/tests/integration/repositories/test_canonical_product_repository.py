@@ -4,6 +4,8 @@ Integration tests for CanonicalProductRepository and the offer link.
 Uses SQLite in-memory, like the other repository tests.
 """
 
+from datetime import datetime, timedelta
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -18,6 +20,8 @@ from src.app.catalog.entities import Product as ProductEntity
 from src.app.catalog.persistence.models import (  # noqa: F401
     CanonicalProduct as CanonicalProductModel,
 )
+from src.app.catalog.persistence.models import PriceHistory as PriceHistoryModel
+from src.app.catalog.persistence.models import Product as ProductModel
 from src.app.catalog.persistence.models import (  # noqa: F401
     ProductIdentifier as ProductIdentifierModel,
 )
@@ -138,3 +142,67 @@ class TestOfferLink:
         )
 
         assert products.get_by_id(created.id).canonical_product_id is None
+
+
+class TestListByStaleness:
+    """The collection queue: never-priced books first, then the oldest point."""
+
+    STORE, OTHER_STORE = 1, 2
+
+    @pytest.fixture
+    def stores(self, db):
+        db.add_all(
+            [
+                SourceWebsiteModel(id=self.STORE, name="a", base_url="https://a"),
+                SourceWebsiteModel(id=self.OTHER_STORE, name="b", base_url="https://b"),
+            ]
+        )
+        db.commit()
+
+    def price_at(self, db, book, store, *days_ago):
+        """An offer for the book at the store, with one price point per day given."""
+        offer = ProductModel(
+            url=f"https://{store}/{book.id}/{len(days_ago)}",
+            title=book.title,
+            source_website_id=store,
+            canonical_product_id=book.id,
+        )
+        db.add(offer)
+        db.flush()
+        now = datetime(2026, 11, 10, 12, 0)
+        db.add_all(
+            PriceHistoryModel(
+                product_id=offer.id, price=10, created_at=now - timedelta(days=d)
+            )
+            for d in days_ago
+        )
+        db.commit()
+
+    def test_orders_never_priced_first_then_oldest_point(self, db, stores):
+        repo = CanonicalProductRepository(db)
+        fresh = repo.create(a_book(isbn="9780000000002", title="fresh"))
+        stale = repo.create(a_book(isbn="9780000000001", title="stale"))
+        never = repo.create(a_book(isbn="9780000000003", title="never"))
+        self.price_at(db, fresh, self.STORE, 5, 0)  # latest point counts: today
+        self.price_at(db, stale, self.STORE, 3)
+        self.price_at(db, never, self.OTHER_STORE, 9)  # another store's point
+
+        queue = repo.list_by_staleness(IdentifierKind.ISBN13, self.STORE)
+
+        assert [q.value for q in queue] == [
+            "9780000000003",
+            "9780000000001",
+            "9780000000002",
+        ]
+        assert queue[0].last_checked_at is None
+        assert queue[1].last_checked_at == datetime(2026, 11, 7, 12, 0)
+
+    def test_uses_the_latest_point_across_the_books_offers(self, db, stores):
+        repo = CanonicalProductRepository(db)
+        book = repo.create(a_book())
+        self.price_at(db, book, self.STORE, 8)  # used offer, old
+        self.price_at(db, book, self.STORE, 1, 2)  # new offer, recent
+
+        (item,) = repo.list_by_staleness(IdentifierKind.ISBN13, self.STORE)
+
+        assert item.last_checked_at == datetime(2026, 11, 9, 12, 0)

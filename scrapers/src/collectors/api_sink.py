@@ -1,12 +1,13 @@
-"""Sends collected offers to the backend's POST /offers (architecture rule 5:
-collectors never write to the database)."""
+"""The collectors' side of the backend API: offers go to POST /offers
+(architecture rule 5: collectors never write to the database) and the list of
+books to check comes from GET /offers/collection-queue."""
 
 from collections.abc import Callable
 
 import requests
 
 from src.collectors.offers import CollectedOffer
-from src.collectors.ports import OfferSink
+from src.collectors.ports import CollectionQueue, OfferSink
 
 JSONAPI = "application/vnd.api+json"
 
@@ -28,9 +29,10 @@ def login(base_url: str, username: str, password: str, timeout: float = 10) -> s
     return token
 
 
-class ApiOfferSink(OfferSink):
-    """Access tokens expire (30 min by default) and a run over many books is
-    longer than that, so a 401 logs in again once and repeats the request."""
+class _BackendApi:
+    """An authenticated session to the backend. Access tokens expire (30 min by
+    default) and a run over many books is longer than that, so a 401 logs in
+    again once and repeats the request."""
 
     def __init__(
         self,
@@ -43,8 +45,24 @@ class ApiOfferSink(OfferSink):
         self.authenticate = authenticate
         self.session = session or requests.Session()
         self.session.headers["Content-Type"] = JSONAPI
-        self._use_token(authenticate())
         self.timeout = timeout
+        self._use_token(authenticate())
+
+    def _request(self, method: str, url: str, **kwargs) -> requests.Response:
+        send = getattr(self.session, method)
+        response = send(url, timeout=self.timeout, **kwargs)
+        if response.status_code == 401:
+            self._use_token(self.authenticate())
+            response = send(url, timeout=self.timeout, **kwargs)
+        return response
+
+    def _use_token(self, token: str) -> None:
+        self.session.headers["Authorization"] = f"Bearer {token}"
+
+
+class ApiOfferSink(_BackendApi, OfferSink):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._store_ids: dict[str, int] = {}
 
     def send(self, store_name: str, offer: CollectedOffer) -> None:
@@ -77,13 +95,13 @@ class ApiOfferSink(OfferSink):
             self._store_ids[store_name] = int(response.json()["data"]["id"])
         return self._store_ids[store_name]
 
-    def _request(self, method: str, url: str, **kwargs) -> requests.Response:
-        send = getattr(self.session, method)
-        response = send(url, timeout=self.timeout, **kwargs)
-        if response.status_code == 401:
-            self._use_token(self.authenticate())
-            response = send(url, timeout=self.timeout, **kwargs)
-        return response
 
-    def _use_token(self, token: str) -> None:
-        self.session.headers["Authorization"] = f"Bearer {token}"
+class ApiCollectionQueue(_BackendApi, CollectionQueue):
+    def isbns_for(self, store_name: str) -> list[str]:
+        response = self._request(
+            "get",
+            f"{self.base_url}/offers/collection-queue",
+            params={"store": store_name},
+        )
+        response.raise_for_status()
+        return [item["attributes"]["isbn"] for item in response.json()["data"]]

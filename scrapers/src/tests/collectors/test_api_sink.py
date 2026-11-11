@@ -1,6 +1,6 @@
 import pytest
 
-from src.collectors.api_sink import ApiOfferSink
+from src.collectors.api_sink import ApiCollectionQueue, ApiOfferSink
 from src.collectors.offers import CollectedOffer
 
 
@@ -102,3 +102,44 @@ def test_a_rejected_offer_raises():
 
     with pytest.raises(RuntimeError, match="422"):
         sink.send("estante_virtual", OFFER)
+
+
+class QueueSession:
+    """Answers GET /offers/collection-queue with the given statuses in turn."""
+
+    def __init__(self, *statuses):
+        self.headers, self.calls, self.statuses = {}, [], list(statuses)
+
+    def get(self, url, timeout, params):
+        self.calls.append((url, params, self.headers["Authorization"]))
+        body = {
+            "data": [
+                {"id": isbn, "attributes": {"isbn": isbn, "last_checked_at": None}}
+                for isbn in ("9788535914849", "9788532530271")
+            ]
+        }
+        return FakeResponse(self.statuses.pop(0), body)
+
+
+def test_the_queue_asks_for_the_store_and_keeps_the_backend_order():
+    session = QueueSession(200)
+    queue = ApiCollectionQueue("http://api/", tokens("t1"), session=session)
+
+    isbns = queue.isbns_for("estante_virtual")
+
+    assert isbns == ["9788535914849", "9788532530271"]
+    assert session.calls == [
+        (
+            "http://api/offers/collection-queue",
+            {"store": "estante_virtual"},
+            "Bearer t1",
+        )
+    ]
+
+
+def test_the_queue_logs_in_again_when_the_token_expired():
+    session = QueueSession(401, 200)
+    queue = ApiCollectionQueue("http://api", tokens("old", "new"), session=session)
+
+    assert len(queue.isbns_for("x")) == 2
+    assert [auth for _, _, auth in session.calls] == ["Bearer old", "Bearer new"]
