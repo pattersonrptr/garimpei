@@ -46,6 +46,11 @@ class PriceAlert(Base):
     last_triggered_at = Column(DateTime, nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     search_config_id = Column(Integer, ForeignKey("search_configs.id"), nullable=True)
+    # Book alerts (Phase 4): the book and the condition watched.
+    canonical_product_id = Column(
+        Integer, ForeignKey("canonical_products.id"), nullable=True
+    )
+    condition = Column(String(10), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
     updated_at = Column(
         DateTime,
@@ -71,6 +76,7 @@ class PriceAlert(Base):
         Index("ix_price_alert_user_id", user_id),
         Index("ix_price_alert_search_config_id", search_config_id),
         Index("ix_price_alert_deleted_at", deleted_at),
+        Index("ix_price_alert_canonical_product_id", canonical_product_id),
     )
 
 

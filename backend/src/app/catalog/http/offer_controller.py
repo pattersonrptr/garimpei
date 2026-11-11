@@ -8,6 +8,11 @@ database repositories and the BrasilAPI metadata adapter into the use cases.
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
+from src.app.alerts.persistence.repositories import (
+    NotificationLogRepository,
+    PriceAlertRepository,
+)
+from src.app.alerts.use_cases import EvaluateBookAlertsUseCase, OpportunityNotifier
 from src.app.catalog.adapters.brasilapi_books import BrasilApiBookMetadata
 from src.app.catalog.http.offer_schema import OfferIngestRequest
 from src.app.catalog.http.product_presenter import ProductPresenter
@@ -31,6 +36,9 @@ from src.app.infrastructure.database_config import get_db
 from src.app.infrastructure.repositories.source_website_repository import (
     SourceWebsiteRepository,
 )
+from src.app.infrastructure.repositories.user_repository import UserRepository
+from src.app.infrastructure.services.email_service import get_email_service
+from src.app.interfaces.services.email_service import EmailServiceInterface
 from src.app.security.auth import get_current_staff_user
 from src.common.jsonapi import JsonApiError, JsonApiErrorResponse
 from src.config.logging_config import get_logger
@@ -53,6 +61,22 @@ def get_ingest_offer_use_case(
         get_book=GetOrCreateBookByIsbnUseCase(CanonicalProductRepository(db), metadata),
         offers=ProductRepository(db),
         prices=PriceHistoryRepository(db),
+    )
+
+
+def get_book_alerts_use_case(
+    db=Depends(get_db),
+    email_service: EmailServiceInterface = Depends(get_email_service),
+) -> EvaluateBookAlertsUseCase:
+    """Book alerts are checked right after an offer for the book comes in."""
+    alerts = PriceAlertRepository(db)
+    return EvaluateBookAlertsUseCase(
+        product_repo=ProductRepository(db),
+        price_alert_repo=alerts,
+        source_website_repo=SourceWebsiteRepository(db),
+        notifier=OpportunityNotifier(
+            NotificationLogRepository(db), UserRepository(db), alerts, email_service
+        ),
     )
 
 
@@ -87,13 +111,15 @@ def ingest_offer(
     offer_in: OfferIngestRequest,
     use_case: IngestOfferUseCase = Depends(get_ingest_offer_use_case),
     source_websites: SourceWebsiteRepository = Depends(get_source_website_repository),
+    book_alerts: EvaluateBookAlertsUseCase = Depends(get_book_alerts_use_case),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
     """
     Record one offer for a book. Requires staff access (collectors).
 
     Finds or creates the book from its ISBN, creates or updates the offer by
-    URL, and adds a price-history point.
+    URL, and adds a price-history point. Then checks the book's price alerts
+    (a failure there never fails the ingestion).
 
     Returns:
         - 201: new offer (products resource, with canonical_product_id)
@@ -158,6 +184,11 @@ def ingest_offer(
         result.book.id,
         extra={"action": "offer_ingested", "user_id": current_user.id},
     )
+    if result.book.id is not None:
+        try:
+            book_alerts.execute(result.book.id)
+        except Exception:  # an alert problem must not lose the price point
+            logger.exception("Book alerts failed for book %s", result.book.id)
     body = ProductPresenter.handle_success(result.offer).model_dump(mode="json")
     return JSONResponse(
         status_code=201 if result.created else 200,

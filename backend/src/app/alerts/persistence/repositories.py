@@ -42,6 +42,8 @@ class PriceAlertRepository(PriceAlertRepositoryInterface):
             user_id=model.user_id,
             search_config_id=model.search_config_id,
             source_website_ids=[sw.id for sw in model.source_websites],
+            canonical_product_id=model.canonical_product_id,
+            condition=model.condition,
             created_at=model.created_at,
             updated_at=model.updated_at,
             deleted_at=model.deleted_at,
@@ -70,6 +72,8 @@ class PriceAlertRepository(PriceAlertRepositoryInterface):
             last_triggered_at=price_alert.last_triggered_at,
             user_id=price_alert.user_id,
             search_config_id=price_alert.search_config_id,
+            canonical_product_id=price_alert.canonical_product_id,
+            condition=price_alert.condition,
         )
         self.db.add(db_price_alert)
         self.db.flush()  # get the id before syncing M2M
@@ -169,6 +173,8 @@ class PriceAlertRepository(PriceAlertRepositoryInterface):
         db_record.last_triggered_at = price_alert.last_triggered_at
         db_record.user_id = price_alert.user_id
         db_record.search_config_id = price_alert.search_config_id
+        db_record.canonical_product_id = price_alert.canonical_product_id
+        db_record.condition = price_alert.condition
 
         self._sync_source_websites(db_record, price_alert.source_website_ids)
 
@@ -227,6 +233,34 @@ class PriceAlertRepository(PriceAlertRepositoryInterface):
             )
             .count()
         )
+
+    def get_by_book_and_user_id(
+        self, canonical_product_id: int, user_id: int, condition: str
+    ) -> PriceAlertEntity | None:
+        record = (
+            self.db.query(PriceAlertModel)
+            .filter(
+                PriceAlertModel.canonical_product_id == canonical_product_id,
+                PriceAlertModel.user_id == user_id,
+                PriceAlertModel.condition == condition,
+                PriceAlertModel.deleted_at.is_(None),
+            )
+            .first()
+        )
+        return self._to_entity(record) if record else None
+
+    def get_active_by_book(self, canonical_product_id: int) -> list[PriceAlertEntity]:
+        records = (
+            self.db.query(PriceAlertModel)
+            .filter(
+                PriceAlertModel.canonical_product_id == canonical_product_id,
+                PriceAlertModel.is_active.is_(True),
+                PriceAlertModel.deleted_at.is_(None),
+            )
+            .order_by(PriceAlertModel.id)
+            .all()
+        )
+        return [self._to_entity(r) for r in records]
 
     def find_matching_alerts_for_product(
         self,

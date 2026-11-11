@@ -73,6 +73,7 @@ class ProductListFilters:
     matching_user_id: int | None = None
     matching_alert_id: int | None = None
     opportunities_only: bool = False
+    canonical_product_id: int | None = None  # only this book's offers
 
 
 @dataclass(kw_only=True)

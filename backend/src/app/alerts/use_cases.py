@@ -87,6 +87,9 @@ class CreatePriceAlertUseCase:
         self.search_config_repo = search_config_repo
 
     def execute(self, price_alert: PriceAlertEntity) -> PriceAlertEntity:
+        if price_alert.is_book_alert:
+            price_alert.search_config_id = None
+            return self.price_alert_repo.create(price_alert)
         search_config_id = _find_or_create_search_config(
             self.search_config_repo,
             price_alert.search_term,
@@ -167,7 +170,9 @@ class UpdatePriceAlertUseCase:
             existing.source_website_ids
         )
 
-        if term_changed or websites_changed:
+        if existing.is_book_alert:
+            price_alert.search_config_id = None
+        elif term_changed or websites_changed:
             new_config_id = _find_or_create_search_config(
                 self.search_config_repo,
                 price_alert.search_term,
@@ -642,10 +647,16 @@ class NotifyAlertOpportunitiesUseCase:
         self.notifier = OpportunityNotifier(
             notification_log_repo, user_repo, price_alert_repo, email_service
         )
+        self.book_alerts = EvaluateBookAlertsUseCase(
+            product_repo, price_alert_repo, source_website_repo, self.notifier
+        )
 
     def execute(self, alert: PriceAlertEntity) -> list[NotificationLogEntity]:
         if not alert.is_active or alert.id is None:
             return []
+        if alert.is_book_alert:
+            log = self.book_alerts.evaluate_alert(alert)
+            return [log] if log is not None and log.status == "sent" else []
         products, _ = self.product_repo.get_all(
             limit=self.MAX_LISTINGS,
             filters=ProductListFilters(
@@ -667,3 +678,79 @@ class NotifyAlertOpportunitiesUseCase:
             if log is not None and log.status == "sent":
                 sent.append(log)
         return sent
+
+
+class EvaluateBookAlertsUseCase:
+    """Check a book's alerts against the book's offers (Phase 4c).
+
+    For each active alert on the book: the cheapest offer in stock, in a
+    condition the alert wants, at or under its max price, is sent to the
+    owner. One e-mail per alert per check; an alert and offer pair is never
+    sent twice (``OpportunityNotifier``), so a further drop on the same offer
+    sends nothing (known MVP limit).
+    """
+
+    MAX_OFFERS = 200
+
+    def __init__(
+        self,
+        product_repo: ProductRepositoryInterface,
+        price_alert_repo: PriceAlertRepositoryInterface,
+        source_website_repo: SourceWebsiteRepositoryInterface,
+        notifier: OpportunityNotifier,
+    ):
+        self.product_repo = product_repo
+        self.price_alert_repo = price_alert_repo
+        self.source_website_repo = source_website_repo
+        self.notifier = notifier
+
+    def execute(self, canonical_product_id: int) -> list[NotificationLogEntity]:
+        """Every active alert on the book. Returns the e-mails sent."""
+        alerts = self.price_alert_repo.get_active_by_book(canonical_product_id)
+        if not alerts:
+            return []
+        offers = self._offers(canonical_product_id)
+        sent = []
+        for alert in alerts:
+            log = self._notify_best(alert, offers)
+            if log is not None and log.status == "sent":
+                sent.append(log)
+        return sent
+
+    def evaluate_alert(self, alert: PriceAlertEntity) -> NotificationLogEntity | None:
+        """One alert (just created or changed)."""
+        if not alert.is_active or alert.canonical_product_id is None:
+            return None
+        return self._notify_best(alert, self._offers(alert.canonical_product_id))
+
+    def _offers(self, canonical_product_id: int) -> list[ProductEntity]:
+        offers, _ = self.product_repo.get_all(
+            limit=self.MAX_OFFERS,
+            filters=ProductListFilters(
+                canonical_product_id=canonical_product_id, is_available=True
+            ),
+        )
+        return offers
+
+    def _notify_best(
+        self, alert: PriceAlertEntity, offers: list[ProductEntity]
+    ) -> NotificationLogEntity | None:
+        wanted = [
+            offer
+            for offer in offers
+            if offer.current_price is not None
+            and offer.current_price <= alert.max_price
+            and offer.is_available is not False
+            and alert.accepts_condition(_condition_value(offer.condition))
+        ]
+        if not wanted:
+            return None
+        best = min(wanted, key=lambda offer: offer.current_price)
+        site = self.source_website_repo.get_by_id(best.source_website_id)
+        return self.notifier.notify(
+            alert, best, best.current_price, site.name if site else "Unknown"
+        )
+
+
+def _condition_value(condition) -> str:
+    return getattr(condition, "value", condition) or ""
