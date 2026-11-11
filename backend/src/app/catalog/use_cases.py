@@ -9,6 +9,7 @@ from src.app.catalog.entities import (
     CanonicalProduct,
     DailyLow,
     IdentifierKind,
+    PriceVerdict,
     ProductCategory,
     ProductCondition,
     ProductListFilters,
@@ -27,6 +28,7 @@ from src.app.catalog.ports import (
     PriceHistoryRepositoryInterface,
     ProductRepositoryInterface,
 )
+from src.app.catalog.verdict import judge_price
 
 # An update never touches these: the id and creation time identify the product,
 # the current price and last check come from price history, and updated_at is
@@ -493,6 +495,7 @@ class LoadSeedBooksUseCase:
 MAX_PAGE_SIZE = 50
 MIN_SEARCH_TERM = 2
 MAX_HISTORY_DAYS = 365
+VERDICT_WINDOW_DAYS = 90
 
 
 @dataclass(frozen=True)
@@ -583,3 +586,34 @@ class GetDailyLowsUseCase:
             raise BookNotFoundError(isbn13)
         days = max(1, min(days, MAX_HISTORY_DAYS))
         return self.books.daily_lows(isbn13, self.now() - timedelta(days=days))
+
+
+class JudgeBookPricesUseCase:
+    """The price verdict for a book's new and used offers (Phase 4).
+
+    Compares each condition's lowest price in stock with that condition's
+    daily lows over the last ``VERDICT_WINDOW_DAYS`` (rule in
+    ``catalog/verdict.py``).
+    """
+
+    CONDITIONS = (ProductCondition.NEW, ProductCondition.USED)
+
+    def __init__(
+        self,
+        books: BookCatalogReader,
+        now: Callable[[], datetime] = lambda: datetime.now(UTC),
+    ):
+        self.books = books
+        self.now = now
+
+    def execute(self, book: BookDetail) -> list[PriceVerdict]:
+        since = self.now() - timedelta(days=VERDICT_WINDOW_DAYS)
+        lows = self.books.daily_lows(book.isbn13, since)
+        return [
+            judge_price(
+                condition,
+                book.lowest(condition),
+                [low.price for low in lows if low.condition == condition],
+            )
+            for condition in self.CONDITIONS
+        ]

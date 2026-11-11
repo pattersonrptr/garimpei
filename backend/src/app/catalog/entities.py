@@ -222,3 +222,31 @@ class DailyLow:
     day: date
     condition: ProductCondition
     price: float
+
+
+class VerdictStatus(str, Enum):
+    """Is the current price a good one, judged against the book's history."""
+
+    GOOD = "good"  # at or below the usual low (25th percentile)
+    NORMAL = "normal"
+    HIGH = "high"  # at or above the usual high (75th percentile): wait
+    LEARNING = "learning"  # not enough history yet
+    NO_OFFER = "no_offer"  # nothing in stock in this condition
+
+
+@dataclass(frozen=True, kw_only=True)
+class PriceVerdict:
+    """The price verdict for one condition (new or used) of a book.
+
+    ``low``, ``high``, ``p25`` and ``p75`` describe the daily lows of the
+    window with outliers removed; they are None when there is no history.
+    """
+
+    condition: ProductCondition
+    status: VerdictStatus
+    current: float | None
+    days: int
+    low: float | None = None
+    high: float | None = None
+    p25: float | None = None
+    p75: float | None = None

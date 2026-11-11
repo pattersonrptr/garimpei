@@ -8,7 +8,13 @@ the catalog's read model.
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
-from src.app.catalog.entities import BookDetail, BookSummary, DailyLow, PublicOffer
+from src.app.catalog.entities import (
+    BookDetail,
+    BookSummary,
+    DailyLow,
+    PriceVerdict,
+    PublicOffer,
+)
 from src.app.catalog.isbn import InvalidIsbnError
 from src.app.catalog.persistence.repositories import BookCatalogRepository
 from src.app.catalog.ports import BookCatalogReader
@@ -18,6 +24,7 @@ from src.app.catalog.use_cases import (
     BookNotFoundError,
     GetBookUseCase,
     GetDailyLowsUseCase,
+    JudgeBookPricesUseCase,
     ListBooksUseCase,
     SearchBooksUseCase,
 )
@@ -64,7 +71,20 @@ def _offer(offer: PublicOffer) -> dict:
     }
 
 
-def _detail(book: BookDetail) -> dict:
+def _verdict(verdict: PriceVerdict) -> dict:
+    return {
+        "condition": verdict.condition.value,
+        "status": verdict.status.value,
+        "current": verdict.current,
+        "days": verdict.days,
+        "low": verdict.low,
+        "high": verdict.high,
+        "p25": verdict.p25,
+        "p75": verdict.p75,
+    }
+
+
+def _detail(book: BookDetail, verdicts: list[PriceVerdict]) -> dict:
     summary = book.summary()
     attributes = {
         key: book.attributes.get(key)
@@ -73,6 +93,7 @@ def _detail(book: BookDetail) -> dict:
     resource = _summary(summary)
     resource["attributes"].update(attributes)
     resource["attributes"]["offers"] = [_offer(o) for o in book.offers]
+    resource["attributes"]["verdicts"] = [_verdict(v) for v in verdicts]
     return resource
 
 
@@ -139,7 +160,8 @@ def list_books(
 
 @router.get("/{isbn}")
 def get_book(isbn: str, books: BookCatalogReader = Depends(get_book_catalog)):
-    """A book with every store's offer, in stock and cheapest first.
+    """A book with every store's offer, in stock and cheapest first, and the
+    price verdict for new and used copies.
 
     Returns 404 for an unknown book or an invalid ISBN.
     """
@@ -147,7 +169,8 @@ def get_book(isbn: str, books: BookCatalogReader = Depends(get_book_catalog)):
         book = GetBookUseCase(books).execute(isbn)
     except (InvalidIsbnError, BookNotFoundError):
         return _not_found(f"No book with ISBN {isbn}")
-    return JSONResponse(content={"data": _detail(book)}, media_type=JSONAPI)
+    verdicts = JudgeBookPricesUseCase(books).execute(book)
+    return JSONResponse(content={"data": _detail(book, verdicts)}, media_type=JSONAPI)
 
 
 @router.get("/{isbn}/price-history")
