@@ -1,8 +1,9 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import asc, desc
+from sqlalchemy import asc, desc, func
 from sqlalchemy.orm import Session, joinedload
 
+from src.app.alerts.entities import NoticeHistory, SentNotice
 from src.app.alerts.entities import NotificationLog as NotificationLogEntity
 from src.app.alerts.entities import PriceAlert as PriceAlertEntity
 from src.app.alerts.persistence.models import (
@@ -424,6 +425,67 @@ class NotificationLogRepository(NotificationLogRepositoryInterface):
         self.db.delete(db_log)
         self.db.commit()
         return True
+
+    def sent_history(
+        self, price_alert_ids: list[int], recent: int = 5
+    ) -> dict[int, NoticeHistory]:
+        from src.app.catalog.persistence.models import Product as ProductModel
+
+        if not price_alert_ids:
+            return {}
+        sent = [
+            NotificationLogModel.price_alert_id.in_(price_alert_ids),
+            NotificationLogModel.status == "sent",
+        ]
+        totals = dict(
+            self.db.query(NotificationLogModel.price_alert_id, func.count())
+            .filter(*sent)
+            .group_by(NotificationLogModel.price_alert_id)
+            .all()
+        )
+        rank = (
+            func.row_number()
+            .over(
+                partition_by=NotificationLogModel.price_alert_id,
+                order_by=(
+                    NotificationLogModel.sent_at.desc(),
+                    NotificationLogModel.id.desc(),
+                ),
+            )
+            .label("rank")
+        )
+        ranked = (
+            self.db.query(
+                NotificationLogModel.price_alert_id.label("alert_id"),
+                NotificationLogModel.sent_at.label("sent_at"),
+                SourceWebsiteModel.name.label("store"),
+                rank,
+            )
+            .outerjoin(ProductModel, ProductModel.id == NotificationLogModel.product_id)
+            .outerjoin(
+                SourceWebsiteModel,
+                SourceWebsiteModel.id == ProductModel.source_website_id,
+            )
+            .filter(*sent)
+            .subquery()
+        )
+        rows = (
+            self.db.query(ranked.c.alert_id, ranked.c.sent_at, ranked.c.store)
+            .filter(ranked.c.rank <= recent)
+            .order_by(ranked.c.alert_id, ranked.c.rank)
+            .all()
+        )
+        recent_by_alert: dict[int, list[SentNotice]] = {}
+        for row in rows:
+            recent_by_alert.setdefault(row.alert_id, []).append(
+                SentNotice(sent_at=row.sent_at, store=row.store)
+            )
+        return {
+            alert_id: NoticeHistory(
+                recent=tuple(recent_by_alert.get(alert_id, [])), total=total
+            )
+            for alert_id, total in totals.items()
+        }
 
     def exists_for_alert_and_product(
         self, price_alert_id: int, product_id: int

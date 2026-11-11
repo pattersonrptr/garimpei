@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from src.app.entities.user import User as UserEntity
@@ -31,7 +32,12 @@ class UserRepository(UserRepositoryInterface):
         return None
 
     def get_by_email(self, email: str) -> UserEntity | None:
-        user = self.db.query(UserModel).filter(UserModel.email == email).first()
+        # E-mail addresses are compared without case: "Ana@x.com" is "ana@x.com".
+        user = (
+            self.db.query(UserModel)
+            .filter(func.lower(UserModel.email) == email.strip().lower())
+            .first()
+        )
         if user:
             return UserEntity(**user.__dict__)
         return None

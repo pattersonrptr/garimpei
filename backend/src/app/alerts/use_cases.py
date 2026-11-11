@@ -1,11 +1,13 @@
 from datetime import UTC, datetime, timedelta
 from math import ceil
 
+from src.app.alerts.entities import MyAlert, NoticeHistory
 from src.app.alerts.entities import NotificationLog as NotificationLogEntity
 from src.app.alerts.entities import PriceAlert as PriceAlertEntity
 from src.app.alerts.ports import (
     NotificationLogRepositoryInterface,
     PriceAlertRepositoryInterface,
+    ProductSnapshotReader,
 )
 from src.app.catalog.entities import Product as ProductEntity
 from src.app.catalog.entities import ProductListFilters
@@ -754,3 +756,43 @@ class EvaluateBookAlertsUseCase:
 
 def _condition_value(condition) -> str:
     return getattr(condition, "value", condition) or ""
+
+
+class ListMyAlertsUseCase:
+    """A user's product alerts with each product today and the e-mails sent.
+
+    Keyword alerts are left out: they no longer show on the user's screens
+    (Phase 5). Active alerts first, then the newest.
+    """
+
+    def __init__(
+        self,
+        price_alert_repo: PriceAlertRepositoryInterface,
+        products: ProductSnapshotReader,
+        notification_log_repo: NotificationLogRepositoryInterface,
+    ):
+        self.price_alert_repo = price_alert_repo
+        self.products = products
+        self.notification_log_repo = notification_log_repo
+
+    def execute(self, user_id: int) -> list[MyAlert]:
+        alerts = [
+            a for a in self.price_alert_repo.get_by_user_id(user_id) if a.is_book_alert
+        ]
+        if not alerts:
+            return []
+        alerts.sort(key=lambda a: (not a.is_active, -a.created_at.timestamp()))
+        snapshots = self.products.snapshots(
+            sorted({a.canonical_product_id for a in alerts if a.canonical_product_id})
+        )
+        history = self.notification_log_repo.sent_history(
+            [a.id for a in alerts if a.id is not None]
+        )
+        return [
+            MyAlert(
+                alert=alert,
+                product=snapshots.get(alert.canonical_product_id or 0),
+                notices=history.get(alert.id or 0, NoticeHistory()),
+            )
+            for alert in alerts
+        ]

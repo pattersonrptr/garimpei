@@ -108,3 +108,22 @@ class TokenValidationRequest(SingleResourceRequest):
     """JSON:API request for token validation endpoint"""
 
     data: TokenValidationRequestResource
+
+
+MIN_PASSWORD_LENGTH = 8
+
+
+class PasswordChangeAttributes(BaseModel):
+    """Change one's own password: the current one proves it is the owner."""
+
+    current_password: str
+    new_password: str = Field(min_length=MIN_PASSWORD_LENGTH)
+
+
+class PasswordChangeResource(ResourceObjectForCreation):
+    type: str = Field(default="password_change", examples=["password_change"])
+    attributes: PasswordChangeAttributes
+
+
+class PasswordChangeRequest(SingleResourceRequest):
+    data: PasswordChangeResource

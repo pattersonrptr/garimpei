@@ -70,3 +70,56 @@ class NotificationLog:
     error_message: str | None = None
     sent_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+
+
+@dataclass(frozen=True, kw_only=True)
+class OfferPrice:
+    """Today's lowest price in stock for a condition, and where."""
+
+    price: float
+    store: str  # the store's slug, e.g. "estante_virtual"
+
+
+@dataclass(frozen=True, kw_only=True)
+class ProductSnapshot:
+    """What "my alerts" shows about the product an alert watches.
+
+    ``lowest`` and ``verdicts`` are keyed by condition ("new", "used").
+    """
+
+    id: int
+    category: str
+    title: str
+    isbn13: str | None = None
+    cover_url: str | None = None
+    lowest: dict[str, OfferPrice] = field(default_factory=dict)
+    verdicts: dict[str, str] = field(default_factory=dict)
+
+    def lowest_for(self, condition: str | None) -> tuple[str, OfferPrice] | None:
+        """The cheapest offer the alert wants: (its condition, price and store)."""
+        wanted = ("new", "used") if (condition or "any") == "any" else (condition,)
+        found = [(c, self.lowest[c]) for c in wanted if c in self.lowest]
+        return min(found, key=lambda item: item[1].price, default=None)
+
+
+@dataclass(frozen=True, kw_only=True)
+class SentNotice:
+    """One e-mail sent for an alert: when, and which store's offer."""
+
+    sent_at: datetime
+    store: str | None
+
+
+@dataclass(frozen=True, kw_only=True)
+class NoticeHistory:
+    recent: tuple[SentNotice, ...] = ()  # newest first
+    total: int = 0
+
+
+@dataclass(frozen=True, kw_only=True)
+class MyAlert:
+    """One line of "my alerts": the alert, its product today, and the e-mails sent."""
+
+    alert: PriceAlert
+    product: ProductSnapshot | None
+    notices: NoticeHistory
