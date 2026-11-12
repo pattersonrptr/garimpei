@@ -246,7 +246,7 @@ export function ProductDetailPage() {
                   width={100}
                 />
                 <Tooltip
-                  formatter={(v: number | undefined) => [v != null ? formatCurrency(v) : '—', t('detail.price')]}
+                  formatter={(v) => [typeof v === 'number' ? formatCurrency(v) : '—', t('detail.price')]}
                   labelFormatter={(_, payload) =>
                     payload?.[0]?.payload?.dateTime ?? ''
                   }
