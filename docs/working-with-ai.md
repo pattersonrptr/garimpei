@@ -66,7 +66,7 @@ trabalho e de outros projetos pessoais. O ritmo da tabela reflete isso.
 - desenho e cuido da arquitetura;
 - defino a estratégia de testes e as barreiras de proteção (seção 8);
 - respondo às rodadas de perguntas dos planos e aprovo cada um;
-- testo o resultado como usuário e aprovo cada merge.
+- testo o resultado como usuário e digo o que precisa mudar.
 
 **O Claude Code:**
 
@@ -75,7 +75,7 @@ trabalho e de outros projetos pessoais. O ritmo da tabela reflete isso.
   pedi;
 - implementa em fatias pequenas, um PR por fatia;
 - roda os testes, sobe o ambiente local, tira prints de celular e desktop;
-- só pede o merge com o CI verde e mostra a evidência.
+- faz o merge sozinho quando o CI fica verde, com a evidência no PR.
 
 Na prática funciona como uma programação em par: eu tenho a palavra final, mas
 as decisões saem da conversa.
@@ -132,10 +132,14 @@ Exemplo real: a Fase 5, que moveu a área do usuário para o site novo.
 2. **Fatias pequenas, um PR por fatia:** API da conta (#90), sessão (#91),
    alertas (#92), conta (#93), admin só para administradores (#94), fechamento
    (#95).
-3. **Verificação antes de pedir o merge:** testes unitários, typecheck, build,
+3. **Verificação antes do merge:** testes unitários, typecheck, build,
    testes ponta a ponta no navegador contra o ambiente local e prints.
-4. **Minha validação.** O merge só acontece depois que eu aprovo, e cada PR
-   precisa de uma aprovação nova.
+4. **Merge com o CI verde.** Desde 11/nov/2026 a IA faz o merge sozinha
+   quando todos os checks do CI passam; se algo fica vermelho, ela corrige
+   antes. Eu deixei de ser o gargalo dos PRs verdes: a proteção da `main` no
+   GitHub recusa o merge sem os checks, até para mim. Minha validação passou a
+   ser usar o sistema e apontar o que precisa mudar, e as decisões de produto
+   e arquitetura continuam comigo.
 5. **O plano é atualizado** a cada fatia, com as decisões novas.
 
 Quando o rumo muda no meio do caminho, o plano muda junto. A própria Fase 5
@@ -201,7 +205,7 @@ Decidi cedo que o projeto teria muitos testes. Hoje:
 
 | Parte | Testes | Ferramenta |
 |---|---|---|
-| Back-end (API) | 876 | pytest |
+| Back-end (API) | 884 | pytest |
 | Coletores | 313 | pytest |
 | Site público | 75 | Vitest |
 | Painel admin | 75 | Vitest |
@@ -214,7 +218,9 @@ Decidi cedo que o projeto teria muitos testes. Hoje:
   confere o cartão e o e-mail que chega no Mailpit (uma caixa de e-mail falsa
   local). **Ainda rodam só localmente**, antes de cada merge, e não no CI.
 - **Manual:** prints de celular e desktop a cada mudança visual, e eu uso o
-  sistema de verdade.
+  sistema de verdade. Os prints e o vídeo do README saem de um script do
+  Playwright ([`frontend/e2e/media/`](../frontend/e2e/media/tour.media.ts)),
+  então dá para refazê-los quando as telas mudam.
 - **Ainda não testado:** carga (muitos usuários ao mesmo tempo), entrega real de
   e-mail fora da caixa falsa e qualquer coisa de produção.
 
@@ -235,6 +241,10 @@ A IA erra. O que importa é ter barreiras que peguem o erro antes da `main`.
 | `pre-commit run --all-files` alterou arquivos antigos, inclusive uma migration já aplicada | `git status` antes de commitar | Alterações desfeitas; ajuste na configuração (#97) |
 | O hook que bloqueia `--no-verify` barrou o próprio commit que o criava, porque a mensagem citava a flag | O próprio hook, ao entrar em vigor | Ele passou a olhar só os argumentos de comandos git de verdade (#101) |
 | O script de prints clicava no botão "Buscar" da barra do topo em vez do "Entrar" | O print de falha que o próprio script salva | Seletor restrito ao formulário de login (#102) |
+| O vídeo de demonstração tinha 1,4 MB, acima do limite de arquivos do repositório | O pre-commit (`check-added-large-files`) | O script comprime o vídeo com ffmpeg (#110) |
+| O exemplo do `docker-compose.override.yml` usa a tag `!override`, que não é YAML comum | O pre-commit (`check-yaml`) | O arquivo ficou fora dessa checagem; quem valida é o `docker compose config` (#105) |
+| O script de mídia escolheu sozinho um livro sem capa e com o novo a R$ 750 | Olhando os prints antes de publicar | O livro dos prints passou a ser fixo, configurável (#110) |
+| O e-mail de alerta ainda tinha a cara do app antigo (azul, "R$ 17.46", `estante_virtual`) | Olhando o print do e-mail para o README | E-mail com a identidade do Garimpei (#111) |
 
 ### Erros que eu peguei
 
@@ -270,10 +280,10 @@ proteções no GitHub valem para qualquer pessoa.
 | Camada | O que pega | O que não pega |
 |---|---|---|
 | [`AGENTS.md`](../AGENTS.md) (lido pelo Claude via `CLAUDE.md`) | Desvios das regras da casa: arquitetura, uma fatia por PR, como verificar, armadilhas conhecidas | Nada à força: é instrução, não trava |
-| Permissões ([`.claude/settings.json`](../.claude/settings.json)) | Merge, `docker compose down` e migrations pedem minha confirmação; editar o `.env` e acessar a Amazon são negados. O push de um branch de trabalho é livre, porque as travas abaixo já protegem a `main` | Comandos que não estão na lista (um `curl` para a Amazon, por exemplo) |
+| Permissões ([`.claude/settings.json`](../.claude/settings.json)) | `docker compose down` e migrations pedem minha confirmação; editar o `.env` e acessar a Amazon são negados. O push de um branch de trabalho e o merge de PR são livres, porque as travas abaixo já protegem a `main` | Comandos que não estão na lista (um `curl` para a Amazon, por exemplo) |
 | Hooks ([`.claude/hooks/`](../.claude/hooks/)) | Bloqueiam: edição de `.env` e de migrations que já estão na `main`; commit ou push na `main`, force push, pular o pre-commit e merge forçado. Pedem minha confirmação antes de qualquer mudança nas próprias travas (`.claude/`). Corrigem Python fora do padrão | Erros de lógica |
 | pre-commit | Qualidade de código: formatação, JSON/YAML inválidos, conflitos esquecidos, nos meus commits e nos da IA | Comportamento |
-| Proteção da `main` no GitHub | Vale para qualquer pessoa, inclusive eu: só entra por PR com o CI verde, sem force push e sem apagar a `main` | O conteúdo do PR |
+| Proteção da `main` no GitHub | Vale para qualquer pessoa, inclusive eu: só entra por PR com os quatro checks do CI verdes, sem force push e sem apagar a `main`. É ela que deixa a IA fazer o merge sozinha | O conteúdo do PR |
 | CI (GitHub Actions) | Lint, tipos, testes e build de cada parte, a cada PR | Fluxos completos no navegador (ainda não roda o E2E) |
 | Testes E2E | Fluxos reais de usuário, do clique ao e-mail | Só rodam localmente, quando alguém os roda |
 | Skill [`e2e-local`](../.claude/skills/e2e-local/SKILL.md) | O teste ponta a ponta como receita: o que reconstruir, esperar os serviços, rodar o Playwright, tirar prints | Só roda quando é chamada |
