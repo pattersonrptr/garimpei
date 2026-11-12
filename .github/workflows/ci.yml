@@ -52,7 +52,7 @@ jobs:
           bandit -c pyproject.toml -r src -ll
 
       # Blocking on the paths already clean: the domain core of catalog and
-      # alerts. Imported modules are followed silently, so their errors
+      # alerts, plus catalog's request validators (http). Imported modules are followed silently, so their errors
       # (fixed area by area) do not fail this step. Add paths as they clean.
       - name: Type check with mypy (blocking, clean paths)
         run: |
