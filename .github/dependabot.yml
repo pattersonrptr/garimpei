@@ -16,6 +16,11 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
+    ignore:
+      # Celery's transport (kombu) supports redis-py <6.5 only. Remove this
+      # once kombu raises its cap (see #125).
+      - dependency-name: redis
+        versions: [">=6.5"]
     groups:
       minor-and-patch:
         update-types: [minor, patch]
