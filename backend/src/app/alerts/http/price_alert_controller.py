@@ -12,6 +12,7 @@ from src.app.alerts.http.price_alert_schema import (
     PriceAlertsCollectionResponse,
     PriceAlertUpdateRequest,
 )
+from src.app.alerts.http.validators import PriceAlertValidator
 from src.app.alerts.persistence.book_finder import CatalogBookFinder
 from src.app.alerts.persistence.keyword_searches import SearchConfigKeywordSearches
 from src.app.alerts.persistence.mailer import EmailServiceMailer
@@ -21,7 +22,6 @@ from src.app.alerts.persistence.repositories import (
     PriceAlertRepository,
 )
 from src.app.alerts.persistence.stores import SourceWebsiteStores
-from src.app.alerts.rules import PriceAlertValidator
 from src.app.alerts.use_cases import (
     CreatePriceAlertUseCase,
     DeletePriceAlertUseCase,

@@ -11,7 +11,7 @@ from src.app.alerts.http.price_alert_schema import (
     PriceAlertResourceForUpdate,
     PriceAlertUpdateRequest,
 )
-from src.app.alerts.rules import PriceAlertValidator
+from src.app.alerts.http.validators import PriceAlertValidator
 
 # ============================================================================
 # Helpers

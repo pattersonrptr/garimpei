@@ -52,7 +52,7 @@ jobs:
           bandit -c pyproject.toml -r src -ll
 
       # Blocking on the paths already clean: the domain core of catalog and
-      # alerts, plus catalog's request validators and alerts' adapters.
+      # alerts, plus both modules' request validators and alerts' adapters.
       # Imported modules are followed silently, so their errors (fixed area
       # by area) do not fail this step. Add paths as they clean.
       - name: Type check with mypy (blocking, clean paths)
@@ -63,7 +63,7 @@ jobs:
             src/app/catalog/http/validators.py \
             src/app/alerts/entities.py \
             src/app/alerts/use_cases.py \
-            src/app/alerts/rules.py \
+            src/app/alerts/http/validators.py \
             src/app/alerts/ports.py \
             src/app/alerts/persistence/stores.py \
             src/app/alerts/persistence/owners.py \
