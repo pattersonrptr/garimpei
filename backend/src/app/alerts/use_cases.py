@@ -6,6 +6,7 @@ from src.app.alerts.entities import NotificationLog as NotificationLogEntity
 from src.app.alerts.entities import PriceAlert as PriceAlertEntity
 from src.app.alerts.notification_text import alert_subject
 from src.app.alerts.ports import (
+    AlertOwnerReader,
     NotificationLogRepositoryInterface,
     PriceAlertRepositoryInterface,
     ProductSnapshotReader,
@@ -21,7 +22,6 @@ from src.app.entities.search_config import SearchConfig as SearchConfigEntity
 from src.app.interfaces.repositories.search_config_repository import (
     SearchConfigRepositoryInterface,
 )
-from src.app.interfaces.repositories.user_repository import UserRepositoryInterface
 from src.app.interfaces.services.email_service import EmailServiceInterface
 from src.config import settings
 from src.config.logging_config import get_logger
@@ -335,7 +335,7 @@ class SendPriceAlertNotificationUseCase:
         self,
         price_alert_repo: PriceAlertRepositoryInterface,
         product_repo: ProductRepositoryInterface,
-        user_repo: UserRepositoryInterface,
+        user_repo: AlertOwnerReader,
         source_website_repo: StoreReader,
         notification_log_repo: NotificationLogRepositoryInterface,
         email_service: EmailServiceInterface,
@@ -448,7 +448,7 @@ class OpportunityNotifier:
     def __init__(
         self,
         notification_log_repo: NotificationLogRepositoryInterface,
-        user_repo: UserRepositoryInterface,
+        user_repo: AlertOwnerReader,
         price_alert_repo: PriceAlertRepositoryInterface,
         email_service: EmailServiceInterface,
     ):
@@ -551,7 +551,7 @@ class EvaluateProductAlertsUseCase:
         price_history_repo: PriceHistoryRepositoryInterface,
         price_alert_repo: PriceAlertRepositoryInterface,
         notification_log_repo: NotificationLogRepositoryInterface,
-        user_repo: UserRepositoryInterface,
+        user_repo: AlertOwnerReader,
         source_website_repo: StoreReader,
         email_service: EmailServiceInterface,
     ):
@@ -635,7 +635,7 @@ class NotifyAlertOpportunitiesUseCase:
         product_repo: ProductRepositoryInterface,
         price_alert_repo: PriceAlertRepositoryInterface,
         notification_log_repo: NotificationLogRepositoryInterface,
-        user_repo: UserRepositoryInterface,
+        user_repo: AlertOwnerReader,
         source_website_repo: StoreReader,
         email_service: EmailServiceInterface,
     ):

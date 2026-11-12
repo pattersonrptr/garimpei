@@ -11,6 +11,7 @@ characterization tests first, in their own PR, reviewed by the author.
 | Catalog request validators out of the domain | #154 | Divergent Change → Move Class | `catalog/rules.py` imported `catalog/http/product_schema`; its validators check JSON:API request shape, so they moved to `catalog/http/validators.py`. Already covered (22 unit tests, 97% of branches, plus e2e), so no characterization tests; the author approved changing only the two tests' import line (Nov 12, 2026) |
 | Alerts characterization tests | #156 | — | Before moving alerts off `src/app/interfaces`: 5 tests where those dependencies were used and uncovered (store lookup once per store, "Unknown" store, listing without price skipped, book alert never links a SearchConfig, update validator 404 for a missing store). Approved by the author |
 | Alerts stores through its own port | #157 | Inappropriate Intimacy → Extract Interface (port owned by the client) + adapter | `StoreReader` + `Store` in alerts; `SourceWebsiteStores` adapts the old repository at four wiring points. Parameter names kept, so no test changed |
+| Alerts users through its own port | #158 | Inappropriate Intimacy → Extract Interface + adapter | `AlertOwnerReader` + `AlertOwner(id, email)`; `UserAccountOwners` adapts the old user repository at four wiring points. No test changed |
 
 ## Queue
 
@@ -18,7 +19,7 @@ Found while doing the slices above; each one is proposed to the author
 before it starts.
 
 - `alerts/use_cases.py` still imports from the older `src/app/interfaces`
-  package: users, e-mail and search configs (stores done in #157). One
+  package: e-mail and search configs (stores #157, users #158). One
   alerts-owned port per PR, like `StoreReader`.
 - `alerts/rules.py` holds `PriceAlertValidator`, which returns
   `JsonApiError`: request validation, like catalog's before #154.
