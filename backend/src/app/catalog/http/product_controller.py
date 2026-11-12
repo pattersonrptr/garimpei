@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
+from src.app.alerts.persistence.mailer import EmailServiceMailer
 from src.app.alerts.persistence.owners import UserAccountOwners
 from src.app.alerts.persistence.repositories import (
     NotificationLogRepository,
@@ -471,7 +472,7 @@ def evaluate_product_alerts(
         notification_log_repo=notification_log_repo,
         user_repo=UserAccountOwners(user_repo),
         source_website_repo=SourceWebsiteStores(source_website_repo),
-        email_service=email_service,
+        email_service=EmailServiceMailer(email_service),
     )
     sent_logs, skipped, error = use_case.execute(product_id)
 

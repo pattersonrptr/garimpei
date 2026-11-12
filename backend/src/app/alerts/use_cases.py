@@ -6,6 +6,7 @@ from src.app.alerts.entities import NotificationLog as NotificationLogEntity
 from src.app.alerts.entities import PriceAlert as PriceAlertEntity
 from src.app.alerts.notification_text import alert_subject
 from src.app.alerts.ports import (
+    AlertMailer,
     AlertOwnerReader,
     NotificationLogRepositoryInterface,
     PriceAlertRepositoryInterface,
@@ -22,7 +23,6 @@ from src.app.entities.search_config import SearchConfig as SearchConfigEntity
 from src.app.interfaces.repositories.search_config_repository import (
     SearchConfigRepositoryInterface,
 )
-from src.app.interfaces.services.email_service import EmailServiceInterface
 from src.config import settings
 from src.config.logging_config import get_logger
 
@@ -338,7 +338,7 @@ class SendPriceAlertNotificationUseCase:
         user_repo: AlertOwnerReader,
         source_website_repo: StoreReader,
         notification_log_repo: NotificationLogRepositoryInterface,
-        email_service: EmailServiceInterface,
+        email_service: AlertMailer,
     ):
         self.price_alert_repo = price_alert_repo
         self.product_repo = product_repo
@@ -450,7 +450,7 @@ class OpportunityNotifier:
         notification_log_repo: NotificationLogRepositoryInterface,
         user_repo: AlertOwnerReader,
         price_alert_repo: PriceAlertRepositoryInterface,
-        email_service: EmailServiceInterface,
+        email_service: AlertMailer,
     ):
         self.notification_log_repo = notification_log_repo
         self.user_repo = user_repo
@@ -553,7 +553,7 @@ class EvaluateProductAlertsUseCase:
         notification_log_repo: NotificationLogRepositoryInterface,
         user_repo: AlertOwnerReader,
         source_website_repo: StoreReader,
-        email_service: EmailServiceInterface,
+        email_service: AlertMailer,
     ):
         self.product_repo = product_repo
         self.price_history_repo = price_history_repo
@@ -637,7 +637,7 @@ class NotifyAlertOpportunitiesUseCase:
         notification_log_repo: NotificationLogRepositoryInterface,
         user_repo: AlertOwnerReader,
         source_website_repo: StoreReader,
-        email_service: EmailServiceInterface,
+        email_service: AlertMailer,
     ):
         self.product_repo = product_repo
         self.source_website_repo = source_website_repo
