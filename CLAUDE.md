@@ -24,7 +24,12 @@
   protection already stop pushes to `main` and force pushes. `gh pr merge`
   is allowed too: branch protection requires the four CI checks (admins
   included) and `guard_git.py` blocks admin merges. Merge only when CI is
-  green; fix it first when it is red.
+  green (and, for a feature or bug fix, once the author approved its
+  tests); fix CI first when it is red.
+- **Tests first:** after writing the tests of a slice, stop and wait for the
+  author's review before writing production code (`AGENTS.md`, *Tests
+  first*). For a review after the fact, use `/code-review` with a focus on
+  whether the tests check behavior or just mirror the implementation.
 - **Automate what repeats.** When a task is done by hand again and again
   (same commands, same lookups, same checklist), propose turning it into a
   skill, hook, subagent or permission, and say which model fits (Haiku for
