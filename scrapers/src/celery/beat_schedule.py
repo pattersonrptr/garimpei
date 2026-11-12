@@ -3,6 +3,7 @@ import time
 
 from celery.beat import ScheduleEntry, Scheduler
 from celery.schedules import crontab, schedule
+
 from src.api.api_client import ApiClient
 
 logger = logging.getLogger(__name__)

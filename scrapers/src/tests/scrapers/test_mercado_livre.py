@@ -892,9 +892,9 @@ def test_jittered_delay_within_range(scraper):
     min_expected = base * (1 - scraper._JITTER_FACTOR)
     max_expected = base * (1 + scraper._JITTER_FACTOR)
     for r in results:
-        assert (
-            min_expected <= r <= max_expected
-        ), f"{r} not in [{min_expected}, {max_expected}]"
+        assert min_expected <= r <= max_expected, (
+            f"{r} not in [{min_expected}, {max_expected}]"
+        )
 
 
 @pytest.mark.asyncio
