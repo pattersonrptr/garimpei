@@ -1,9 +1,7 @@
 from src.app.alerts.ports import (
     BookFinder,
     PriceAlertRepositoryInterface,
-)
-from src.app.interfaces.repositories.source_website_repository import (
-    SourceWebsiteRepositoryInterface,
+    StoreReader,
 )
 from src.common.jsonapi import JsonApiError
 
@@ -14,7 +12,7 @@ class PriceAlertValidator:
     def __init__(
         self,
         price_alert_repo: PriceAlertRepositoryInterface,
-        source_website_repo: SourceWebsiteRepositoryInterface,
+        source_website_repo: StoreReader,
         book_finder: BookFinder | None = None,
     ):
         self.price_alert_repo = price_alert_repo

@@ -5,6 +5,7 @@ from src.app.alerts.persistence.repositories import (
     NotificationLogRepository,
     PriceAlertRepository,
 )
+from src.app.alerts.persistence.stores import SourceWebsiteStores
 from src.app.alerts.use_cases import (
     EvaluateProductAlertsUseCase,
 )
@@ -468,7 +469,7 @@ def evaluate_product_alerts(
         price_alert_repo=price_alert_repo,
         notification_log_repo=notification_log_repo,
         user_repo=user_repo,
-        source_website_repo=source_website_repo,
+        source_website_repo=SourceWebsiteStores(source_website_repo),
         email_service=email_service,
     )
     sent_logs, skipped, error = use_case.execute(product_id)

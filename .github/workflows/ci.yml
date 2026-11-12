@@ -62,7 +62,7 @@ jobs:
             src/app/catalog/http/validators.py \
             src/app/alerts/entities.py \
             src/app/alerts/use_cases.py \
-            src/app/alerts/rules.py
+            src/app/alerts/rules.py \n            src/app/alerts/ports.py \n            src/app/alerts/persistence/stores.py
 
       - name: Type check with mypy (whole backend, report only)
         run: poetry run mypy src/

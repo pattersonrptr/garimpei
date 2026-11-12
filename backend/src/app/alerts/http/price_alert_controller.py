@@ -17,6 +17,7 @@ from src.app.alerts.persistence.repositories import (
     NotificationLogRepository,
     PriceAlertRepository,
 )
+from src.app.alerts.persistence.stores import SourceWebsiteStores
 from src.app.alerts.rules import PriceAlertValidator
 from src.app.alerts.use_cases import (
     CreatePriceAlertUseCase,
@@ -108,7 +109,7 @@ def get_alert_opportunities_use_case(
         price_alert_repo=PriceAlertRepository(db),
         notification_log_repo=NotificationLogRepository(db),
         user_repo=UserRepository(db),
-        source_website_repo=SourceWebsiteRepository(db),
+        source_website_repo=SourceWebsiteStores(SourceWebsiteRepository(db)),
         email_service=email_service,
     )
 
@@ -122,7 +123,9 @@ def get_price_alert_validator(
 ) -> PriceAlertValidator:
     """Dependency injection for PriceAlertValidator."""
     return PriceAlertValidator(
-        price_alert_repo, source_website_repo, CatalogBookFinder(db)
+        price_alert_repo,
+        SourceWebsiteStores(source_website_repo),
+        CatalogBookFinder(db),
     )
 
 
@@ -638,7 +641,7 @@ def trigger_price_alert_notification(
         price_alert_repo=price_alert_repo,
         product_repo=product_repo,
         user_repo=user_repo,
-        source_website_repo=source_website_repo,
+        source_website_repo=SourceWebsiteStores(source_website_repo),
         notification_log_repo=notification_log_repo,
         email_service=email_service,
     )

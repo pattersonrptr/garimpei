@@ -9,6 +9,7 @@ from src.app.alerts.ports import (
     NotificationLogRepositoryInterface,
     PriceAlertRepositoryInterface,
     ProductSnapshotReader,
+    StoreReader,
 )
 from src.app.catalog.entities import Product as ProductEntity
 from src.app.catalog.entities import ProductListFilters
@@ -19,9 +20,6 @@ from src.app.catalog.ports import (
 from src.app.entities.search_config import SearchConfig as SearchConfigEntity
 from src.app.interfaces.repositories.search_config_repository import (
     SearchConfigRepositoryInterface,
-)
-from src.app.interfaces.repositories.source_website_repository import (
-    SourceWebsiteRepositoryInterface,
 )
 from src.app.interfaces.repositories.user_repository import UserRepositoryInterface
 from src.app.interfaces.services.email_service import EmailServiceInterface
@@ -338,7 +336,7 @@ class SendPriceAlertNotificationUseCase:
         price_alert_repo: PriceAlertRepositoryInterface,
         product_repo: ProductRepositoryInterface,
         user_repo: UserRepositoryInterface,
-        source_website_repo: SourceWebsiteRepositoryInterface,
+        source_website_repo: StoreReader,
         notification_log_repo: NotificationLogRepositoryInterface,
         email_service: EmailServiceInterface,
     ):
@@ -554,7 +552,7 @@ class EvaluateProductAlertsUseCase:
         price_alert_repo: PriceAlertRepositoryInterface,
         notification_log_repo: NotificationLogRepositoryInterface,
         user_repo: UserRepositoryInterface,
-        source_website_repo: SourceWebsiteRepositoryInterface,
+        source_website_repo: StoreReader,
         email_service: EmailServiceInterface,
     ):
         self.product_repo = product_repo
@@ -638,7 +636,7 @@ class NotifyAlertOpportunitiesUseCase:
         price_alert_repo: PriceAlertRepositoryInterface,
         notification_log_repo: NotificationLogRepositoryInterface,
         user_repo: UserRepositoryInterface,
-        source_website_repo: SourceWebsiteRepositoryInterface,
+        source_website_repo: StoreReader,
         email_service: EmailServiceInterface,
     ):
         self.product_repo = product_repo
@@ -695,7 +693,7 @@ class EvaluateBookAlertsUseCase:
         self,
         product_repo: ProductRepositoryInterface,
         price_alert_repo: PriceAlertRepositoryInterface,
-        source_website_repo: SourceWebsiteRepositoryInterface,
+        source_website_repo: StoreReader,
         notifier: OpportunityNotifier,
     ):
         self.product_repo = product_repo
