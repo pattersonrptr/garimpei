@@ -46,10 +46,9 @@ som, da mesma jornada está em [`docs/demo/garimpei-demo.webm`](docs/demo/garimp
 |---|---|
 | ![Resultado da busca: A Divina Comédia, usado a partir de R$ 17,46, novo a partir de R$ 38,64](docs/screenshots/site-search-desktop.png) | ![Criar alerta: exemplar usado, me avise em R$ 23](docs/screenshots/site-alert-form-desktop.png) |
 | **Meus alertas** | **O e-mail** (caixa local) |
-| ![Meus alertas: hoje R$ 17,46 na Estante Virtual, abaixo do alvo de R$ 23; pausar, mudar preço, excluir](docs/screenshots/site-my-alerts-desktop.png) | ![E-mail de alerta no Mailpit: o livro, o preço encontrado e a economia](docs/screenshots/site-alert-email-desktop.png) |
+| ![Meus alertas: hoje R$ 17,46 na Estante Virtual, abaixo do alvo de R$ 23; pausar, mudar preço, excluir](docs/screenshots/site-my-alerts-desktop.png) | ![E-mail de alerta: o preço baixou, R$ 17,46 na Estante Virtual, R$ 5,54 abaixo do alvo, ver na loja](docs/screenshots/site-alert-email-desktop.png) |
 
-<sub>O e-mail ainda tem o visual do app antigo; ele vai ganhar a identidade do
-Garimpei. As versões para celular estão em [`docs/screenshots/`](docs/screenshots/).
+<sub>As versões para celular estão em [`docs/screenshots/`](docs/screenshots/).
 Tudo isso sai de um script do Playwright, então dá para refazer quando as telas
 mudarem: veja [`frontend/e2e/media/`](frontend/e2e/media/tour.media.ts).</sub>
 
