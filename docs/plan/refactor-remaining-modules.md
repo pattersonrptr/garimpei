@@ -12,7 +12,7 @@ characterization tests first, in their own PR, reviewed by the author.
 | Alerts characterization tests | #156 | — | Before moving alerts off `src/app/interfaces`: 5 tests where those dependencies were used and uncovered (store lookup once per store, "Unknown" store, listing without price skipped, book alert never links a SearchConfig, update validator 404 for a missing store). Approved by the author |
 | Alerts stores through its own port | #157 | Inappropriate Intimacy → Extract Interface (port owned by the client) + adapter | `StoreReader` + `Store` in alerts; `SourceWebsiteStores` adapts the old repository at four wiring points. Parameter names kept, so no test changed |
 | Alerts users through its own port | #158 | Inappropriate Intimacy → Extract Interface + adapter | `AlertOwnerReader` + `AlertOwner(id, email)`; `UserAccountOwners` adapts the old user repository at four wiring points. No test changed |
-| Alerts e-mail through its own port | #PR | Inappropriate Intimacy → Extract Interface + adapter | `AlertMailer` + `MailResult(success, error_message)`; `EmailServiceMailer` adapts the old e-mail service at four wiring points (FastAPI still injects `get_email_service`, so the e2e overrides keep working). Same method and arguments, so no test changed; inverting the adapter's result fails 4 e2e tests |
+| Alerts e-mail through its own port | #159 | Inappropriate Intimacy → Extract Interface + adapter | `AlertMailer` + `MailResult(success, error_message)`; `EmailServiceMailer` adapts the old e-mail service at four wiring points (FastAPI still injects `get_email_service`, so the e2e overrides keep working). Same method and arguments, so no test changed; inverting the adapter's result fails 4 e2e tests |
 
 ## Queue
 
@@ -21,7 +21,7 @@ before it starts.
 
 - `alerts/use_cases.py` still imports from the older `src/app/interfaces`
   package: search configs, the last one (stores #157, users #158,
-  e-mail #PR). One alerts-owned port per PR, like `StoreReader`.
+  e-mail #159). One alerts-owned port per PR, like `StoreReader`.
 - `alerts/rules.py` holds `PriceAlertValidator`, which returns
   `JsonApiError`: request validation, like catalog's before #154.
 - The `source_website_repo`, `user_repo` and `email_service` parameters now
