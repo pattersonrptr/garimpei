@@ -13,7 +13,7 @@
   phases not done yet, so a session does not have to look them up.
 - Skill `e2e-local` (`.claude/skills/`): the local end-to-end check with
   screenshots. Subagent `architecture-reviewer` (`.claude/agents/`): reviews
-  a diff against the architecture rules; run it before asking for a merge of
+  a diff against the architecture rules; run it before merging
   backend or scrapers changes.
 - Permissions deny `WebFetch` on Amazon domains (no Amazon scraping). Shell
   commands like `curl` are not covered by that rule.
@@ -21,7 +21,10 @@
   enforced by Claude Code. GitHub branch protection on `main` applies to
   everyone.
 - `git push` is allowed without asking: `guard_git.py` and the branch
-  protection already stop pushes to `main` and force pushes. Merges still ask.
+  protection already stop pushes to `main` and force pushes. `gh pr merge`
+  is allowed too: branch protection requires the four CI checks (admins
+  included) and `guard_git.py` blocks admin merges. Merge only when CI is
+  green; fix it first when it is red.
 - **Automate what repeats.** When a task is done by hand again and again
   (same commands, same lookups, same checklist), propose turning it into a
   skill, hook, subagent or permission, and say which model fits (Haiku for

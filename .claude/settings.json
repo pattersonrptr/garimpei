@@ -23,10 +23,10 @@
       "Bash(backend/.venv/Scripts/ruff:*)",
       "Bash(poetry run pytest:*)",
       "Bash(poetry run ruff:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(gh pr merge:*)"
     ],
     "ask": [
-      "Bash(gh pr merge:*)",
       "Bash(docker compose down:*)",
       "Bash(docker compose exec web alembic:*)",
       "Bash(alembic upgrade:*)",

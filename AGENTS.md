@@ -44,11 +44,13 @@ and verifies. When in doubt about intent, ask a short round of questions.
    `docs/plan/`), with the author's answers to open questions recorded as
    decisions.
 2. **One slice per PR, one branch per slice** (`phase-5c/my-alerts`).
-3. **Verify before asking for a merge:** unit tests, type checks, build, and
+3. **Verify before merging:** unit tests, type checks, build, and
    for user-facing changes an end-to-end run against the local compose stack
    with screenshots (mobile and desktop).
-4. **Merge only with the author's explicit OK and a green CI.** Squash merge.
-   Approval for one PR never carries over to the next.
+4. **Merge once CI is green.** The agent squash-merges its own PRs without
+   asking once every CI check passes (decided Nov 11, 2026); if CI is red, it
+   fixes the cause first. GitHub branch protection refuses a merge without
+   the required checks, admins included.
 5. **Keep the plan current:** mark slices done in the phase doc, add new
    decisions there.
 6. Commit messages end with a `Co-Authored-By:` line naming the agent and
@@ -97,4 +99,5 @@ Local addresses: site `http://localhost:3000`, admin `http://localhost`
 - Rewrite an Alembic migration that is already on `main` (a Claude Code hook
   blocks it): add a new one.
 - Scrape Amazon (contract risk; use affiliate search links instead).
-- Push to `main`, merge, or run destructive commands without the author's OK.
+- Push to `main`, merge with red CI, or run destructive commands without the
+  author's OK.
