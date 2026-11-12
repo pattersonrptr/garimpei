@@ -290,6 +290,7 @@ applies only to the AI: the protections on GitHub apply to everyone.
 | CI (GitHub Actions) | Lint, types, tests and build for each part, on every PR | Full browser flows (E2E does not run there yet) |
 | E2E tests | Real user flows, from the click to the e-mail | They run only locally, when someone runs them |
 | Skill [`e2e-local`](../.claude/skills/e2e-local/SKILL.md) | The end-to-end check as a recipe: what to rebuild, waiting for the services, running Playwright, taking screenshots | It runs only when called |
+| Skill [`dependabot-triage`](../.claude/skills/dependabot-triage/SKILL.md) | Triage of the Dependabot PRs: a script gathers the CI results and errors, and the skill decides between merging, fixing, or closing with an ignore rule | It runs only when called |
 | Subagent [`architecture-reviewer`](../.claude/agents/architecture-reviewer.md) | Violations of my architecture rules in a diff (dependency rule, ports, pure entities) | Bugs and style; it is a second opinion, not a lock |
 | My validation | Whether it makes sense for the product; what no test measures | It depends on me reviewing carefully |
 
