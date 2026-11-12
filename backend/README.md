@@ -66,8 +66,8 @@ groups:
 | `/source-websites`, `/search-configs`, `/search-execution-logs` | stores and the older keyword searches | admin |
 | `/users`, `/plans`, `/subscriptions`, `/admin`, `/dashboard` | users, plans, admin summary | user / admin |
 
-Errors: bad login 400, no token 403, expired or invalid token 401. Timestamps
-are naive UTC.
+Errors: bad login 400; no token, expired or invalid token 401; a valid token
+without permission 403. Timestamps are naive UTC.
 
 ## Run
 
