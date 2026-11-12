@@ -4,6 +4,7 @@ from datetime import datetime
 from src.app.alerts.entities import (
     AlertOwner,
     BookRef,
+    KeywordSearch,
     MailResult,
     NoticeHistory,
     ProductSnapshot,
@@ -139,6 +140,34 @@ class AlertMailer(ABC):
         source_website_name: str,
     ) -> MailResult:
         """Send one alert e-mail; a failure comes back in the result, not raised."""
+        raise NotImplementedError
+
+
+class KeywordSearches(ABC):
+    """The collector searches keyword alerts create, reactivate and pause."""
+
+    @abstractmethod
+    def get_by_search_term_and_user_id(
+        self, search_term: str, user_id: int
+    ) -> KeywordSearch | None:
+        """The user's search for this term; None when there is none."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_by_id(self, search_config_id: int) -> KeywordSearch | None:
+        """The search with this id; None when it does not exist."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def create(self, search: KeywordSearch) -> KeywordSearch:
+        """Save a new search and return it with its id."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def update(
+        self, search_config_id: int, search: KeywordSearch
+    ) -> KeywordSearch | None:
+        """Save the term, state, frequency, user and stores; None when not found."""
         raise NotImplementedError
 
 

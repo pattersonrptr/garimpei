@@ -147,3 +147,19 @@ class MailResult:
 
     success: bool
     error_message: str | None = None
+
+
+@dataclass(kw_only=True)
+class KeywordSearch:
+    """The collector search a keyword alert keeps running (a SearchConfig).
+
+    One per term and user, shared by that user's alerts on the term; it is
+    paused when no active alert uses it any more.
+    """
+
+    id: int | None = None
+    search_term: str
+    is_active: bool = True
+    frequency_days: int = 1
+    user_id: int | None = None
+    source_website_ids: list[int] = field(default_factory=list)
