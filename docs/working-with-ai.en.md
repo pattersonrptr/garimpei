@@ -66,7 +66,7 @@ personal projects. The pace in the table reflects that.
 - I design and look after the architecture;
 - I define the testing strategy and the safety layers (section 8);
 - I answer the rounds of questions in each plan and approve it;
-- I test the result as a user and approve every merge.
+- I test the result as a user and say what needs to change.
 
 **Claude Code:**
 
@@ -76,7 +76,7 @@ personal projects. The pace in the table reflects that.
 - implements in small slices, one PR per slice;
 - runs the tests, brings up the local environment, takes mobile and desktop
   screenshots;
-- asks for a merge only with green CI, and shows the evidence.
+- merges on its own once CI is green, with the evidence in the PR.
 
 In practice it works like pair programming: I have the final word, but the
 decisions come out of the conversation.
@@ -132,10 +132,14 @@ A real example: Phase 5, which moved the user area to the new site.
    decisions recorded in [`docs/plan/phase-5-user-area.md`](plan/phase-5-user-area.md).
 2. **Small slices, one PR each:** account API (#90), session (#91), alerts
    (#92), account (#93), admin for administrators only (#94), wrap-up (#95).
-3. **Verification before asking for a merge:** unit tests, type check, build,
+3. **Verification before merging:** unit tests, type check, build,
    end-to-end browser tests against the local environment, and screenshots.
-4. **My validation.** A merge happens only after I approve it, and each PR
-   needs a new approval.
+4. **Merge on green CI.** Since Nov 11, 2026 the AI merges on its own once
+   every CI check passes; if something is red, it fixes it first. I stopped
+   being the bottleneck for green PRs: branch protection on GitHub refuses a
+   merge without the checks, even for me. My validation is now using the
+   system and pointing out what needs to change, and product and architecture
+   decisions are still mine.
 5. **The plan is updated** with every slice, with the new decisions.
 
 When the direction changes midway, the plan changes with it. Phase 5 itself
@@ -203,7 +207,7 @@ I decided early that the project would have many tests. Today:
 
 | Part | Tests | Tool |
 |---|---|---|
-| Back end (API) | 876 | pytest |
+| Back end (API) | 884 | pytest |
 | Collectors | 313 | pytest |
 | Public site | 75 | Vitest |
 | Admin panel | 75 | Vitest |
@@ -216,7 +220,9 @@ I decided early that the project would have many tests. Today:
   the card and the e-mail that arrives in Mailpit (a fake local mailbox).
   **They still run only locally**, before each merge, not in CI.
 - **Manual:** mobile and desktop screenshots for every visual change, and I
-  use the system for real.
+  use the system for real. The README's screenshots and video come from a
+  Playwright script ([`frontend/e2e/media/`](../frontend/e2e/media/tour.media.ts)),
+  so they can be taken again when the screens change.
 - **Not tested yet:** load (many users at once), real e-mail delivery outside
   the fake mailbox, and anything in production.
 
@@ -238,6 +244,10 @@ The AI makes mistakes. What matters is having barriers that catch them before
 | `pre-commit run --all-files` changed old files, including an already-applied migration | `git status` before committing | Changes reverted; configuration adjusted (#97) |
 | The hook that blocks `--no-verify` blocked the very commit that created it, because the message mentioned the flag | The hook itself, once active | It now looks only at the arguments of real git commands (#101) |
 | The screenshot script clicked the top bar's "Buscar" (Search) button instead of "Entrar" (Sign in) | The failure screenshot the script itself saves | Selector scoped to the sign-in form (#102) |
+| The demo video was 1.4 MB, over the repository's file size limit | pre-commit (`check-added-large-files`) | The script compresses the video with ffmpeg (#110) |
+| The `docker-compose.override.yml` example uses the `!override` tag, which is not plain YAML | pre-commit (`check-yaml`) | The file is left out of that check; `docker compose config` validates it (#105) |
+| The media script picked a book with no cover and a new copy at R$ 750 on its own | Looking at the screenshots before publishing | The book in the screenshots is now fixed and configurable (#110) |
+| The alert e-mail still had the old app's look (blue, "R$ 17.46", `estante_virtual`) | Looking at the e-mail screenshot for the README | E-mail with Garimpei's identity (#111) |
 
 ### Caught by me
 
@@ -273,10 +283,10 @@ applies only to the AI: the protections on GitHub apply to everyone.
 | Layer | What it catches | What it does not |
 |---|---|---|
 | [`AGENTS.md`](../AGENTS.md) (read by Claude through `CLAUDE.md`) | Departures from the house rules: architecture, one slice per PR, how to verify, known traps | Nothing by force: it is an instruction, not a lock |
-| Permissions ([`.claude/settings.json`](../.claude/settings.json)) | Merges, `docker compose down` and migrations ask for my confirmation; editing `.env` and fetching Amazon are denied. Pushing a work branch is free, because the locks below already protect `main` | Commands not on the list (a `curl` to Amazon, for example) |
+| Permissions ([`.claude/settings.json`](../.claude/settings.json)) | `docker compose down` and migrations ask for my confirmation; editing `.env` and fetching Amazon are denied. Pushing a work branch and merging a PR are free, because the locks below already protect `main` | Commands not on the list (a `curl` to Amazon, for example) |
 | Hooks ([`.claude/hooks/`](../.claude/hooks/)) | They block: edits to `.env` and to migrations already on `main`; commits or pushes on `main`, force pushes, skipping pre-commit and forced merges. They ask me before any change to the locks themselves (`.claude/`). They fix Python formatting | Logic errors |
 | pre-commit | Code quality: formatting, invalid JSON/YAML, leftover conflict markers, in my commits and the AI's | Behavior |
-| Branch protection on GitHub | Applies to everyone, me included: `main` changes only through a PR with green CI, no force push, no deleting `main` | What the PR contains |
+| Branch protection on GitHub | Applies to everyone, me included: `main` changes only through a PR with the four CI checks green, no force push, no deleting `main`. It is what lets the AI merge on its own | What the PR contains |
 | CI (GitHub Actions) | Lint, types, tests and build for each part, on every PR | Full browser flows (E2E does not run there yet) |
 | E2E tests | Real user flows, from the click to the e-mail | They run only locally, when someone runs them |
 | Skill [`e2e-local`](../.claude/skills/e2e-local/SKILL.md) | The end-to-end check as a recipe: what to rebuild, waiting for the services, running Playwright, taking screenshots | It runs only when called |
