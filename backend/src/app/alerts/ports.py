@@ -1,7 +1,13 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from src.app.alerts.entities import BookRef, NoticeHistory, ProductSnapshot, Store
+from src.app.alerts.entities import (
+    AlertOwner,
+    BookRef,
+    NoticeHistory,
+    ProductSnapshot,
+    Store,
+)
 from src.app.alerts.entities import NotificationLog as NotificationLogEntity
 from src.app.alerts.entities import PriceAlert as PriceAlertEntity
 
@@ -105,6 +111,15 @@ class PriceAlertRepositoryInterface(ABC):
         Returns:
             List of matching PriceAlert entities.
         """
+        raise NotImplementedError
+
+
+class AlertOwnerReader(ABC):
+    """The owners alerts e-mail when an offer reaches the target."""
+
+    @abstractmethod
+    def get_by_id(self, user_id: int) -> AlertOwner | None:
+        """The user with this id; None when it does not exist."""
         raise NotImplementedError
 
 

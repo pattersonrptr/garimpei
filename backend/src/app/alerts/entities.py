@@ -111,6 +111,14 @@ class Store:
 
 
 @dataclass(frozen=True, kw_only=True)
+class AlertOwner:
+    """The user who owns an alert, as far as alerts needs: where to write."""
+
+    id: int
+    email: str
+
+
+@dataclass(frozen=True, kw_only=True)
 class SentNotice:
     """One e-mail sent for an alert: when, and which store's offer."""
 
