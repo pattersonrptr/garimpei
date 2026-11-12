@@ -23,16 +23,15 @@ means the run was still going: run the script again.
 | Situation | Action |
 |---|---|
 | Green, minor/patch | Squash-merge (standing OK: merge on green CI) |
-| Green, major of a test or lint tool (pytest, vitest, jest-dom, eslint) | Squash-merge: CI runs the tool itself |
-| Green, major of a runtime library | Check the library's consumers (e.g. kombu's `redis` range in the lock) before merging; if outside a supported range, treat as blocked |
+| Green, **major** (any package, test tools included) | **Do not merge.** Show it to the author first (decided Nov 12, 2026), with your reading: for a runtime library, whether its consumers support it (e.g. kombu's `redis` range in the lock) |
 | Red, small and mechanical (ruff import order or format, a type that narrowed, a sibling package that must move with it) | Fix on the PR branch, verify the module, push |
 | Red because an approved test now fails | **Stop**: never change an approved test without the author's OK |
 | Red on a peer conflict (`ERESOLVE`) or an upstream cap | Recommend closing and adding an `ignore` rule |
 | Needs a migration (driver, enum, library swap) | Recommend an ignore now and its own PR later, tests first |
 
 Pairs that move together (e.g. `eslint` + `@eslint/js`, `vitest` +
-`@vitest/coverage-v8`): merge the one that installs alone first, then
-`@dependabot recreate` the other.
+`@vitest/coverage-v8`): once the author approves the major, bump both in
+one PR and close the other.
 
 ## 3. Fixing a PR branch
 
