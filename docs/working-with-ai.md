@@ -287,6 +287,7 @@ proteções no GitHub valem para qualquer pessoa.
 | CI (GitHub Actions) | Lint, tipos, testes e build de cada parte, a cada PR | Fluxos completos no navegador (ainda não roda o E2E) |
 | Testes E2E | Fluxos reais de usuário, do clique ao e-mail | Só rodam localmente, quando alguém os roda |
 | Skill [`e2e-local`](../.claude/skills/e2e-local/SKILL.md) | O teste ponta a ponta como receita: o que reconstruir, esperar os serviços, rodar o Playwright, tirar prints | Só roda quando é chamada |
+| Skill [`dependabot-triage`](../.claude/skills/dependabot-triage/SKILL.md) | A triagem dos PRs do Dependabot: um script junta o CI e os erros, e a skill decide entre merge, correção ou fechar com regra de ignore | Só roda quando é chamada |
 | Subagente [`architecture-reviewer`](../.claude/agents/architecture-reviewer.md) | Violações das minhas regras de arquitetura num diff (regra da dependência, portas, entidades puras) | Bugs e estilo; é uma segunda opinião, não uma trava |
 | Minha validação | Se faz sentido para o produto; o que nenhum teste mede | Depende de eu revisar com atenção |
 
