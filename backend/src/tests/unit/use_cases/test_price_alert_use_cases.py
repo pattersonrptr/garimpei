@@ -122,6 +122,34 @@ class TestFindOrCreateSearchConfig:
         updated = mock_sc_repo.update.call_args[0][1]
         assert updated.is_active is True
 
+    def test_reactivated_config_takes_the_alerts_stores(self, mock_sc_repo):
+        """
+        Characterization (Nov 12, 2026): reactivating a paused SearchConfig
+        replaces its stores with the alert's, not the ones it had before.
+        """
+        existing = make_search_config_entity(
+            id=10, is_active=False, source_website_ids=[1, 2]
+        )
+        mock_sc_repo.get_by_search_term_and_user_id.return_value = existing
+
+        _find_or_create_search_config(mock_sc_repo, "iPhone 13", [3], 1, 60)
+
+        updated = mock_sc_repo.update.call_args[0][1]
+        assert updated.source_website_ids == [3]
+
+    def test_reactivated_config_takes_the_alerts_frequency(self, mock_sc_repo):
+        """
+        Characterization (Nov 12, 2026): reactivating a paused SearchConfig
+        recomputes its frequency in days from the alert's minutes (rounded up).
+        """
+        existing = make_search_config_entity(id=10, is_active=False, frequency_days=1)
+        mock_sc_repo.get_by_search_term_and_user_id.return_value = existing
+
+        _find_or_create_search_config(mock_sc_repo, "iPhone 13", [1, 2], 1, 2881)
+
+        updated = mock_sc_repo.update.call_args[0][1]
+        assert updated.frequency_days == 3
+
     def test_creates_new_config_when_none_exists(self, mock_sc_repo):
         """When no matching SearchConfig exists, creates a new one."""
         mock_sc_repo.get_by_search_term_and_user_id.return_value = None
@@ -337,6 +365,48 @@ class TestUpdatePriceAlertUseCase:
 
         mock_sc_repo.update.assert_called()
         assert result.search_config_id == 20
+
+    def test_relinks_config_when_stores_change(self, mock_pa_repo, mock_sc_repo):
+        """
+        Characterization (Nov 12, 2026): same term, different stores: the
+        alert is linked to a SearchConfig found or created for the new stores.
+        """
+        existing = make_price_alert_entity(search_config_id=10, source_website_ids=[1])
+        mock_pa_repo.get_by_id.return_value = existing
+        mock_sc_repo.get_by_search_term_and_user_id.return_value = None
+        mock_sc_repo.create.return_value = make_search_config_entity(id=20)
+        mock_pa_repo.count_active_by_search_config_id.return_value = 1
+        changed = make_price_alert_entity(
+            search_config_id=10, source_website_ids=[1, 3]
+        )
+
+        UpdatePriceAlertUseCase(mock_pa_repo, mock_sc_repo).execute(1, changed)
+
+        created = mock_sc_repo.create.call_args[0][0]
+        assert created.source_website_ids == [1, 3]
+        saved = mock_pa_repo.update.call_args[0][1]
+        assert saved.search_config_id == 20
+
+    def test_same_stores_in_another_order_keep_the_config(
+        self, mock_pa_repo, mock_sc_repo
+    ):
+        """
+        Characterization (Nov 12, 2026): store order does not count as a
+        change, so the alert keeps its SearchConfig.
+        """
+        existing = make_price_alert_entity(
+            search_config_id=10, source_website_ids=[1, 2]
+        )
+        mock_pa_repo.get_by_id.return_value = existing
+        changed = make_price_alert_entity(
+            search_config_id=10, source_website_ids=[2, 1]
+        )
+
+        UpdatePriceAlertUseCase(mock_pa_repo, mock_sc_repo).execute(1, changed)
+
+        mock_sc_repo.get_by_search_term_and_user_id.assert_not_called()
+        saved = mock_pa_repo.update.call_args[0][1]
+        assert saved.search_config_id == 10
 
     def test_deactivation_cleans_up_orphaned_config(self, mock_pa_repo, mock_sc_repo):
         """
