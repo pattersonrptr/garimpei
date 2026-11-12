@@ -51,7 +51,20 @@ jobs:
           pip install "bandit[toml]==1.8.0"
           bandit -c pyproject.toml -r src -ll
 
-      - name: Type check with mypy
+      # Blocking on the paths already clean: the domain core of catalog and
+      # alerts. Imported modules are followed silently, so their errors
+      # (fixed area by area) do not fail this step. Add paths as they clean.
+      - name: Type check with mypy (blocking, clean paths)
+        run: |
+          poetry run mypy --follow-imports=silent \
+            src/app/catalog/entities.py \
+            src/app/catalog/use_cases.py \
+            src/app/catalog/rules.py \
+            src/app/alerts/entities.py \
+            src/app/alerts/use_cases.py \
+            src/app/alerts/rules.py
+
+      - name: Type check with mypy (whole backend, report only)
         run: poetry run mypy src/
         continue-on-error: true
 
