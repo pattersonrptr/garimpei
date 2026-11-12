@@ -44,6 +44,13 @@ jobs:
       - name: Check formatting with ruff
         run: poetry run ruff format --check src/
 
+      # Fails on medium or high severity; low findings are only listed.
+      # Same version as the pre-commit hook.
+      - name: Security scan with bandit
+        run: |
+          pip install "bandit[toml]==1.8.0"
+          bandit -c pyproject.toml -r src -ll
+
       - name: Type check with mypy
         run: poetry run mypy src/
         continue-on-error: true
@@ -130,6 +137,9 @@ jobs:
 
       - name: Run tests
         run: npm run test
+
+      - name: Type check and build
+        run: npm run build
 
   # ── Public pages (Next.js) ───────────────────────────────────────────────
   web:
