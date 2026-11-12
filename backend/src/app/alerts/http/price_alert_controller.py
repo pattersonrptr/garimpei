@@ -13,6 +13,7 @@ from src.app.alerts.http.price_alert_schema import (
     PriceAlertUpdateRequest,
 )
 from src.app.alerts.persistence.book_finder import CatalogBookFinder
+from src.app.alerts.persistence.keyword_searches import SearchConfigKeywordSearches
 from src.app.alerts.persistence.mailer import EmailServiceMailer
 from src.app.alerts.persistence.owners import UserAccountOwners
 from src.app.alerts.persistence.repositories import (
@@ -209,7 +210,9 @@ def create_price_alert(
         source_website_ids=attrs.source_website_ids,
     )
 
-    use_case = CreatePriceAlertUseCase(price_alert_repo, search_config_repo)
+    use_case = CreatePriceAlertUseCase(
+        price_alert_repo, SearchConfigKeywordSearches(search_config_repo)
+    )
     created = use_case.execute(price_alert_entity)
     opportunities.execute(created)
 
@@ -535,7 +538,9 @@ def update_price_alert(
         if limit_error:
             return PriceAlertPresenter.handle_validation_errors([limit_error])
 
-    update_uc = UpdatePriceAlertUseCase(price_alert_repo, search_config_repo)
+    update_uc = UpdatePriceAlertUseCase(
+        price_alert_repo, SearchConfigKeywordSearches(search_config_repo)
+    )
     updated = update_uc.execute(price_alert_id, updated_entity)
     opportunities.execute(updated)
 
@@ -585,7 +590,9 @@ def delete_price_alert(
     ):
         return PriceAlertPresenter.handle_not_found(f"id {price_alert_id}", "/data/id")
 
-    delete_uc = DeletePriceAlertUseCase(price_alert_repo, search_config_repo)
+    delete_uc = DeletePriceAlertUseCase(
+        price_alert_repo, SearchConfigKeywordSearches(search_config_repo)
+    )
     deleted = delete_uc.execute(price_alert_id)
 
     if not deleted:

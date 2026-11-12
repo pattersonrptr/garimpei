@@ -1,13 +1,14 @@
 from datetime import UTC, datetime, timedelta
 from math import ceil
 
-from src.app.alerts.entities import MyAlert, NoticeHistory
+from src.app.alerts.entities import KeywordSearch, MyAlert, NoticeHistory
 from src.app.alerts.entities import NotificationLog as NotificationLogEntity
 from src.app.alerts.entities import PriceAlert as PriceAlertEntity
 from src.app.alerts.notification_text import alert_subject
 from src.app.alerts.ports import (
     AlertMailer,
     AlertOwnerReader,
+    KeywordSearches,
     NotificationLogRepositoryInterface,
     PriceAlertRepositoryInterface,
     ProductSnapshotReader,
@@ -19,16 +20,12 @@ from src.app.catalog.ports import (
     PriceHistoryRepositoryInterface,
     ProductRepositoryInterface,
 )
-from src.app.entities.search_config import SearchConfig as SearchConfigEntity
-from src.app.interfaces.repositories.search_config_repository import (
-    SearchConfigRepositoryInterface,
-)
 from src.config import settings
 from src.config.logging_config import get_logger
 
 
 def _find_or_create_search_config(
-    search_config_repo: SearchConfigRepositoryInterface,
+    search_config_repo: KeywordSearches,
     search_term: str,
     source_website_ids: list[int],
     user_id: int,
@@ -49,7 +46,7 @@ def _find_or_create_search_config(
         return existing.id
 
     # Create a new SearchConfig bound to this search
-    new_config = SearchConfigEntity(
+    new_config = KeywordSearch(
         search_term=search_term,
         is_active=True,
         frequency_days=max(1, ceil(frequency_minutes / 1440)),
@@ -62,7 +59,7 @@ def _find_or_create_search_config(
 
 def _cleanup_orphaned_search_config(
     price_alert_repo: PriceAlertRepositoryInterface,
-    search_config_repo: SearchConfigRepositoryInterface,
+    search_config_repo: KeywordSearches,
     search_config_id: int | None,
 ) -> None:
     """Deactivate a SearchConfig if no other active PriceAlerts use it."""
@@ -82,7 +79,7 @@ class CreatePriceAlertUseCase:
     def __init__(
         self,
         price_alert_repo: PriceAlertRepositoryInterface,
-        search_config_repo: SearchConfigRepositoryInterface,
+        search_config_repo: KeywordSearches,
     ):
         self.price_alert_repo = price_alert_repo
         self.search_config_repo = search_config_repo
@@ -151,7 +148,7 @@ class UpdatePriceAlertUseCase:
     def __init__(
         self,
         price_alert_repo: PriceAlertRepositoryInterface,
-        search_config_repo: SearchConfigRepositoryInterface,
+        search_config_repo: KeywordSearches,
     ):
         self.price_alert_repo = price_alert_repo
         self.search_config_repo = search_config_repo
@@ -207,7 +204,7 @@ class DeletePriceAlertUseCase:
     def __init__(
         self,
         price_alert_repo: PriceAlertRepositoryInterface,
-        search_config_repo: SearchConfigRepositoryInterface,
+        search_config_repo: KeywordSearches,
     ):
         self.price_alert_repo = price_alert_repo
         self.search_config_repo = search_config_repo
