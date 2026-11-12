@@ -1,4 +1,4 @@
-import '@testing-library/jest-dom'
+import '@testing-library/jest-dom/vitest'
 import i18n from '@/i18n'
 
 // Unit tests assert on the English UI texts; tests that need another
