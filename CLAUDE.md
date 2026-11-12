@@ -12,7 +12,9 @@
   `session_brief.py` (SessionStart) prints the branch, open PRs and the plan
   phases not done yet, so a session does not have to look them up.
 - Skill `e2e-local` (`.claude/skills/`): the local end-to-end check with
-  screenshots. Subagent `architecture-reviewer` (`.claude/agents/`): reviews
+  screenshots. Skill `dependabot-triage`: CI status and failure logs of the
+  open Dependabot PRs (script), then merge, fix or propose ignore rules.
+  Subagent `architecture-reviewer` (`.claude/agents/`): reviews
   a diff against the architecture rules; run it before merging
   backend or scrapers changes.
 - Permissions deny `WebFetch` on Amazon domains (no Amazon scraping). Shell
