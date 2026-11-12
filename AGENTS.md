@@ -106,6 +106,12 @@ ports in unit tests, the real database in e2e tests.
 | web | `npm test` · `npm run typecheck` · `npm run build` |
 | frontend | `npm run lint` · `npm test` · `npx tsc -b` |
 
+**Poetry is not installed locally**; the author's machine has `uv`. CI and
+the lock files still use Poetry. Locally, run Poetry through `uvx`
+(`uvx poetry@2 lock`, `uvx poetry@2 update --lock <pkg>`) and ruff at the
+version pinned in the module's `poetry.lock` (`uvx ruff@<version> check src`).
+The backend `.venv` was created with `uv`.
+
 **End to end (local):** `docker compose up -d --build <service>`, wait until
 `:8000`, `:3000` and `:80` answer, then from `frontend/`:
 `E2E_CHANNEL=msedge npx playwright test --project=chromium`. Test accounts
