@@ -154,10 +154,10 @@ test('desktop journey: search, compare, warn me, e-mail (with video)', async ({ 
   await linger(page, 2000)
   await shot(page, 'site-my-alerts-desktop')
 
-  // 5. The e-mail, in the local inbox (Mailpit)
+  // 5. The e-mail as the user sees it (its HTML, served by the local Mailpit)
   await expect.poll(async () => (await mailpit.search(book.title)).length).toBeGreaterThan(0)
   const [mail] = await mailpit.search(book.title)
-  await page.goto(`${MAILPIT_BASE}/view/${mail.ID}`)
+  await page.goto(`${MAILPIT_BASE}/view/${mail.ID}.html`)
   await expect(page.getByText(book.title).first()).toBeVisible()
   await linger(page, 2500)
   await shot(page, 'site-alert-email-desktop')

@@ -4,6 +4,7 @@ from math import ceil
 from src.app.alerts.entities import MyAlert, NoticeHistory
 from src.app.alerts.entities import NotificationLog as NotificationLogEntity
 from src.app.alerts.entities import PriceAlert as PriceAlertEntity
+from src.app.alerts.notification_text import alert_subject
 from src.app.alerts.ports import (
     NotificationLogRepositoryInterface,
     PriceAlertRepositoryInterface,
@@ -411,9 +412,8 @@ class SendPriceAlertNotificationUseCase:
         )
 
         # Record notification log
-        subject = (
-            f"🎯 Oportunidade! {alert.search_term} por "
-            f"R$ {best_product.current_price or 0:,.2f} no {source_website_name}"
+        subject = alert_subject(
+            alert.search_term, best_product.current_price or 0.0, source_website_name
         )
 
         log_entry = NotificationLogEntity(
@@ -500,10 +500,7 @@ class OpportunityNotifier:
             source_website_name=source_website_name,
         )
 
-        subject = (
-            f"🎯 Oportunidade! {alert.search_term} por "
-            f"R$ {current_price:,.2f} no {source_website_name}"
-        )
+        subject = alert_subject(alert.search_term, current_price, source_website_name)
         created_log = self.notification_log_repo.create(
             NotificationLogEntity(
                 price_alert_id=alert_id,

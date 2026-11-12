@@ -32,13 +32,21 @@ class TestPriceAlertEmailContent:
 
     def test_subject_and_body(self):
         email = self._build()
-        assert (
-            email.subject == "🎯 Oportunidade! arquitetura limpa por R$ 38.00 no enjoei"
-        )
+        assert email.subject == "Baixou: arquitetura limpa por R$ 38,00 na Enjoei"
         assert "Arquitetura Limpa | Robert C. Martin" in email.html
-        assert "Economia de R$ 22.00" in email.html
+        assert "R$ 22,00 abaixo do seu alvo" in email.html
+        assert "Enjoei" in email.html
+        assert "enjoei" not in email.html.replace("example.com", "")
         assert "1 e-mail por alerta a cada 60 minutos" in email.html
         assert ALERT["product_url"] in email.text
+        assert "R$ 38,00" in email.text
+
+    def test_has_garimpei_identity_not_the_old_app(self):
+        html = self._build().html
+        assert "Garimpei" in html
+        assert "#ffc928" in html  # the site's gold
+        assert "#1976d2" not in html  # the old app's blue
+        assert "para a busca" not in html
 
     def test_listing_data_is_html_escaped(self):
         email = self._build(
@@ -66,7 +74,7 @@ class TestSmtpEmailService:
         smtp.login.assert_not_called()
         message = smtp.send_message.call_args.args[0]
         assert message["To"] == "user@example.com"
-        assert message["Subject"].startswith("🎯 Oportunidade!")
+        assert message["Subject"].startswith("Baixou: ")
         assert message.is_multipart()
         types = [part.get_content_type() for part in message.iter_parts()]
         assert types == ["text/plain", "text/html"]
