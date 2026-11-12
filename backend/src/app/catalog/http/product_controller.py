@@ -17,11 +17,11 @@ from src.app.catalog.http.product_schema import (
     ProductsCollectionResponse,
     ProductUpdateRequest,
 )
+from src.app.catalog.http.validators import ProductValidator
 from src.app.catalog.persistence.repositories import (
     PriceHistoryRepository,
     ProductRepository,
 )
-from src.app.catalog.rules import ProductValidator
 from src.app.catalog.use_cases import (
     CreateProductUseCase,
     DeleteProductUseCase,

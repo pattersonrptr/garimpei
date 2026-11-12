@@ -9,11 +9,11 @@ from src.app.catalog.http.price_history_schema import (
     PriceHistoryCreateRequest,
     PriceHistoryReadResponse,
 )
+from src.app.catalog.http.validators import PriceHistoryValidator
 from src.app.catalog.persistence.repositories import (
     PriceHistoryRepository,
     ProductRepository,
 )
-from src.app.catalog.rules import PriceHistoryValidator
 from src.app.catalog.use_cases import (
     CreatePriceHistoryUseCase,
     DeletePriceHistoryUseCase,

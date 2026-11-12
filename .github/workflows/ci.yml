@@ -59,7 +59,7 @@ jobs:
           poetry run mypy --follow-imports=silent \
             src/app/catalog/entities.py \
             src/app/catalog/use_cases.py \
-            src/app/catalog/rules.py \
+            src/app/catalog/http/validators.py \
             src/app/alerts/entities.py \
             src/app/alerts/use_cases.py \
             src/app/alerts/rules.py
