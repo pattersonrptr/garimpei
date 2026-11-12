@@ -405,6 +405,30 @@ class TestUpdatePriceAlertUseCase:
 
         assert result is None
 
+    def test_book_alert_update_never_links_a_search_config(
+        self, mock_pa_repo, mock_sc_repo
+    ):
+        """
+        Characterization (Nov 12, 2026): a book alert has no SearchConfig.
+        Even when its term changes, no config is looked up or created, and it
+        is saved with search_config_id None.
+        """
+        existing = make_price_alert_entity(
+            canonical_product_id=5, search_config_id=None, search_term="Dom Casmurro"
+        )
+        mock_pa_repo.get_by_id.return_value = existing
+        changed = make_price_alert_entity(
+            canonical_product_id=5, search_config_id=99, search_term="Memórias"
+        )
+
+        uc = UpdatePriceAlertUseCase(mock_pa_repo, mock_sc_repo)
+        uc.execute(1, changed)
+
+        saved = mock_pa_repo.update.call_args.args[1]
+        assert saved.search_config_id is None
+        mock_sc_repo.get_by_search_term_and_user_id.assert_not_called()
+        mock_sc_repo.create.assert_not_called()
+
 
 # ============================================================================
 # DeletePriceAlertUseCase

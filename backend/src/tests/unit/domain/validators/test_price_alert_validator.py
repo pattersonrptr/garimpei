@@ -319,3 +319,22 @@ class TestPriceAlertValidatorUpdate:
         )
 
         assert errors == []
+
+    def test_update_with_nonexistent_source_website_returns_404(self):
+        """
+        Characterization (Nov 12, 2026): on update, a store id that does not
+        exist gives 404 SOURCE_WEBSITE_NOT_FOUND pointing at the store ids.
+        """
+        mock_pa_repo = Mock()
+        mock_sw_repo = Mock()
+        mock_sw_repo.get_by_id.return_value = None
+        validator = PriceAlertValidator(mock_pa_repo, mock_sw_repo)
+
+        errors = validator.validate_update_request(
+            1, make_update_request(source_website_ids=[999])
+        )
+
+        assert len(errors) == 1
+        assert errors[0].code == "SOURCE_WEBSITE_NOT_FOUND"
+        assert errors[0].status == "404"
+        assert errors[0].source["pointer"] == "/data/attributes/source_website_ids"
