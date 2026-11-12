@@ -66,7 +66,7 @@ jobs:
             src/app/alerts/rules.py \
             src/app/alerts/ports.py \
             src/app/alerts/persistence/stores.py \
-            src/app/alerts/persistence/owners.py
+            src/app/alerts/persistence/owners.py \n            src/app/alerts/persistence/mailer.py
 
       - name: Type check with mypy (whole backend, report only)
         run: poetry run mypy src/

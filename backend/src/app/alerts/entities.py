@@ -139,3 +139,11 @@ class MyAlert:
     alert: PriceAlert
     product: ProductSnapshot | None
     notices: NoticeHistory
+
+
+@dataclass(frozen=True, kw_only=True)
+class MailResult:
+    """Whether an alert e-mail went out; the reason when it did not."""
+
+    success: bool
+    error_message: str | None = None

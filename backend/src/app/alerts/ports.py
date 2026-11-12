@@ -4,6 +4,7 @@ from datetime import datetime
 from src.app.alerts.entities import (
     AlertOwner,
     BookRef,
+    MailResult,
     NoticeHistory,
     ProductSnapshot,
     Store,
@@ -120,6 +121,24 @@ class AlertOwnerReader(ABC):
     @abstractmethod
     def get_by_id(self, user_id: int) -> AlertOwner | None:
         """The user with this id; None when it does not exist."""
+        raise NotImplementedError
+
+
+class AlertMailer(ABC):
+    """Sends the e-mail that tells an owner an offer reached the target."""
+
+    @abstractmethod
+    def send_price_alert_email(
+        self,
+        to_email: str,
+        search_term: str,
+        product_title: str,
+        product_price: float,
+        max_price: float,
+        product_url: str,
+        source_website_name: str,
+    ) -> MailResult:
+        """Send one alert e-mail; a failure comes back in the result, not raised."""
         raise NotImplementedError
 
 

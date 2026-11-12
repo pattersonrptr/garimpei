@@ -13,6 +13,7 @@ from src.app.alerts.http.price_alert_schema import (
     PriceAlertUpdateRequest,
 )
 from src.app.alerts.persistence.book_finder import CatalogBookFinder
+from src.app.alerts.persistence.mailer import EmailServiceMailer
 from src.app.alerts.persistence.owners import UserAccountOwners
 from src.app.alerts.persistence.repositories import (
     NotificationLogRepository,
@@ -111,7 +112,7 @@ def get_alert_opportunities_use_case(
         notification_log_repo=NotificationLogRepository(db),
         user_repo=UserAccountOwners(UserRepository(db)),
         source_website_repo=SourceWebsiteStores(SourceWebsiteRepository(db)),
-        email_service=email_service,
+        email_service=EmailServiceMailer(email_service),
     )
 
 
@@ -644,7 +645,7 @@ def trigger_price_alert_notification(
         user_repo=UserAccountOwners(user_repo),
         source_website_repo=SourceWebsiteStores(source_website_repo),
         notification_log_repo=notification_log_repo,
-        email_service=email_service,
+        email_service=EmailServiceMailer(email_service),
     )
     logs, error = use_case.execute(price_alert_id)
 

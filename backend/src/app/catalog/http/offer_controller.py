@@ -8,6 +8,7 @@ database repositories and the BrasilAPI metadata adapter into the use cases.
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
+from src.app.alerts.persistence.mailer import EmailServiceMailer
 from src.app.alerts.persistence.owners import UserAccountOwners
 from src.app.alerts.persistence.repositories import (
     NotificationLogRepository,
@@ -80,7 +81,7 @@ def get_book_alerts_use_case(
             NotificationLogRepository(db),
             UserAccountOwners(UserRepository(db)),
             alerts,
-            email_service,
+            EmailServiceMailer(email_service),
         ),
     )
 
