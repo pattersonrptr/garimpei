@@ -7,6 +7,15 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
+    ignore:
+      # passlib (unmaintained) breaks with bcrypt 5 (#141). Remove once
+      # passlib is replaced.
+      - dependency-name: bcrypt
+        versions: [">=5"]
+      # SQLAlchemy 2.1 defaults postgresql:// to psycopg 3; we use psycopg2
+      # (#139). Remove once the driver is switched.
+      - dependency-name: sqlalchemy
+        versions: [">=2.1"]
     groups:
       minor-and-patch:
         update-types: [minor, patch]
@@ -30,6 +39,10 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
+    ignore:
+      # Types follow the Node runtime (node:22 in web/Dockerfile, #131).
+      - dependency-name: "@types/node"
+        versions: [">=23"]
     groups:
       minor-and-patch:
         update-types: [minor, patch]
@@ -44,6 +57,11 @@ updates:
       # supports newer versions (see #123).
       - dependency-name: typescript
         versions: [">=6"]
+      # @mui/x-data-grid 8 supports @mui/material <=7 only (#138).
+      - dependency-name: "@mui/material"
+        versions: [">=8"]
+      - dependency-name: "@mui/icons-material"
+        versions: [">=8"]
     groups:
       minor-and-patch:
         update-types: [minor, patch]
