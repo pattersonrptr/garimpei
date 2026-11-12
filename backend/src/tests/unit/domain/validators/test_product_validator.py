@@ -14,7 +14,7 @@ from src.app.catalog.http.product_schema import (
     ProductResourceForUpdate,
     ProductUpdateRequest,
 )
-from src.app.catalog.rules import ProductValidator
+from src.app.catalog.http.validators import ProductValidator
 
 # ============================================================================
 # Helpers

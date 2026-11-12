@@ -52,14 +52,14 @@ jobs:
           bandit -c pyproject.toml -r src -ll
 
       # Blocking on the paths already clean: the domain core of catalog and
-      # alerts. Imported modules are followed silently, so their errors
+      # alerts, plus catalog's request validators (http). Imported modules are followed silently, so their errors
       # (fixed area by area) do not fail this step. Add paths as they clean.
       - name: Type check with mypy (blocking, clean paths)
         run: |
           poetry run mypy --follow-imports=silent \
             src/app/catalog/entities.py \
             src/app/catalog/use_cases.py \
-            src/app/catalog/rules.py \
+            src/app/catalog/http/validators.py \
             src/app/alerts/entities.py \
             src/app/alerts/use_cases.py \
             src/app/alerts/rules.py

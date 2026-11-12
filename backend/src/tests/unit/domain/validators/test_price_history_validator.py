@@ -10,7 +10,7 @@ from src.app.catalog.http.price_history_schema import (
     PriceHistoryCreateRequest,
     PriceHistoryResourceForCreation,
 )
-from src.app.catalog.rules import PriceHistoryValidator
+from src.app.catalog.http.validators import PriceHistoryValidator
 
 # ============================================================================
 # Helpers
