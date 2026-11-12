@@ -13,8 +13,8 @@ packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-fastapi = "^0.120.4"
-uvicorn = "^0.38.0"
+fastapi = ">=0.120.4,<0.163.0"
+uvicorn = ">=0.38,<0.55"
 sqlalchemy = "^2.0.44"
 alembic = "^1.17.1"
 psycopg2-binary = "^2.9.11"
@@ -23,7 +23,7 @@ python-jose = "^3.5.0"
 passlib = "^1.7.4"
 bcrypt = "^3.2.2"
 python-dotenv = "^1.0.0"
-python-multipart = "^0.0.20"
+python-multipart = ">=0.0.20,<0.0.34"
 email-validator = "^2.3.0"
 requests = "^2.32.5"
 sendgrid = "^6.12.5"
@@ -33,7 +33,7 @@ celery = {extras = ["redis"], version = "^5.6.3"}
 pytest = ">=8.4.2,<10.0.0"
 pytest-asyncio = "^1.3.0"
 pytest-cov = "^7.0.0"
-ruff = "^0.8.6"
+ruff = ">=0.8.6,<0.18.0"
 mypy = "^1.13.0"
 pre-commit = "^4.0.1"
 types-requests = "^2.32.4"
@@ -79,6 +79,7 @@ select = [
 ignore = [
     "E501",  # line-too-long (already controlled by formatter)
     "B008",  # do-not-perform-function-calls-in-argument-defaults (common in FastAPI)
+    "UP042", # str+Enum -> StrEnum changes str(); migrate in its own PR, tests first
 ]
 
 # Allow autofixing

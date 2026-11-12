@@ -47,7 +47,7 @@ class TestMe:
         assert "hashed_password" not in attributes
 
     def test_needs_a_login(self, client):
-        assert client.get("/auth/me").status_code == 403  # no token
+        assert client.get("/auth/me").status_code == 401  # no token
 
 
 def password_change(current, new):
@@ -212,4 +212,4 @@ class TestMyAlerts:
         assert client.get("/me/alerts", headers=auth_headers).json()["data"] == []
 
     def test_needs_a_login(self, client):
-        assert client.get("/me/alerts").status_code == 403  # no token
+        assert client.get("/me/alerts").status_code == 401  # no token
