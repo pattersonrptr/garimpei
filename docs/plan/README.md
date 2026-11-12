@@ -164,5 +164,6 @@ Each one becomes a short decision record when it is made.
 - [ ] Source of the new-book price anchor (Phase 2)
 - [x] Verdict rule: 90 days, outliers out (Tukey), 14 days minimum, good <= P25, high >= P75 (decided Nov 2026, see [phase-4-verdict-alerts.md](phase-4-verdict-alerts.md))
 - [x] Where daily collection runs: the author's Windows PC (Docker Desktop, in the background, resource-capped) until the AWS track is ready (decided Nov 2026). The VPS is not a target; it belongs to another project
+- [x] How we build: XP with AI. Tests first for features and bug fixes, reviewed by the author before any production code; approved tests are never changed to pass; characterization tests before refactoring untested code; architecture review recorded in each backend/scrapers PR (decided Nov 12, 2026; rules in `AGENTS.md`). CI gaps (frontend `tsc -b`, Dependabot, Bandit), blocking mypy and a one-page architecture README follow in their own PRs
 - [ ] AWS design (track A): broker (SQS?), notifications (SNS?), database, scheduling, cost guardrails. Note: an AWS Budget alerts, it does not stop charges
 - [ ] Hosting for Next.js (Phase 3; AWS track)

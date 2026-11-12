@@ -34,7 +34,10 @@ and verifies. When in doubt about intent, ask a short round of questions.
   over `catalog`).
 - **Entities are pure dataclasses:** no ORM, no framework imports.
 - **Refactor in small steps:** one module per small PR, behavior unchanged,
-  never a big-bang rewrite.
+  never a big-bang rewrite. Refactor only code covered by tests; untested
+  code gets characterization tests first, in their own PR. Refactoring PRs
+  name the smell and the refactoring in Fowler's vocabulary (e.g. "Feature
+  Envy → Move Function").
 - The web site renders on the server; client JavaScript only where needed
   (Server Actions with `useActionState` for forms).
 
@@ -43,23 +46,56 @@ and verifies. When in doubt about intent, ask a short round of questions.
 1. **Plan first.** Non-trivial work starts with a plan (plan mode or a doc in
    `docs/plan/`), with the author's answers to open questions recorded as
    decisions.
-2. **One slice per PR, one branch per slice** (`phase-5c/my-alerts`).
-3. **Verify before merging:** unit tests, type checks, build, and
+2. **One slice per PR, one branch per slice** (`phase-5c/my-alerts`). A big
+   feature is split into slices small enough to review; inside a slice,
+   small commits (`test:` before `feat:`/`fix:`).
+3. **Tests first** for features and bug fixes (see *Tests first* below).
+4. **Verify before merging:** unit tests, type checks, build, and
    for user-facing changes an end-to-end run against the local compose stack
-   with screenshots (mobile and desktop).
-4. **Merge once CI is green.** The agent squash-merges its own PRs without
-   asking once every CI check passes (decided Nov 11, 2026); if CI is red, it
-   fixes the cause first. GitHub branch protection refuses a merge without
-   the required checks, admins included.
-5. **Keep the plan current:** mark slices done in the phase doc, add new
+   with screenshots (mobile and desktop). For backend or scrapers changes,
+   run the `architecture-reviewer` and record its result in the PR.
+5. **Merge once CI is green.** The agent squash-merges its own PRs without
+   asking once every CI check passes (decided Nov 11, 2026); a feature or
+   bug fix also needs its tests approved by the author first (decided
+   Nov 12, 2026). If CI is red, the agent fixes the cause first. GitHub
+   branch protection refuses a merge without the required checks, admins
+   included.
+6. **Simple design (YAGNI):** build only what an approved test asks for;
+   anything else is proposed first. Scope is closed before implementing.
+7. **Keep the plan current:** mark slices done in the phase doc, add new
    decisions there.
-6. Commit messages end with a `Co-Authored-By:` line naming the agent and
-   model; PR bodies say which tool generated them.
-7. Flag anything that grows the scope; propose, don't just do it.
-8. `docs/working-with-ai.md` (and its `.en.md` translation) is
-   written in the author's voice. When a change makes it stale (new
-   protection layer, test counts, a decision, something the author learned),
-   say so and propose the edit; change it only after the author reviews it.
+8. Commit messages end with a `Co-Authored-By:` line naming the agent and
+   model; PR bodies follow `.github/pull_request_template.md` and say which
+   tool generated them.
+9. Flag anything that grows the scope; propose, don't just do it.
+10. `docs/working-with-ai.md` (and its `.en.md` translation) is
+    written in the author's voice. When a change makes it stale (new
+    protection layer, test counts, a decision, something the author learned),
+    say so and propose the edit; change it only after the author reviews it.
+
+## Tests first (TDD)
+
+Tests written after the code tend to mirror it and confirm its bugs; tests
+written first are an independent spec. Decided Nov 12, 2026.
+
+1. The author describes the behavior.
+2. The agent writes **only the tests** and stops for the author's review.
+3. Once approved, the agent runs them and shows them **failing on an
+   assertion** (not on an import or syntax error), then implements the
+   least code that makes them pass, then refactors with the tests green.
+4. The PR shows the red output and the green output.
+
+- A **bug fix** starts with a test that reproduces the bug.
+- **Never change an approved test to make it pass.** If a test looks wrong,
+  stop and ask the author.
+- Before moving or refactoring **untested code**, add characterization tests
+  (they pin today's behavior, bugs included) in their own PR.
+- Docs, config and chores need no tests first.
+
+**Test style:** test behavior through the public interface (use case, HTTP
+endpoint, rendered page), not private helpers; one behavior per test; names
+state the rule (`test_alert_fires_when_price_reaches_target`); fakes for
+ports in unit tests, the real database in e2e tests.
 
 ## Verify
 
