@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from src.app.alerts.entities import BookRef, NoticeHistory, ProductSnapshot
+from src.app.alerts.entities import BookRef, NoticeHistory, ProductSnapshot, Store
 from src.app.alerts.entities import NotificationLog as NotificationLogEntity
 from src.app.alerts.entities import PriceAlert as PriceAlertEntity
 
@@ -105,6 +105,15 @@ class PriceAlertRepositoryInterface(ABC):
         Returns:
             List of matching PriceAlert entities.
         """
+        raise NotImplementedError
+
+
+class StoreReader(ABC):
+    """The stores alerts accept in requests and name in e-mails."""
+
+    @abstractmethod
+    def get_by_id(self, source_website_id: int) -> Store | None:
+        """The store with this id; None when it does not exist."""
         raise NotImplementedError
 
 

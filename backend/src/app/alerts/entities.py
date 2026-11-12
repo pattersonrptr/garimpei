@@ -103,6 +103,14 @@ class ProductSnapshot:
 
 
 @dataclass(frozen=True, kw_only=True)
+class Store:
+    """A store an alert can watch and an e-mail names."""
+
+    id: int
+    name: str
+
+
+@dataclass(frozen=True, kw_only=True)
 class SentNotice:
     """One e-mail sent for an alert: when, and which store's offer."""
 

@@ -12,6 +12,7 @@ from src.app.alerts.persistence.repositories import (
     NotificationLogRepository,
     PriceAlertRepository,
 )
+from src.app.alerts.persistence.stores import SourceWebsiteStores
 from src.app.alerts.use_cases import EvaluateBookAlertsUseCase, OpportunityNotifier
 from src.app.catalog.adapters.brasilapi_books import BrasilApiBookMetadata
 from src.app.catalog.http.offer_schema import OfferIngestRequest
@@ -73,7 +74,7 @@ def get_book_alerts_use_case(
     return EvaluateBookAlertsUseCase(
         product_repo=ProductRepository(db),
         price_alert_repo=alerts,
-        source_website_repo=SourceWebsiteRepository(db),
+        source_website_repo=SourceWebsiteStores(SourceWebsiteRepository(db)),
         notifier=OpportunityNotifier(
             NotificationLogRepository(db), UserRepository(db), alerts, email_service
         ),
