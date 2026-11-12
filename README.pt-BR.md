@@ -37,6 +37,22 @@ aparece com 14 dias de histórico; este livro tinha 3. [Versão celular](docs/sc
   afiliado, nunca por scraping.
 - **Admin (back office)** para lojas, usuários e execuções da coleta.
 
+### A jornada em prints
+
+Buscar, comparar, pedir para ser avisado, receber o e-mail. Um vídeo curto, sem
+som, da mesma jornada está em [`docs/demo/garimpei-demo.webm`](docs/demo/garimpei-demo.webm).
+
+| Busca | Criar alerta |
+|---|---|
+| ![Resultado da busca: A Divina Comédia, usado a partir de R$ 17,46, novo a partir de R$ 38,64](docs/screenshots/site-search-desktop.png) | ![Criar alerta: exemplar usado, me avise em R$ 23](docs/screenshots/site-alert-form-desktop.png) |
+| **Meus alertas** | **O e-mail** (caixa local) |
+| ![Meus alertas: hoje R$ 17,46 na Estante Virtual, abaixo do alvo de R$ 23; pausar, mudar preço, excluir](docs/screenshots/site-my-alerts-desktop.png) | ![E-mail de alerta no Mailpit: o livro, o preço encontrado e a economia](docs/screenshots/site-alert-email-desktop.png) |
+
+<sub>O e-mail ainda tem o visual do app antigo; ele vai ganhar a identidade do
+Garimpei. As versões para celular estão em [`docs/screenshots/`](docs/screenshots/).
+Tudo isso sai de um script do Playwright, então dá para refazer quando as telas
+mudarem: veja [`frontend/e2e/media/`](frontend/e2e/media/tour.media.ts).</sub>
+
 ## Arquitetura
 
 ```mermaid
