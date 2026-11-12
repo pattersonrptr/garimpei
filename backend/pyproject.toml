@@ -79,6 +79,7 @@ select = [
 ignore = [
     "E501",  # line-too-long (already controlled by formatter)
     "B008",  # do-not-perform-function-calls-in-argument-defaults (common in FastAPI)
+    "UP042", # str+Enum -> StrEnum changes str(); migrate in its own PR, tests first
 ]
 
 # Allow autofixing
