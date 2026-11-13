@@ -21,6 +21,8 @@ characterization tests first, in their own PR, reviewed by the author.
 | SendPriceAlertNotification through Listings | (this PR) | Inappropriate Intimacy → Change the dependency to the client-owned port | The use case asks `Listings.cheapest_match` for the best match instead of catalog's `search_by_term_and_sources(limit=1)`; `POST /price-alerts/{id}/notify` wires `CatalogListings`. Test diff (mock setup and one interaction assertion: `cheapest_match` with the alert's term, stores and max price) approved by the author before the change. Red was a `ValueError` (old code unpacking the new mock), not an assertion: inherent to swapping a port. `listings.py` added to the blocking mypy paths |
 | EvaluateProductAlerts through Listings | (this PR) | Inappropriate Intimacy → depend on the client-owned port | `Listings.get_by_id` brings the listing with its latest price, so the use case no longer needs catalog's price history repository; `alerts/wiring.py` builds `CatalogListings`. Test diff (mock setup only, no assertion changed) approved by the author. **Behavior change approved by the author (Nov 12, 2026):** "latest price" is now the point with the highest id, like the rest of the site, instead of the highest `created_at`; they differ only for points saved out of order. `OpportunityNotifier.notify` takes `Listing \| Product` until the last use case moves |
 | NotifyAlertOpportunities and EvaluateBookAlerts through Listings | (this PR) | Inappropriate Intimacy → depend on the client-owned port | One PR because the first builds the second over the same repository. `opportunities_for_alert` and `available_offers_for_book` replace catalog's `get_all` + `ProductListFilters`; `OpportunityNotifier.notify` takes only `Listing`; `alerts/wiring.py` no longer imports catalog. Test diff (mock setup only) approved by the author; book alerts are covered by 12 e2e tests, unchanged |
+| Characterization tests for alert products | #168 | — | 4 e2e tests for `GET /price-alerts/{id}/products` (max price on and off, cheapest first, pagination, 404); filter off had no test above the unit level. A mutation (always filter) fails 2. Approved by the author |
+| Products by alert searched in catalog | (this PR) | Feature Envy → Move Function | `GetProductsByPriceAlertUseCase` only searched catalog's products for a catalog presenter. The alerts controller already loads the alert to check its owner, so it now calls catalog's new `SearchProductsByTermUseCase` with the alert's term, stores and max price. The 4 unit tests of the old use case were removed (covered by #168 and 1 new catalog test, approved by the author; red on an assertion). Alerts' use cases no longer import catalog |
 
 ## Queue
 
@@ -33,13 +35,11 @@ before it starts.
   also call the private `_find_or_create_search_config` helpers (needs the
   author's OK).
 - `catalog/persistence/repositories.py` imports alerts' ORM models.
-- `GetProductsByPriceAlertUseCase` lists full catalog products for
-  `/price-alerts/{id}/products` and `/opportunities`; decide whether it
-  belongs in catalog (a query by alert) rather than in alerts.
-- After the `Listings` slices, alerts' use cases import catalog only for
-  `GetProductsByPriceAlertUseCase` (item above). Catalog's controllers still
-  import alerts' use case types and `alerts/wiring.py`; a shared composition
-  root would remove that direction too.
+- Alerts' use cases no longer import catalog. Still coupled: alerts'
+  adapters and http layer use catalog (expected for adapters), catalog's
+  controllers import alerts' use case types and `alerts/wiring.py`, and
+  `catalog/persistence/repositories.py` imports alerts' ORM models; a shared
+  composition root would remove the controllers' direction.
 - Alerts' own controller (`price_alert_controller.py`) still wires its
   adapters by hand at four points; it could use `alerts/wiring.py` too.
 - Catalog controllers build concrete repositories and use cases themselves;

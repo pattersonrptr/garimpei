@@ -11,13 +11,11 @@ from src.app.alerts.use_cases import (
     DeletePriceAlertUseCase,
     GetPriceAlertByIdUseCase,
     GetPriceAlertsByUserIdUseCase,
-    GetProductsByPriceAlertUseCase,
     ListPriceAlertsUseCase,
     UpdatePriceAlertUseCase,
     _cleanup_orphaned_search_config,
     _find_or_create_search_config,
 )
-from src.app.catalog.entities import Product as ProductEntity
 from src.app.entities.search_config import SearchConfig as SearchConfigEntity
 
 # ============================================================================
@@ -57,20 +55,6 @@ def make_search_config_entity(**overrides):
     return SearchConfigEntity(**defaults)
 
 
-def make_product_entity(**overrides):
-    defaults = {
-        "id": 1,
-        "url": "https://example.com/product/1",
-        "title": "iPhone 13 128GB",
-        "source_website_id": 1,
-        "current_price": 2000.00,
-        "created_at": datetime(2024, 1, 1),
-        "updated_at": datetime(2024, 1, 1),
-    }
-    defaults.update(overrides)
-    return ProductEntity(**defaults)
-
-
 # ============================================================================
 # Fixtures
 # ============================================================================
@@ -83,11 +67,6 @@ def mock_pa_repo():
 
 @pytest.fixture
 def mock_sc_repo():
-    return Mock()
-
-
-@pytest.fixture
-def mock_product_repo():
     return Mock()
 
 
@@ -630,82 +609,3 @@ class TestListPriceAlertsUseCase:
 
         assert total == 1
         assert result == [entity]
-
-
-# ============================================================================
-# GetProductsByPriceAlertUseCase
-# ============================================================================
-
-
-class TestGetProductsByPriceAlertUseCase:
-    """Tests for the endpoint that returns products matching a PriceAlert."""
-
-    def test_returns_products_matching_alert(self, mock_pa_repo, mock_product_repo):
-        """
-        Given: An existing alert and matching products
-        When: execute is called
-        Then: Returns (alert, products, total)
-        """
-        alert = make_price_alert_entity()
-        products = [
-            make_product_entity(id=1, current_price=2000.00),
-            make_product_entity(id=2, current_price=2200.00),
-        ]
-        mock_pa_repo.get_by_id.return_value = alert
-        mock_product_repo.search_by_term_and_sources.return_value = (products, 2)
-
-        uc = GetProductsByPriceAlertUseCase(mock_pa_repo, mock_product_repo)
-        result_alert, result_products, total = uc.execute(1)
-
-        assert result_alert == alert
-        assert result_products == products
-        assert total == 2
-        mock_product_repo.search_by_term_and_sources.assert_called_once_with(
-            search_term="iPhone 13",
-            source_website_ids=[1, 2],
-            max_price=2500.00,
-            limit=50,
-            offset=0,
-        )
-
-    def test_returns_none_when_alert_not_found(self, mock_pa_repo, mock_product_repo):
-        """Returns (None, [], 0) when alert does not exist."""
-        mock_pa_repo.get_by_id.return_value = None
-
-        uc = GetProductsByPriceAlertUseCase(mock_pa_repo, mock_product_repo)
-        result_alert, result_products, total = uc.execute(999)
-
-        assert result_alert is None
-        assert result_products == []
-        assert total == 0
-
-    def test_filter_by_max_price_false_passes_none(
-        self, mock_pa_repo, mock_product_repo
-    ):
-        """When filter_by_max_price=False, max_price is passed as None."""
-        alert = make_price_alert_entity(max_price=2500.00)
-        mock_pa_repo.get_by_id.return_value = alert
-        mock_product_repo.search_by_term_and_sources.return_value = ([], 0)
-
-        uc = GetProductsByPriceAlertUseCase(mock_pa_repo, mock_product_repo)
-        uc.execute(1, filter_by_max_price=False)
-
-        call_kwargs = mock_product_repo.search_by_term_and_sources.call_args
-        assert call_kwargs[1]["max_price"] is None
-
-    def test_respects_pagination_params(self, mock_pa_repo, mock_product_repo):
-        """Passes limit and offset to the product repository."""
-        alert = make_price_alert_entity()
-        mock_pa_repo.get_by_id.return_value = alert
-        mock_product_repo.search_by_term_and_sources.return_value = ([], 0)
-
-        uc = GetProductsByPriceAlertUseCase(mock_pa_repo, mock_product_repo)
-        uc.execute(1, limit=20, offset=40)
-
-        mock_product_repo.search_by_term_and_sources.assert_called_once_with(
-            search_term="iPhone 13",
-            source_website_ids=[1, 2],
-            max_price=2500.00,
-            limit=20,
-            offset=40,
-        )

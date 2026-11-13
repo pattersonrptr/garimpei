@@ -15,8 +15,6 @@ from src.app.alerts.ports import (
     ProductSnapshotReader,
     StoreReader,
 )
-from src.app.catalog.entities import Product as ProductEntity
-from src.app.catalog.ports import ProductRepositoryInterface
 from src.config import settings
 from src.config.logging_config import get_logger
 
@@ -222,41 +220,6 @@ class DeletePriceAlertUseCase:
             )
 
         return deleted
-
-
-class GetProductsByPriceAlertUseCase:
-    """Retrieve products matching a price alert's criteria, sorted by price."""
-
-    def __init__(
-        self,
-        price_alert_repo: PriceAlertRepositoryInterface,
-        product_repo: ProductRepositoryInterface,
-    ):
-        self.price_alert_repo = price_alert_repo
-        self.product_repo = product_repo
-
-    def execute(
-        self,
-        price_alert_id: int,
-        limit: int = 50,
-        offset: int = 0,
-        filter_by_max_price: bool = True,
-    ) -> tuple[PriceAlertEntity | None, list[ProductEntity], int]:
-        """Return (alert, products, total) or (None, [], 0) if alert not found."""
-        alert = self.price_alert_repo.get_by_id(price_alert_id)
-        if not alert:
-            return None, [], 0
-
-        max_price = alert.max_price if filter_by_max_price else None
-
-        products, total = self.product_repo.search_by_term_and_sources(
-            search_term=alert.search_term,
-            source_website_ids=alert.source_website_ids,
-            max_price=max_price,
-            limit=limit,
-            offset=offset,
-        )
-        return alert, products, total
 
 
 class CreateNotificationLogUseCase:
