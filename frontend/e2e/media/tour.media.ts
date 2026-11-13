@@ -5,7 +5,7 @@
  * what a reader of the README should see. Run it again when the site's look
  * changes (from frontend/):
  *
- *   MEDIA=1 E2E_CHANNEL=msedge npx playwright test --project=media
+ *   MEDIA=1 npx playwright test --project=media
  *
  * Writes PNGs to docs/screenshots/ and the video to docs/demo/ (override with
  * MEDIA_SCREENSHOTS / MEDIA_DEMO; pick the book with MEDIA_ISBN). Uses the
