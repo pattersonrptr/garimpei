@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from src.app.alerts import wiring
 from src.app.alerts.entities import PriceAlert as PriceAlertEntity
 from src.app.alerts.http.price_alert_presenter import (
     PriceAlertPresenter,
@@ -13,25 +14,12 @@ from src.app.alerts.http.price_alert_schema import (
     PriceAlertUpdateRequest,
 )
 from src.app.alerts.http.validators import PriceAlertValidator
-from src.app.alerts.persistence.book_finder import CatalogBookFinder
-from src.app.alerts.persistence.keyword_searches import SearchConfigKeywordSearches
-from src.app.alerts.persistence.listings import CatalogListings
-from src.app.alerts.persistence.mailer import EmailServiceMailer
-from src.app.alerts.persistence.owners import UserAccountOwners
-from src.app.alerts.persistence.repositories import (
-    NotificationLogRepository,
-    PriceAlertRepository,
-)
-from src.app.alerts.persistence.stores import SourceWebsiteStores
+from src.app.alerts.persistence.repositories import PriceAlertRepository
 from src.app.alerts.use_cases import (
-    CreatePriceAlertUseCase,
-    DeletePriceAlertUseCase,
     GetPriceAlertByIdUseCase,
     GetPriceAlertsByUserIdUseCase,
     ListPriceAlertsUseCase,
     NotifyAlertOpportunitiesUseCase,
-    SendPriceAlertNotificationUseCase,
-    UpdatePriceAlertUseCase,
 )
 from src.app.catalog.http.product_presenter import ProductPresenter
 from src.app.catalog.http.product_schema import ProductsCollectionResponse
@@ -40,13 +28,6 @@ from src.app.catalog.use_cases import SearchProductsByTermUseCase
 from src.app.domain.plan_limits import PlanLimits
 from src.app.entities.user import User as UserEntity
 from src.app.infrastructure.database_config import get_db
-from src.app.infrastructure.repositories.search_config_repository import (
-    SearchConfigRepository,
-)
-from src.app.infrastructure.repositories.source_website_repository import (
-    SourceWebsiteRepository,
-)
-from src.app.infrastructure.repositories.user_repository import UserRepository
 from src.app.infrastructure.services.email_service import get_email_service
 from src.app.interfaces.http.plan_limits import (
     check_alert_limit,
@@ -76,31 +57,9 @@ def get_price_alert_repository(db=Depends(get_db)) -> PriceAlertRepository:
     return PriceAlertRepository(db)
 
 
-def get_search_config_repository(db=Depends(get_db)) -> SearchConfigRepository:
-    """Dependency injection for SearchConfigRepository."""
-    return SearchConfigRepository(db)
-
-
 def get_product_repository(db=Depends(get_db)) -> ProductRepository:
     """Dependency injection for ProductRepository."""
     return ProductRepository(db)
-
-
-def get_source_website_repository(db=Depends(get_db)) -> SourceWebsiteRepository:
-    """Dependency injection for SourceWebsiteRepository (used by validator)."""
-    return SourceWebsiteRepository(db)
-
-
-def get_user_repository(db=Depends(get_db)) -> UserRepository:
-    """Dependency injection for UserRepository."""
-    return UserRepository(db)
-
-
-def get_notification_log_repository(
-    db=Depends(get_db),
-) -> NotificationLogRepository:
-    """Dependency injection for NotificationLogRepository."""
-    return NotificationLogRepository(db)
 
 
 def get_alert_opportunities_use_case(
@@ -108,36 +67,17 @@ def get_alert_opportunities_use_case(
     email_service: EmailServiceInterface = Depends(get_email_service),
 ) -> NotifyAlertOpportunitiesUseCase:
     """The use case that checks collected listings when an alert changes."""
-    return NotifyAlertOpportunitiesUseCase(
-        listings=CatalogListings(db),
-        price_alert_repo=PriceAlertRepository(db),
-        notification_log_repo=NotificationLogRepository(db),
-        owners=UserAccountOwners(UserRepository(db)),
-        stores=SourceWebsiteStores(SourceWebsiteRepository(db)),
-        mailer=EmailServiceMailer(email_service),
-    )
+    return wiring.alert_opportunities(db, email_service)
 
 
-def get_price_alert_validator(
-    price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
-    source_website_repo: SourceWebsiteRepository = Depends(
-        get_source_website_repository
-    ),
-    db=Depends(get_db),
-) -> PriceAlertValidator:
+def get_price_alert_validator(db=Depends(get_db)) -> PriceAlertValidator:
     """Dependency injection for PriceAlertValidator."""
-    return PriceAlertValidator(
-        price_alert_repo,
-        SourceWebsiteStores(source_website_repo),
-        CatalogBookFinder(db),
-    )
+    return wiring.price_alert_validator(db)
 
 
 @router.post("/", response_model=PriceAlertReadResponse, status_code=201)
 def create_price_alert(
     price_alert_in: PriceAlertCreateRequest,
-    price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
-    search_config_repo: SearchConfigRepository = Depends(get_search_config_repository),
     price_alert_validator: PriceAlertValidator = Depends(get_price_alert_validator),
     current_user: UserEntity = Depends(get_current_active_user),
     plan_limits: PlanLimits = Depends(get_user_plan_limits),
@@ -195,7 +135,7 @@ def create_price_alert(
     if source_err:
         return PriceAlertPresenter.handle_validation_errors([source_err])
 
-    book = CatalogBookFinder(db).find_by_isbn(attrs.isbn) if attrs.isbn else None
+    book = wiring.book_finder(db).find_by_isbn(attrs.isbn) if attrs.isbn else None
     price_alert_entity = PriceAlertEntity(
         search_term=book.title[:255] if book else attrs.search_term,
         canonical_product_id=book.id if book else None,
@@ -211,10 +151,7 @@ def create_price_alert(
         source_website_ids=attrs.source_website_ids,
     )
 
-    use_case = CreatePriceAlertUseCase(
-        price_alert_repo, SearchConfigKeywordSearches(search_config_repo)
-    )
-    created = use_case.execute(price_alert_entity)
+    created = wiring.create_price_alert(db).execute(price_alert_entity)
     opportunities.execute(created)
 
     logger.info(
@@ -435,7 +372,6 @@ def update_price_alert(
     price_alert_id: int,
     price_alert_in: PriceAlertUpdateRequest,
     price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
-    search_config_repo: SearchConfigRepository = Depends(get_search_config_repository),
     price_alert_validator: PriceAlertValidator = Depends(get_price_alert_validator),
     plan_limits: PlanLimits = Depends(get_user_plan_limits),
     opportunities: NotifyAlertOpportunitiesUseCase = Depends(
@@ -531,10 +467,7 @@ def update_price_alert(
         if limit_error:
             return PriceAlertPresenter.handle_validation_errors([limit_error])
 
-    update_uc = UpdatePriceAlertUseCase(
-        price_alert_repo, SearchConfigKeywordSearches(search_config_repo)
-    )
-    updated = update_uc.execute(price_alert_id, updated_entity)
+    updated = wiring.update_price_alert(db).execute(price_alert_id, updated_entity)
     opportunities.execute(updated)
 
     logger.info(
@@ -552,7 +485,7 @@ def update_price_alert(
 def delete_price_alert(
     price_alert_id: int,
     price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
-    search_config_repo: SearchConfigRepository = Depends(get_search_config_repository),
+    db: Session = Depends(get_db),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
@@ -583,10 +516,7 @@ def delete_price_alert(
     ):
         return PriceAlertPresenter.handle_not_found(f"id {price_alert_id}", "/data/id")
 
-    delete_uc = DeletePriceAlertUseCase(
-        price_alert_repo, SearchConfigKeywordSearches(search_config_repo)
-    )
-    deleted = delete_uc.execute(price_alert_id)
+    deleted = wiring.delete_price_alert(db).execute(price_alert_id)
 
     if not deleted:
         return PriceAlertPresenter.handle_not_found(f"id {price_alert_id}", "/data/id")
@@ -605,15 +535,7 @@ def delete_price_alert(
 @router.post("/{price_alert_id}/notify", status_code=200)
 def trigger_price_alert_notification(
     price_alert_id: int,
-    price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
     db: Session = Depends(get_db),
-    user_repo: UserRepository = Depends(get_user_repository),
-    source_website_repo: SourceWebsiteRepository = Depends(
-        get_source_website_repository
-    ),
-    notification_log_repo: NotificationLogRepository = Depends(
-        get_notification_log_repository
-    ),
     email_service: EmailServiceInterface = Depends(get_email_service),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
@@ -639,14 +561,7 @@ def trigger_price_alert_notification(
         },
     )
 
-    use_case = SendPriceAlertNotificationUseCase(
-        price_alert_repo=price_alert_repo,
-        listings=CatalogListings(db),
-        owners=UserAccountOwners(user_repo),
-        stores=SourceWebsiteStores(source_website_repo),
-        notification_log_repo=notification_log_repo,
-        mailer=EmailServiceMailer(email_service),
-    )
+    use_case = wiring.send_price_alert_notification(db, email_service)
     logs, error = use_case.execute(price_alert_id)
 
     if error and not logs:
