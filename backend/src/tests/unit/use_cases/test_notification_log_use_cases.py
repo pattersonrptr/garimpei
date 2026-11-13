@@ -7,6 +7,7 @@ Tests CRUD use cases and SendPriceAlertNotificationUseCase with mocked repos + e
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
+from src.app.alerts.entities import Listing
 from src.app.alerts.entities import NotificationLog as NotificationLogEntity
 from src.app.alerts.entities import PriceAlert as PriceAlertEntity
 from src.app.alerts.use_cases import (
@@ -17,7 +18,6 @@ from src.app.alerts.use_cases import (
     ListNotificationLogsUseCase,
     SendPriceAlertNotificationUseCase,
 )
-from src.app.catalog.entities import Product as ProductEntity
 from src.app.entities.source_website import SourceWebsite as SourceWebsiteEntity
 from src.app.entities.user import User as UserEntity
 from src.app.interfaces.services.email_service import EmailResult
@@ -61,19 +61,18 @@ def make_price_alert(**overrides):
     return PriceAlertEntity(**defaults)
 
 
-def make_product(**overrides):
+def make_listing(**overrides):
     defaults = {
         "id": 100,
         "url": "https://example.com/product/1",
         "title": "iPhone 13 128GB",
-        "source_website_id": 1,
-        "current_price": 2000.00,
+        "store_id": 1,
+        "price": 2000.00,
+        "condition": "undetermined",
         "is_available": True,
-        "created_at": datetime(2024, 1, 1, tzinfo=UTC),
-        "updated_at": datetime(2024, 1, 1, tzinfo=UTC),
     }
     defaults.update(overrides)
-    return ProductEntity(**defaults)
+    return Listing(**defaults)
 
 
 def make_user(**overrides):
@@ -275,7 +274,7 @@ class TestSendPriceAlertNotificationUseCase:
         nl_repo.count_since.return_value = 0
 
         prod_repo = MagicMock()
-        prod_repo.search_by_term_and_sources.return_value = ([], 0)
+        prod_repo.cheapest_match.return_value = None
 
         uc = self._build_use_case(
             price_alert_repo=pa_repo,
@@ -297,10 +296,7 @@ class TestSendPriceAlertNotificationUseCase:
         nl_repo.count_since.return_value = 0
 
         prod_repo = MagicMock()
-        prod_repo.search_by_term_and_sources.return_value = (
-            [make_product()],
-            1,
-        )
+        prod_repo.cheapest_match.return_value = make_listing()
 
         user_repo = MagicMock()
         user_repo.get_by_id.return_value = None
@@ -328,8 +324,7 @@ class TestSendPriceAlertNotificationUseCase:
         nl_repo.create.side_effect = lambda log: log
 
         prod_repo = MagicMock()
-        product = make_product(current_price=2000.00)
-        prod_repo.search_by_term_and_sources.return_value = ([product], 1)
+        prod_repo.cheapest_match.return_value = make_listing(price=2000.00)
 
         user_repo = MagicMock()
         user_repo.get_by_id.return_value = make_user()
@@ -383,10 +378,7 @@ class TestSendPriceAlertNotificationUseCase:
         nl_repo.create.side_effect = lambda log: log
 
         prod_repo = MagicMock()
-        prod_repo.search_by_term_and_sources.return_value = (
-            [make_product()],
-            1,
-        )
+        prod_repo.cheapest_match.return_value = make_listing()
 
         user_repo = MagicMock()
         user_repo.get_by_id.return_value = make_user()
@@ -429,7 +421,7 @@ class TestSendPriceAlertNotificationUseCase:
         nl_repo.count_since.return_value = 0
 
         prod_repo = MagicMock()
-        prod_repo.search_by_term_and_sources.return_value = ([], 0)
+        prod_repo.cheapest_match.return_value = None
 
         uc = self._build_use_case(
             price_alert_repo=pa_repo,
@@ -438,12 +430,10 @@ class TestSendPriceAlertNotificationUseCase:
         )
         uc.execute(10)
 
-        prod_repo.search_by_term_and_sources.assert_called_once_with(
+        prod_repo.cheapest_match.assert_called_once_with(
             search_term="Galaxy S24",
-            source_website_ids=[1, 3],
+            store_ids=[1, 3],
             max_price=3000.00,
-            limit=1,
-            offset=0,
         )
 
     @patch("src.app.alerts.use_cases.settings")
@@ -457,10 +447,7 @@ class TestSendPriceAlertNotificationUseCase:
         nl_repo.create.side_effect = lambda log: log
 
         prod_repo = MagicMock()
-        prod_repo.search_by_term_and_sources.return_value = (
-            [make_product()],
-            1,
-        )
+        prod_repo.cheapest_match.return_value = make_listing()
 
         user_repo = MagicMock()
         user_repo.get_by_id.return_value = make_user()
