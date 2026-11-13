@@ -20,7 +20,6 @@ from src.app.alerts.use_cases import (
     EvaluateProductAlertsUseCase,
     OpportunityNotifier,
 )
-from src.app.catalog.persistence.repositories import ProductRepository
 from src.app.infrastructure.repositories.source_website_repository import (
     SourceWebsiteRepository,
 )
@@ -34,7 +33,7 @@ def evaluate_book_alerts(
     """Book alerts, checked right after an offer for the book comes in."""
     alerts = PriceAlertRepository(db)
     return EvaluateBookAlertsUseCase(
-        product_repo=ProductRepository(db),
+        product_repo=CatalogListings(db),
         price_alert_repo=alerts,
         source_website_repo=SourceWebsiteStores(SourceWebsiteRepository(db)),
         notifier=OpportunityNotifier(

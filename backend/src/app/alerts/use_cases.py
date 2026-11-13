@@ -16,7 +16,6 @@ from src.app.alerts.ports import (
     StoreReader,
 )
 from src.app.catalog.entities import Product as ProductEntity
-from src.app.catalog.entities import ProductListFilters
 from src.app.catalog.ports import ProductRepositoryInterface
 from src.config import settings
 from src.config.logging_config import get_logger
@@ -449,7 +448,7 @@ class OpportunityNotifier:
     def notify(
         self,
         alert: PriceAlertEntity,
-        product: Listing | ProductEntity,
+        product: Listing,
         current_price: float,
         source_website_name: str,
     ) -> NotificationLogEntity | None:
@@ -616,7 +615,7 @@ class NotifyAlertOpportunitiesUseCase:
 
     def __init__(
         self,
-        product_repo: ProductRepositoryInterface,
+        product_repo: Listings,
         price_alert_repo: PriceAlertRepositoryInterface,
         notification_log_repo: NotificationLogRepositoryInterface,
         user_repo: AlertOwnerReader,
@@ -638,24 +637,20 @@ class NotifyAlertOpportunitiesUseCase:
         if alert.is_book_alert:
             log = self.book_alerts.evaluate_alert(alert)
             return [log] if log is not None and log.status == "sent" else []
-        products, _ = self.product_repo.get_all(
-            limit=self.MAX_LISTINGS,
-            filters=ProductListFilters(
-                matching_alert_id=alert.id, opportunities_only=True
-            ),
+        products = self.product_repo.opportunities_for_alert(
+            alert.id, limit=self.MAX_LISTINGS
         )
         site_names: dict[int, str] = {}
         sent: list[NotificationLogEntity] = []
         for product in products:
-            if product.current_price is None:
+            price = product.price
+            if price is None:
                 continue
-            site_id = product.source_website_id
+            site_id = product.store_id
             if site_id not in site_names:
                 site = self.source_website_repo.get_by_id(site_id)
                 site_names[site_id] = site.name if site else "Unknown"
-            log = self.notifier.notify(
-                alert, product, product.current_price, site_names[site_id]
-            )
+            log = self.notifier.notify(alert, product, price, site_names[site_id])
             if log is not None and log.status == "sent":
                 sent.append(log)
         return sent
@@ -675,7 +670,7 @@ class EvaluateBookAlertsUseCase:
 
     def __init__(
         self,
-        product_repo: ProductRepositoryInterface,
+        product_repo: Listings,
         price_alert_repo: PriceAlertRepositoryInterface,
         source_website_repo: StoreReader,
         notifier: OpportunityNotifier,
@@ -704,37 +699,29 @@ class EvaluateBookAlertsUseCase:
             return None
         return self._notify_best(alert, self._offers(alert.canonical_product_id))
 
-    def _offers(self, canonical_product_id: int) -> list[ProductEntity]:
-        offers, _ = self.product_repo.get_all(
-            limit=self.MAX_OFFERS,
-            filters=ProductListFilters(
-                canonical_product_id=canonical_product_id, is_available=True
-            ),
+    def _offers(self, canonical_product_id: int) -> list[Listing]:
+        return self.product_repo.available_offers_for_book(
+            canonical_product_id, limit=self.MAX_OFFERS
         )
-        return offers
 
     def _notify_best(
-        self, alert: PriceAlertEntity, offers: list[ProductEntity]
+        self, alert: PriceAlertEntity, offers: list[Listing]
     ) -> NotificationLogEntity | None:
         wanted = [
-            offer
+            (offer.price, offer)
             for offer in offers
-            if offer.current_price is not None
-            and offer.current_price <= alert.max_price
+            if offer.price is not None
+            and offer.price <= alert.max_price
             and offer.is_available is not False
-            and alert.accepts_condition(_condition_value(offer.condition))
+            and alert.accepts_condition(offer.condition)
         ]
         if not wanted:
             return None
-        best = min(wanted, key=lambda offer: offer.current_price)
-        site = self.source_website_repo.get_by_id(best.source_website_id)
+        price, best = min(wanted, key=lambda priced: priced[0])
+        site = self.source_website_repo.get_by_id(best.store_id)
         return self.notifier.notify(
-            alert, best, best.current_price, site.name if site else "Unknown"
+            alert, best, price, site.name if site else "Unknown"
         )
-
-
-def _condition_value(condition) -> str:
-    return getattr(condition, "value", condition) or ""
 
 
 class ListMyAlertsUseCase:
