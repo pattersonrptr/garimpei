@@ -24,7 +24,8 @@ characterization tests first, in their own PR, reviewed by the author.
 | Characterization tests for alert products | #168 | — | 4 e2e tests for `GET /price-alerts/{id}/products` (max price on and off, cheapest first, pagination, 404); filter off had no test above the unit level. A mutation (always filter) fails 2. Approved by the author |
 | Products by alert searched in catalog | #169 | Feature Envy → Move Function | `GetProductsByPriceAlertUseCase` only searched catalog's products for a catalog presenter. The alerts controller already loads the alert to check its owner, so it now calls catalog's new `SearchProductsByTermUseCase` with the alert's term, stores and max price. The 4 unit tests of the old use case were removed (covered by #168 and 1 new catalog test, approved by the author; red on an assertion). Alerts' use cases no longer import catalog |
 | Port parameters named after the ports | #171 | Mysterious Name → Rename Variable | In alerts' use cases `product_repo`, `user_repo`, `source_website_repo`, `email_service` and `search_config_repo` held alerts' ports; they are now `listings`, `owners`, `stores`, `mailer` and `searches` (parameters and attributes), plus `PriceAlertValidator`'s `stores` (found by the architecture-reviewer; its tests pass it by position). Test diff (the 4 keyword names in two `_build_use_case` helpers) approved by the author; red was a `TypeError` (unexpected keyword), as expected for a rename |
-| Characterization tests for the alerts controller's wiring | (this PR) | — | Before moving its wiring to `alerts/wiring.py`: 3 of 6 wiring mutations survived the suite (`/notify` sending through the real e-mail service, `/notify` finding no listing, delete leaving the search active). 2 e2e tests kill all three on an assertion. Approved by the author (Nov 13, 2026) |
+| Characterization tests for the alerts controller's wiring | #172 | — | Before moving its wiring to `alerts/wiring.py`: 3 of 6 wiring mutations survived the suite (`/notify` sending through the real e-mail service, `/notify` finding no listing, delete leaving the search active). 2 e2e tests kill all three on an assertion. Approved by the author (Nov 13, 2026) |
+| Alerts controller wired through `alerts/wiring.py` | (this PR) | Duplicated Code → Extract Function + Move Function | `price_alert_controller.py` built alerts' adapters by hand at four points (opportunities, validator, create/update/delete, notify); it now calls factories in `alerts/wiring.py` and no longer imports adapters or `src/app/infrastructure` repositories. Its four unused repository dependencies were removed. FastAPI still injects `get_db` and `get_email_service`. No test changed; #172's tests kill the wiring mutations the suite missed. `wiring.py` and the controller joined the blocking mypy paths |
 
 ## Queue
 
@@ -37,8 +38,12 @@ before it starts.
   controllers import alerts' use case types and `alerts/wiring.py`, and
   `catalog/persistence/repositories.py` imports alerts' ORM models; a shared
   composition root would remove the controllers' direction.
-- Alerts' own controller (`price_alert_controller.py`) still wires its
-  adapters by hand at four points; it could use `alerts/wiring.py` too.
+- Alerts' controller builds create/update/delete through `wiring` inside the
+  handlers, but gets the validator and opportunities through `Depends`; one
+  way for all would let `dependency_overrides` swap any of them (found by the
+  architecture-reviewer, low priority).
+- Alerts' controller imports catalog's presenter, schema, `ProductRepository`
+  and `SearchProductsByTermUseCase` for `/products` and `/opportunities`.
 - Catalog controllers build concrete repositories and use cases themselves;
   that wiring belongs in FastAPI dependencies or a composition root.
 - Validator tests live in `tests/unit/domain/validators/` but the code is
