@@ -12,11 +12,11 @@ class PriceAlertValidator:
     def __init__(
         self,
         price_alert_repo: PriceAlertRepositoryInterface,
-        source_website_repo: StoreReader,
+        stores: StoreReader,
         book_finder: BookFinder | None = None,
     ):
         self.price_alert_repo = price_alert_repo
-        self.source_website_repo = source_website_repo
+        self.stores = stores
         self.book_finder = book_finder
 
     def validate_create_request(self, price_alert_in) -> list[JsonApiError]:
@@ -105,7 +105,7 @@ class PriceAlertValidator:
 
         # Validation 6: each source_website_id must exist
         for sw_id in attrs.source_website_ids or []:
-            existing_sw = self.source_website_repo.get_by_id(sw_id)
+            existing_sw = self.stores.get_by_id(sw_id)
             if not existing_sw:
                 errors.append(
                     JsonApiError(
@@ -233,7 +233,7 @@ class PriceAlertValidator:
 
         # Validation 5: each source_website_id must exist
         for sw_id in attrs.source_website_ids or []:
-            existing_sw = self.source_website_repo.get_by_id(sw_id)
+            existing_sw = self.stores.get_by_id(sw_id)
             if not existing_sw:
                 errors.append(
                     JsonApiError(
