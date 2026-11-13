@@ -18,6 +18,7 @@ characterization tests first, in their own PR, reviewed by the author.
 | Alerts request validator out of the domain | #162 | Divergent Change → Move Class | `alerts/rules.py` → `alerts/http/validators.py`, unchanged: `PriceAlertValidator` returns `JsonApiError`, so it is request validation, like catalog's in #154. Already covered (15 unit tests plus e2e); only the test's import line changed, approved by the author like #154 |
 | Catalog stops wiring alerts' adapters | (this PR) | Inappropriate Intimacy → Move Function | `alerts/wiring.py` builds `EvaluateBookAlertsUseCase` and `EvaluateProductAlertsUseCase` from the request's session and e-mail service; catalog's offer and product controllers call it and no longer import alerts' adapters or repositories. FastAPI still injects `get_db` and `get_email_service`, so the e2e overrides keep working. No test changed |
 | Alerts-owned Listings port and its adapter | (this PR) | Inappropriate Intimacy → Extract Interface (port owned by the client) + adapter, step 1 | `Listings` + `Listing` (a frozen dataclass) in alerts; `CatalogListings` adapts catalog's `ProductRepository`. 12 integration tests approved by the author (Nov 12, 2026), red then green. Not wired yet: the notification use cases move to it one PR each, showing the author the mock-setup diff first. `GetProductsByPriceAlertUseCase` stays on catalog's repository: it lists full catalog products for a catalog presenter (own queue item) |
+| SendPriceAlertNotification through Listings | (this PR) | Inappropriate Intimacy → Change the dependency to the client-owned port | The use case asks `Listings.cheapest_match` for the best match instead of catalog's `search_by_term_and_sources(limit=1)`; `POST /price-alerts/{id}/notify` wires `CatalogListings`. Test diff (mock setup and one interaction assertion: `cheapest_match` with the alert's term, stores and max price) approved by the author before the change. Red was a `ValueError` (old code unpacking the new mock), not an assertion: inherent to swapping a port. `listings.py` added to the blocking mypy paths |
 
 ## Queue
 
@@ -30,8 +31,8 @@ before it starts.
   also call the private `_find_or_create_search_config` helpers (needs the
   author's OK).
 - `catalog/persistence/repositories.py` imports alerts' ORM models.
-- Move the notification use cases to `Listings`, one PR each:
-  `SendPriceAlertNotificationUseCase`, `EvaluateProductAlertsUseCase`,
+- Move the notification use cases to `Listings`, one PR each
+  (`SendPriceAlertNotificationUseCase` done): `EvaluateProductAlertsUseCase`,
   `NotifyAlertOpportunitiesUseCase`, `EvaluateBookAlertsUseCase` (with
   `OpportunityNotifier`). Show the author each test diff (mock setup only)
   first.
@@ -50,6 +51,8 @@ before it starts.
   that wiring belongs in FastAPI dependencies or a composition root.
 - Validator tests live in `tests/unit/domain/validators/` but the code is
   now http-layer.
+- `POST /price-alerts/{id}/notify` has one e2e test, which only checks the
+  answer is not 403; it catches a broken wiring (500) but not a wrong match.
 - Checks that need a repository (unique URL, product exists) may belong in
   the use cases rather than in request validation.
 - mypy: 271 errors in 44 files outside the blocking list (#153); add paths

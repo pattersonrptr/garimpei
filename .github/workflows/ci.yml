@@ -68,7 +68,8 @@ jobs:
             src/app/alerts/persistence/stores.py \
             src/app/alerts/persistence/owners.py \
             src/app/alerts/persistence/mailer.py \
-            src/app/alerts/persistence/keyword_searches.py
+            src/app/alerts/persistence/keyword_searches.py \
+            src/app/alerts/persistence/listings.py
 
       - name: Type check with mypy (whole backend, report only)
         run: poetry run mypy src/
