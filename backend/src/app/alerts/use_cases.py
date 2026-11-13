@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta
 from math import ceil
 
-from src.app.alerts.entities import KeywordSearch, MyAlert, NoticeHistory
+from src.app.alerts.entities import KeywordSearch, Listing, MyAlert, NoticeHistory
 from src.app.alerts.entities import NotificationLog as NotificationLogEntity
 from src.app.alerts.entities import PriceAlert as PriceAlertEntity
 from src.app.alerts.notification_text import alert_subject
@@ -17,10 +17,7 @@ from src.app.alerts.ports import (
 )
 from src.app.catalog.entities import Product as ProductEntity
 from src.app.catalog.entities import ProductListFilters
-from src.app.catalog.ports import (
-    PriceHistoryRepositoryInterface,
-    ProductRepositoryInterface,
-)
+from src.app.catalog.ports import ProductRepositoryInterface
 from src.config import settings
 from src.config.logging_config import get_logger
 
@@ -452,7 +449,7 @@ class OpportunityNotifier:
     def notify(
         self,
         alert: PriceAlertEntity,
-        product: ProductEntity,
+        product: Listing | ProductEntity,
         current_price: float,
         source_website_name: str,
     ) -> NotificationLogEntity | None:
@@ -539,8 +536,7 @@ class EvaluateProductAlertsUseCase:
 
     def __init__(
         self,
-        product_repo: ProductRepositoryInterface,
-        price_history_repo: PriceHistoryRepositoryInterface,
+        product_repo: Listings,
         price_alert_repo: PriceAlertRepositoryInterface,
         notification_log_repo: NotificationLogRepositoryInterface,
         user_repo: AlertOwnerReader,
@@ -548,7 +544,6 @@ class EvaluateProductAlertsUseCase:
         email_service: AlertMailer,
     ):
         self.product_repo = product_repo
-        self.price_history_repo = price_history_repo
         self.price_alert_repo = price_alert_repo
         self.notification_log_repo = notification_log_repo
         self.user_repo = user_repo
@@ -571,19 +566,16 @@ class EvaluateProductAlertsUseCase:
         if not product:
             return [], 0, "Product not found"
 
-        # 2. Get latest price
-        latest_price_record = self.price_history_repo.get_latest_by_product_id(
-            product_id
-        )
-        if not latest_price_record:
+        # 2. Its latest price
+        if product.price is None:
             return [], 0, "Product has no price history"
 
-        current_price = latest_price_record.price
+        current_price = product.price
 
         # 3. Find matching alerts
         matching_alerts = self.price_alert_repo.find_matching_alerts_for_product(
             product_title=product.title,
-            source_website_id=product.source_website_id,
+            source_website_id=product.store_id,
             current_price=current_price,
         )
 
@@ -591,7 +583,7 @@ class EvaluateProductAlertsUseCase:
             return [], 0, "No matching alerts found"
 
         # Resolve source website name once
-        source_website = self.source_website_repo.get_by_id(product.source_website_id)
+        source_website = self.source_website_repo.get_by_id(product.store_id)
         source_website_name = source_website.name if source_website else "Unknown"
 
         notifier = OpportunityNotifier(

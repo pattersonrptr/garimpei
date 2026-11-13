@@ -7,6 +7,7 @@ service, so they never see alerts' adapters (stores, owners, mailer).
 
 from sqlalchemy.orm import Session
 
+from src.app.alerts.persistence.listings import CatalogListings
 from src.app.alerts.persistence.mailer import EmailServiceMailer
 from src.app.alerts.persistence.owners import UserAccountOwners
 from src.app.alerts.persistence.repositories import (
@@ -19,10 +20,7 @@ from src.app.alerts.use_cases import (
     EvaluateProductAlertsUseCase,
     OpportunityNotifier,
 )
-from src.app.catalog.persistence.repositories import (
-    PriceHistoryRepository,
-    ProductRepository,
-)
+from src.app.catalog.persistence.repositories import ProductRepository
 from src.app.infrastructure.repositories.source_website_repository import (
     SourceWebsiteRepository,
 )
@@ -53,8 +51,7 @@ def evaluate_product_alerts(
 ) -> EvaluateProductAlertsUseCase:
     """Active alerts checked against one product (staff endpoint)."""
     return EvaluateProductAlertsUseCase(
-        product_repo=ProductRepository(db),
-        price_history_repo=PriceHistoryRepository(db),
+        product_repo=CatalogListings(db),
         price_alert_repo=PriceAlertRepository(db),
         notification_log_repo=NotificationLogRepository(db),
         user_repo=UserAccountOwners(UserRepository(db)),
