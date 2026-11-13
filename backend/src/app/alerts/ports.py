@@ -5,6 +5,7 @@ from src.app.alerts.entities import (
     AlertOwner,
     BookRef,
     KeywordSearch,
+    Listing,
     MailResult,
     NoticeHistory,
     ProductSnapshot,
@@ -177,6 +178,36 @@ class StoreReader(ABC):
     @abstractmethod
     def get_by_id(self, source_website_id: int) -> Store | None:
         """The store with this id; None when it does not exist."""
+        raise NotImplementedError
+
+
+class Listings(ABC):
+    """The collected listings alerts send to their owners (over the catalog)."""
+
+    @abstractmethod
+    def get_by_id(self, listing_id: int) -> Listing | None:
+        """The listing with its latest price; None when it does not exist."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def cheapest_match(
+        self, search_term: str, store_ids: list[int], max_price: float
+    ) -> Listing | None:
+        """The cheapest available listing whose title contains the term, in one
+        of the stores, at or under the max price; None when there is none."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def opportunities_for_alert(self, alert_id: int, limit: int) -> list[Listing]:
+        """Listings matching a keyword alert (term and stores) at or under its
+        max price, at most ``limit``."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def available_offers_for_book(
+        self, canonical_product_id: int, limit: int
+    ) -> list[Listing]:
+        """The book's offers still in stock, at most ``limit``."""
         raise NotImplementedError
 
 
