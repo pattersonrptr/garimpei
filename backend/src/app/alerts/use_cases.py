@@ -9,6 +9,7 @@ from src.app.alerts.ports import (
     AlertMailer,
     AlertOwnerReader,
     KeywordSearches,
+    Listings,
     NotificationLogRepositoryInterface,
     PriceAlertRepositoryInterface,
     ProductSnapshotReader,
@@ -331,7 +332,7 @@ class SendPriceAlertNotificationUseCase:
     def __init__(
         self,
         price_alert_repo: PriceAlertRepositoryInterface,
-        product_repo: ProductRepositoryInterface,
+        product_repo: Listings,
         user_repo: AlertOwnerReader,
         source_website_repo: StoreReader,
         notification_log_repo: NotificationLogRepositoryInterface,
@@ -370,16 +371,14 @@ class SendPriceAlertNotificationUseCase:
                 f"the last {rate_limit_minutes} minutes"
             )
 
-        # Find matching products
-        products, total = self.product_repo.search_by_term_and_sources(
+        # The best match only: the cheapest listing at or under the max price
+        best_product = self.product_repo.cheapest_match(
             search_term=alert.search_term,
-            source_website_ids=alert.source_website_ids,
+            store_ids=alert.source_website_ids,
             max_price=alert.max_price,
-            limit=1,  # Send notification for the best match only
-            offset=0,
         )
 
-        if not products:
+        if best_product is None:
             return [], "No matching products found below max price"
 
         # Get user info
@@ -387,12 +386,8 @@ class SendPriceAlertNotificationUseCase:
         if not user:
             return [], "User not found"
 
-        best_product = products[0]
-
         # Resolve source website name
-        source_website = self.source_website_repo.get_by_id(
-            best_product.source_website_id
-        )
+        source_website = self.source_website_repo.get_by_id(best_product.store_id)
         source_website_name = source_website.name if source_website else "Unknown"
 
         # Send email
@@ -400,7 +395,7 @@ class SendPriceAlertNotificationUseCase:
             to_email=user.email,
             search_term=alert.search_term,
             product_title=best_product.title,
-            product_price=best_product.current_price or 0.0,
+            product_price=best_product.price or 0.0,
             max_price=alert.max_price,
             product_url=best_product.url,
             source_website_name=source_website_name,
@@ -408,7 +403,7 @@ class SendPriceAlertNotificationUseCase:
 
         # Record notification log
         subject = alert_subject(
-            alert.search_term, best_product.current_price or 0.0, source_website_name
+            alert.search_term, best_product.price or 0.0, source_website_name
         )
 
         log_entry = NotificationLogEntity(

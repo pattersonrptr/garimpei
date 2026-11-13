@@ -15,6 +15,7 @@ from src.app.alerts.http.price_alert_schema import (
 from src.app.alerts.http.validators import PriceAlertValidator
 from src.app.alerts.persistence.book_finder import CatalogBookFinder
 from src.app.alerts.persistence.keyword_searches import SearchConfigKeywordSearches
+from src.app.alerts.persistence.listings import CatalogListings
 from src.app.alerts.persistence.mailer import EmailServiceMailer
 from src.app.alerts.persistence.owners import UserAccountOwners
 from src.app.alerts.persistence.repositories import (
@@ -613,7 +614,7 @@ def delete_price_alert(
 def trigger_price_alert_notification(
     price_alert_id: int,
     price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
-    product_repo: ProductRepository = Depends(get_product_repository),
+    db: Session = Depends(get_db),
     user_repo: UserRepository = Depends(get_user_repository),
     source_website_repo: SourceWebsiteRepository = Depends(
         get_source_website_repository
@@ -648,7 +649,7 @@ def trigger_price_alert_notification(
 
     use_case = SendPriceAlertNotificationUseCase(
         price_alert_repo=price_alert_repo,
-        product_repo=product_repo,
+        product_repo=CatalogListings(db),
         user_repo=UserAccountOwners(user_repo),
         source_website_repo=SourceWebsiteStores(source_website_repo),
         notification_log_repo=notification_log_repo,
