@@ -14,6 +14,8 @@
 - Skill `e2e-local` (`.claude/skills/`): the local end-to-end check with
   screenshots. Skill `dependabot-triage`: CI status and failure logs of the
   open Dependabot PRs (script), then merge, fix or propose ignore rules.
+  Skill `refactor-slice-pr`: one refactor or tests-first slice end to end
+  (red/green capture, CI wait and merge-on-green are a script).
   Subagent `architecture-reviewer` (`.claude/agents/`): reviews
   a diff against the architecture rules; run it before merging
   backend or scrapers changes.
