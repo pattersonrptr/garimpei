@@ -18,6 +18,7 @@ from src.app.catalog.use_cases import (
     GetProductByIdUseCase,
     GetProductByUrlUseCase,
     ListProductsUseCase,
+    SearchProductsByTermUseCase,
     UpdateProductUseCase,
 )
 
@@ -422,3 +423,31 @@ class TestDeleteProductUseCase:
         # Assert
         assert result is False
         mock_product_repo.delete.assert_called_once_with(999)
+
+
+class TestSearchProductsByTermUseCase:
+    def test_returns_the_matches_and_total_for_the_term_stores_and_max_price(
+        self, mock_product_repo, sample_product_entity
+    ):
+        mock_product_repo.search_by_term_and_sources.return_value = (
+            [sample_product_entity],
+            1,
+        )
+
+        products, total = SearchProductsByTermUseCase(mock_product_repo).execute(
+            search_term="iPhone 13",
+            store_ids=[1, 2],
+            max_price=2500.0,
+            limit=20,
+            offset=40,
+        )
+
+        assert products == [sample_product_entity]
+        assert total == 1
+        mock_product_repo.search_by_term_and_sources.assert_called_once_with(
+            search_term="iPhone 13",
+            source_website_ids=[1, 2],
+            max_price=2500.0,
+            limit=20,
+            offset=40,
+        )

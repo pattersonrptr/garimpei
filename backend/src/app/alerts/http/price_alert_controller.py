@@ -28,7 +28,6 @@ from src.app.alerts.use_cases import (
     DeletePriceAlertUseCase,
     GetPriceAlertByIdUseCase,
     GetPriceAlertsByUserIdUseCase,
-    GetProductsByPriceAlertUseCase,
     ListPriceAlertsUseCase,
     NotifyAlertOpportunitiesUseCase,
     SendPriceAlertNotificationUseCase,
@@ -37,6 +36,7 @@ from src.app.alerts.use_cases import (
 from src.app.catalog.http.product_presenter import ProductPresenter
 from src.app.catalog.http.product_schema import ProductsCollectionResponse
 from src.app.catalog.persistence.repositories import ProductRepository
+from src.app.catalog.use_cases import SearchProductsByTermUseCase
 from src.app.domain.plan_limits import PlanLimits
 from src.app.entities.user import User as UserEntity
 from src.app.infrastructure.database_config import get_db
@@ -375,17 +375,13 @@ def get_products_by_price_alert(
     if not owned or not can_access_owned_resource(owned.user_id, current_user):
         return PriceAlertPresenter.handle_not_found(f"id {price_alert_id}", "/data/id")
 
-    use_case = GetProductsByPriceAlertUseCase(price_alert_repo, product_repo)
-    alert, products, total = use_case.execute(
-        price_alert_id,
+    products, total = SearchProductsByTermUseCase(product_repo).execute(
+        search_term=owned.search_term,
+        store_ids=owned.source_website_ids,
+        max_price=owned.max_price if filter_by_max_price else None,
         limit=limit,
         offset=offset,
-        filter_by_max_price=filter_by_max_price,
     )
-
-    if not alert:
-        return PriceAlertPresenter.handle_not_found(f"id {price_alert_id}", "/data/id")
-
     return ProductPresenter.handle_collection_success(products, total)
 
 
@@ -424,17 +420,13 @@ def get_opportunities_by_price_alert(
     if not owned or not can_access_owned_resource(owned.user_id, current_user):
         return PriceAlertPresenter.handle_not_found(f"id {price_alert_id}", "/data/id")
 
-    use_case = GetProductsByPriceAlertUseCase(price_alert_repo, product_repo)
-    alert, products, total = use_case.execute(
-        price_alert_id,
+    products, total = SearchProductsByTermUseCase(product_repo).execute(
+        search_term=owned.search_term,
+        store_ids=owned.source_website_ids,
+        max_price=owned.max_price,
         limit=limit,
         offset=offset,
-        filter_by_max_price=True,
     )
-
-    if not alert:
-        return PriceAlertPresenter.handle_not_found(f"id {price_alert_id}", "/data/id")
-
     return ProductPresenter.handle_collection_success(products, total)
 
 

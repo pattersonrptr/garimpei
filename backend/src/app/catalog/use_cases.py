@@ -138,6 +138,33 @@ class ListProductsUseCase:
         )
 
 
+class SearchProductsByTermUseCase:
+    """Listings whose title contains a term, in some stores, cheapest first.
+
+    Only listings still available; with a max price, only those whose latest
+    price is at or under it.
+    """
+
+    def __init__(self, product_repo: ProductRepositoryInterface):
+        self.product_repo = product_repo
+
+    def execute(
+        self,
+        search_term: str,
+        store_ids: list[int],
+        max_price: float | None,
+        limit: int,
+        offset: int,
+    ) -> tuple[list[ProductEntity], int]:
+        return self.product_repo.search_by_term_and_sources(
+            search_term=search_term,
+            source_website_ids=store_ids,
+            max_price=max_price,
+            limit=limit,
+            offset=offset,
+        )
+
+
 class UpdateProductUseCase:
     """Use case for updating an existing product."""
 
