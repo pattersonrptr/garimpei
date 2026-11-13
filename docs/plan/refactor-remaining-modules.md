@@ -17,6 +17,7 @@ characterization tests first, in their own PR, reviewed by the author.
 | Alerts SearchConfig through its own port | #161 | Inappropriate Intimacy → Extract Interface + adapter | `KeywordSearches` + `KeywordSearch` (a dataclass) in alerts; `SearchConfigKeywordSearches` maps to the old pydantic entity and reads before updating, so preferred time and metadata survive. Alerts' domain core no longer imports `src/app/interfaces` or `src/app/entities`. No existing test changed; the adapter had no coverage (4 of 5 mutations survived the e2e suite), so 6 integration tests were added for the author's review |
 | Alerts request validator out of the domain | #162 | Divergent Change → Move Class | `alerts/rules.py` → `alerts/http/validators.py`, unchanged: `PriceAlertValidator` returns `JsonApiError`, so it is request validation, like catalog's in #154. Already covered (15 unit tests plus e2e); only the test's import line changed, approved by the author like #154 |
 | Catalog stops wiring alerts' adapters | (this PR) | Inappropriate Intimacy → Move Function | `alerts/wiring.py` builds `EvaluateBookAlertsUseCase` and `EvaluateProductAlertsUseCase` from the request's session and e-mail service; catalog's offer and product controllers call it and no longer import alerts' adapters or repositories. FastAPI still injects `get_db` and `get_email_service`, so the e2e overrides keep working. No test changed |
+| Alerts-owned Listings port and its adapter | (this PR) | Inappropriate Intimacy → Extract Interface (port owned by the client) + adapter, step 1 | `Listings` + `Listing` (a frozen dataclass) in alerts; `CatalogListings` adapts catalog's `ProductRepository`. 12 integration tests approved by the author (Nov 12, 2026), red then green. Not wired yet: the notification use cases move to it one PR each, showing the author the mock-setup diff first. `GetProductsByPriceAlertUseCase` stays on catalog's repository: it lists full catalog products for a catalog presenter (own queue item) |
 
 ## Queue
 
@@ -29,6 +30,14 @@ before it starts.
   also call the private `_find_or_create_search_config` helpers (needs the
   author's OK).
 - `catalog/persistence/repositories.py` imports alerts' ORM models.
+- Move the notification use cases to `Listings`, one PR each:
+  `SendPriceAlertNotificationUseCase`, `EvaluateProductAlertsUseCase`,
+  `NotifyAlertOpportunitiesUseCase`, `EvaluateBookAlertsUseCase` (with
+  `OpportunityNotifier`). Show the author each test diff (mock setup only)
+  first.
+- `GetProductsByPriceAlertUseCase` lists full catalog products for
+  `/price-alerts/{id}/products` and `/opportunities`; decide whether it
+  belongs in catalog (a query by alert) rather than in alerts.
 - Alerts' use cases take catalog's repository interfaces (`catalog/ports.py`)
   instead of alerts-owned ports, so `alerts/wiring.py` builds catalog's
   repositories and catalog's controllers import alerts' use case types: a

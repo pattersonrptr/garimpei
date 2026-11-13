@@ -163,3 +163,20 @@ class KeywordSearch:
     frequency_days: int = 1
     user_id: int | None = None
     source_website_ids: list[int] = field(default_factory=list)
+
+
+@dataclass(frozen=True, kw_only=True)
+class Listing:
+    """A store's listing an alert can send: what the e-mail shows and links to.
+
+    ``price`` is the latest price seen (None before the first one);
+    ``condition`` is "new", "used", "refurbished" or "undetermined".
+    """
+
+    id: int
+    title: str
+    url: str
+    store_id: int
+    price: float | None
+    condition: str
+    is_available: bool
