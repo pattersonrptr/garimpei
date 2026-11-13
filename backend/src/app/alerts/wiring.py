@@ -33,9 +33,9 @@ def evaluate_book_alerts(
     """Book alerts, checked right after an offer for the book comes in."""
     alerts = PriceAlertRepository(db)
     return EvaluateBookAlertsUseCase(
-        product_repo=CatalogListings(db),
+        listings=CatalogListings(db),
         price_alert_repo=alerts,
-        source_website_repo=SourceWebsiteStores(SourceWebsiteRepository(db)),
+        stores=SourceWebsiteStores(SourceWebsiteRepository(db)),
         notifier=OpportunityNotifier(
             NotificationLogRepository(db),
             UserAccountOwners(UserRepository(db)),
@@ -50,10 +50,10 @@ def evaluate_product_alerts(
 ) -> EvaluateProductAlertsUseCase:
     """Active alerts checked against one product (staff endpoint)."""
     return EvaluateProductAlertsUseCase(
-        product_repo=CatalogListings(db),
+        listings=CatalogListings(db),
         price_alert_repo=PriceAlertRepository(db),
         notification_log_repo=NotificationLogRepository(db),
-        user_repo=UserAccountOwners(UserRepository(db)),
-        source_website_repo=SourceWebsiteStores(SourceWebsiteRepository(db)),
-        email_service=EmailServiceMailer(email_service),
+        owners=UserAccountOwners(UserRepository(db)),
+        stores=SourceWebsiteStores(SourceWebsiteRepository(db)),
+        mailer=EmailServiceMailer(email_service),
     )

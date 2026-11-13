@@ -109,12 +109,12 @@ def get_alert_opportunities_use_case(
 ) -> NotifyAlertOpportunitiesUseCase:
     """The use case that checks collected listings when an alert changes."""
     return NotifyAlertOpportunitiesUseCase(
-        product_repo=CatalogListings(db),
+        listings=CatalogListings(db),
         price_alert_repo=PriceAlertRepository(db),
         notification_log_repo=NotificationLogRepository(db),
-        user_repo=UserAccountOwners(UserRepository(db)),
-        source_website_repo=SourceWebsiteStores(SourceWebsiteRepository(db)),
-        email_service=EmailServiceMailer(email_service),
+        owners=UserAccountOwners(UserRepository(db)),
+        stores=SourceWebsiteStores(SourceWebsiteRepository(db)),
+        mailer=EmailServiceMailer(email_service),
     )
 
 
@@ -641,11 +641,11 @@ def trigger_price_alert_notification(
 
     use_case = SendPriceAlertNotificationUseCase(
         price_alert_repo=price_alert_repo,
-        product_repo=CatalogListings(db),
-        user_repo=UserAccountOwners(user_repo),
-        source_website_repo=SourceWebsiteStores(source_website_repo),
+        listings=CatalogListings(db),
+        owners=UserAccountOwners(user_repo),
+        stores=SourceWebsiteStores(source_website_repo),
         notification_log_repo=notification_log_repo,
-        email_service=EmailServiceMailer(email_service),
+        mailer=EmailServiceMailer(email_service),
     )
     logs, error = use_case.execute(price_alert_id)
 

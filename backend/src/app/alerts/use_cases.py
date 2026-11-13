@@ -20,7 +20,7 @@ from src.config.logging_config import get_logger
 
 
 def _find_or_create_search_config(
-    search_config_repo: KeywordSearches,
+    searches: KeywordSearches,
     search_term: str,
     source_website_ids: list[int],
     user_id: int,
@@ -30,14 +30,14 @@ def _find_or_create_search_config(
 
     Returns the SearchConfig id.
     """
-    existing = search_config_repo.get_by_search_term_and_user_id(search_term, user_id)
+    existing = searches.get_by_search_term_and_user_id(search_term, user_id)
     if existing:
         # Reactivate if it was deactivated
         if not existing.is_active:
             existing.is_active = True
             existing.source_website_ids = source_website_ids
             existing.frequency_days = max(1, ceil(frequency_minutes / 1440))
-            search_config_repo.update(existing.id, existing)
+            searches.update(existing.id, existing)
         return existing.id
 
     # Create a new SearchConfig bound to this search
@@ -48,13 +48,13 @@ def _find_or_create_search_config(
         user_id=user_id,
         source_website_ids=source_website_ids,
     )
-    created = search_config_repo.create(new_config)
+    created = searches.create(new_config)
     return created.id
 
 
 def _cleanup_orphaned_search_config(
     price_alert_repo: PriceAlertRepositoryInterface,
-    search_config_repo: KeywordSearches,
+    searches: KeywordSearches,
     search_config_id: int | None,
 ) -> None:
     """Deactivate a SearchConfig if no other active PriceAlerts use it."""
@@ -62,10 +62,10 @@ def _cleanup_orphaned_search_config(
         return
     active_count = price_alert_repo.count_active_by_search_config_id(search_config_id)
     if active_count == 0:
-        config = search_config_repo.get_by_id(search_config_id)
+        config = searches.get_by_id(search_config_id)
         if config and config.is_active:
             config.is_active = False
-            search_config_repo.update(config.id, config)
+            searches.update(config.id, config)
 
 
 class CreatePriceAlertUseCase:
@@ -74,17 +74,17 @@ class CreatePriceAlertUseCase:
     def __init__(
         self,
         price_alert_repo: PriceAlertRepositoryInterface,
-        search_config_repo: KeywordSearches,
+        searches: KeywordSearches,
     ):
         self.price_alert_repo = price_alert_repo
-        self.search_config_repo = search_config_repo
+        self.searches = searches
 
     def execute(self, price_alert: PriceAlertEntity) -> PriceAlertEntity:
         if price_alert.is_book_alert:
             price_alert.search_config_id = None
             return self.price_alert_repo.create(price_alert)
         search_config_id = _find_or_create_search_config(
-            self.search_config_repo,
+            self.searches,
             price_alert.search_term,
             price_alert.source_website_ids,
             price_alert.user_id,
@@ -143,10 +143,10 @@ class UpdatePriceAlertUseCase:
     def __init__(
         self,
         price_alert_repo: PriceAlertRepositoryInterface,
-        search_config_repo: KeywordSearches,
+        searches: KeywordSearches,
     ):
         self.price_alert_repo = price_alert_repo
-        self.search_config_repo = search_config_repo
+        self.searches = searches
 
     def execute(
         self, price_alert_id: int, price_alert: PriceAlertEntity
@@ -167,7 +167,7 @@ class UpdatePriceAlertUseCase:
             price_alert.search_config_id = None
         elif term_changed or websites_changed:
             new_config_id = _find_or_create_search_config(
-                self.search_config_repo,
+                self.searches,
                 price_alert.search_term,
                 price_alert.source_website_ids,
                 price_alert.user_id,
@@ -186,7 +186,7 @@ class UpdatePriceAlertUseCase:
         if old_search_config_id and (was_deactivated or config_changed):
             _cleanup_orphaned_search_config(
                 self.price_alert_repo,
-                self.search_config_repo,
+                self.searches,
                 old_search_config_id,
             )
 
@@ -199,10 +199,10 @@ class DeletePriceAlertUseCase:
     def __init__(
         self,
         price_alert_repo: PriceAlertRepositoryInterface,
-        search_config_repo: KeywordSearches,
+        searches: KeywordSearches,
     ):
         self.price_alert_repo = price_alert_repo
-        self.search_config_repo = search_config_repo
+        self.searches = searches
 
     def execute(self, price_alert_id: int) -> bool:
         existing = self.price_alert_repo.get_by_id(price_alert_id)
@@ -215,7 +215,7 @@ class DeletePriceAlertUseCase:
         if deleted and search_config_id:
             _cleanup_orphaned_search_config(
                 self.price_alert_repo,
-                self.search_config_repo,
+                self.searches,
                 search_config_id,
             )
 
@@ -291,18 +291,18 @@ class SendPriceAlertNotificationUseCase:
     def __init__(
         self,
         price_alert_repo: PriceAlertRepositoryInterface,
-        product_repo: Listings,
-        user_repo: AlertOwnerReader,
-        source_website_repo: StoreReader,
+        listings: Listings,
+        owners: AlertOwnerReader,
+        stores: StoreReader,
         notification_log_repo: NotificationLogRepositoryInterface,
-        email_service: AlertMailer,
+        mailer: AlertMailer,
     ):
         self.price_alert_repo = price_alert_repo
-        self.product_repo = product_repo
-        self.user_repo = user_repo
-        self.source_website_repo = source_website_repo
+        self.listings = listings
+        self.owners = owners
+        self.stores = stores
         self.notification_log_repo = notification_log_repo
-        self.email_service = email_service
+        self.mailer = mailer
 
     def execute(
         self, price_alert_id: int
@@ -331,7 +331,7 @@ class SendPriceAlertNotificationUseCase:
             )
 
         # The best match only: the cheapest listing at or under the max price
-        best_product = self.product_repo.cheapest_match(
+        best_product = self.listings.cheapest_match(
             search_term=alert.search_term,
             store_ids=alert.source_website_ids,
             max_price=alert.max_price,
@@ -341,16 +341,16 @@ class SendPriceAlertNotificationUseCase:
             return [], "No matching products found below max price"
 
         # Get user info
-        user = self.user_repo.get_by_id(alert.user_id)
+        user = self.owners.get_by_id(alert.user_id)
         if not user:
             return [], "User not found"
 
         # Resolve source website name
-        source_website = self.source_website_repo.get_by_id(best_product.store_id)
+        source_website = self.stores.get_by_id(best_product.store_id)
         source_website_name = source_website.name if source_website else "Unknown"
 
         # Send email
-        result = self.email_service.send_price_alert_email(
+        result = self.mailer.send_price_alert_email(
             to_email=user.email,
             search_term=alert.search_term,
             product_title=best_product.title,
@@ -399,14 +399,14 @@ class OpportunityNotifier:
     def __init__(
         self,
         notification_log_repo: NotificationLogRepositoryInterface,
-        user_repo: AlertOwnerReader,
+        owners: AlertOwnerReader,
         price_alert_repo: PriceAlertRepositoryInterface,
-        email_service: AlertMailer,
+        mailer: AlertMailer,
     ):
         self.notification_log_repo = notification_log_repo
-        self.user_repo = user_repo
+        self.owners = owners
         self.price_alert_repo = price_alert_repo
-        self.email_service = email_service
+        self.mailer = mailer
 
     def notify(
         self,
@@ -432,14 +432,14 @@ class OpportunityNotifier:
             )
             return None
 
-        user = self.user_repo.get_by_id(alert.user_id)
+        user = self.owners.get_by_id(alert.user_id)
         if not user:
             logger.warning(
                 "User %s not found for alert %s, skipping", alert.user_id, alert_id
             )
             return None
 
-        result = self.email_service.send_price_alert_email(
+        result = self.mailer.send_price_alert_email(
             to_email=user.email,
             search_term=alert.search_term,
             product_title=product.title,
@@ -498,19 +498,19 @@ class EvaluateProductAlertsUseCase:
 
     def __init__(
         self,
-        product_repo: Listings,
+        listings: Listings,
         price_alert_repo: PriceAlertRepositoryInterface,
         notification_log_repo: NotificationLogRepositoryInterface,
-        user_repo: AlertOwnerReader,
-        source_website_repo: StoreReader,
-        email_service: AlertMailer,
+        owners: AlertOwnerReader,
+        stores: StoreReader,
+        mailer: AlertMailer,
     ):
-        self.product_repo = product_repo
+        self.listings = listings
         self.price_alert_repo = price_alert_repo
         self.notification_log_repo = notification_log_repo
-        self.user_repo = user_repo
-        self.source_website_repo = source_website_repo
-        self.email_service = email_service
+        self.owners = owners
+        self.stores = stores
+        self.mailer = mailer
 
     def execute(
         self, product_id: int
@@ -524,7 +524,7 @@ class EvaluateProductAlertsUseCase:
             - error_message: None on success, or reason for early exit
         """
         # 1. Load product
-        product = self.product_repo.get_by_id(product_id)
+        product = self.listings.get_by_id(product_id)
         if not product:
             return [], 0, "Product not found"
 
@@ -545,14 +545,14 @@ class EvaluateProductAlertsUseCase:
             return [], 0, "No matching alerts found"
 
         # Resolve source website name once
-        source_website = self.source_website_repo.get_by_id(product.store_id)
+        source_website = self.stores.get_by_id(product.store_id)
         source_website_name = source_website.name if source_website else "Unknown"
 
         notifier = OpportunityNotifier(
             self.notification_log_repo,
-            self.user_repo,
+            self.owners,
             self.price_alert_repo,
-            self.email_service,
+            self.mailer,
         )
         sent_logs: list[NotificationLogEntity] = []
         skipped = 0
@@ -578,20 +578,20 @@ class NotifyAlertOpportunitiesUseCase:
 
     def __init__(
         self,
-        product_repo: Listings,
+        listings: Listings,
         price_alert_repo: PriceAlertRepositoryInterface,
         notification_log_repo: NotificationLogRepositoryInterface,
-        user_repo: AlertOwnerReader,
-        source_website_repo: StoreReader,
-        email_service: AlertMailer,
+        owners: AlertOwnerReader,
+        stores: StoreReader,
+        mailer: AlertMailer,
     ):
-        self.product_repo = product_repo
-        self.source_website_repo = source_website_repo
+        self.listings = listings
+        self.stores = stores
         self.notifier = OpportunityNotifier(
-            notification_log_repo, user_repo, price_alert_repo, email_service
+            notification_log_repo, owners, price_alert_repo, mailer
         )
         self.book_alerts = EvaluateBookAlertsUseCase(
-            product_repo, price_alert_repo, source_website_repo, self.notifier
+            listings, price_alert_repo, stores, self.notifier
         )
 
     def execute(self, alert: PriceAlertEntity) -> list[NotificationLogEntity]:
@@ -600,7 +600,7 @@ class NotifyAlertOpportunitiesUseCase:
         if alert.is_book_alert:
             log = self.book_alerts.evaluate_alert(alert)
             return [log] if log is not None and log.status == "sent" else []
-        products = self.product_repo.opportunities_for_alert(
+        products = self.listings.opportunities_for_alert(
             alert.id, limit=self.MAX_LISTINGS
         )
         site_names: dict[int, str] = {}
@@ -611,7 +611,7 @@ class NotifyAlertOpportunitiesUseCase:
                 continue
             site_id = product.store_id
             if site_id not in site_names:
-                site = self.source_website_repo.get_by_id(site_id)
+                site = self.stores.get_by_id(site_id)
                 site_names[site_id] = site.name if site else "Unknown"
             log = self.notifier.notify(alert, product, price, site_names[site_id])
             if log is not None and log.status == "sent":
@@ -633,14 +633,14 @@ class EvaluateBookAlertsUseCase:
 
     def __init__(
         self,
-        product_repo: Listings,
+        listings: Listings,
         price_alert_repo: PriceAlertRepositoryInterface,
-        source_website_repo: StoreReader,
+        stores: StoreReader,
         notifier: OpportunityNotifier,
     ):
-        self.product_repo = product_repo
+        self.listings = listings
         self.price_alert_repo = price_alert_repo
-        self.source_website_repo = source_website_repo
+        self.stores = stores
         self.notifier = notifier
 
     def execute(self, canonical_product_id: int) -> list[NotificationLogEntity]:
@@ -663,7 +663,7 @@ class EvaluateBookAlertsUseCase:
         return self._notify_best(alert, self._offers(alert.canonical_product_id))
 
     def _offers(self, canonical_product_id: int) -> list[Listing]:
-        return self.product_repo.available_offers_for_book(
+        return self.listings.available_offers_for_book(
             canonical_product_id, limit=self.MAX_OFFERS
         )
 
@@ -681,7 +681,7 @@ class EvaluateBookAlertsUseCase:
         if not wanted:
             return None
         price, best = min(wanted, key=lambda priced: priced[0])
-        site = self.source_website_repo.get_by_id(best.store_id)
+        site = self.stores.get_by_id(best.store_id)
         return self.notifier.notify(
             alert, best, price, site.name if site else "Unknown"
         )
