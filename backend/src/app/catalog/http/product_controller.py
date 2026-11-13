@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
 from src.app.alerts import wiring as alerts_wiring
+from src.app.alerts.use_cases import EvaluateProductAlertsUseCase
 from src.app.catalog.entities import Product as ProductEntity
 from src.app.catalog.entities import ProductListFilters
 from src.app.catalog.http.product_presenter import ProductPresenter
@@ -41,6 +42,14 @@ logger = get_logger(__name__)
 def get_product_repository(db=Depends(get_db)) -> ProductRepository:
     """Dependency injection for ProductRepository."""
     return ProductRepository(db)
+
+
+def get_product_alerts_use_case(
+    db=Depends(get_db),
+    email_service: EmailServiceInterface = Depends(get_email_service),
+) -> EvaluateProductAlertsUseCase:
+    """The use case behind POST /products/{id}/evaluate-alerts."""
+    return alerts_wiring.evaluate_product_alerts(db, email_service)
 
 
 def get_product_validator(
@@ -392,8 +401,7 @@ def delete_product(
 @router.post("/{product_id}/evaluate-alerts", status_code=200)
 def evaluate_product_alerts(
     product_id: int,
-    db=Depends(get_db),
-    email_service: EmailServiceInterface = Depends(get_email_service),
+    use_case: EvaluateProductAlertsUseCase = Depends(get_product_alerts_use_case),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
     """
@@ -420,7 +428,6 @@ def evaluate_product_alerts(
         },
     )
 
-    use_case = alerts_wiring.evaluate_product_alerts(db, email_service)
     sent_logs, skipped, error = use_case.execute(product_id)
 
     if error:

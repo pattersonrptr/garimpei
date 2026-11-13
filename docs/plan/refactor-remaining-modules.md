@@ -29,6 +29,12 @@ before it starts.
   also call the private `_find_or_create_search_config` helpers (needs the
   author's OK).
 - `catalog/persistence/repositories.py` imports alerts' ORM models.
+- Alerts' use cases take catalog's repository interfaces (`catalog/ports.py`)
+  instead of alerts-owned ports, so `alerts/wiring.py` builds catalog's
+  repositories and catalog's controllers import alerts' use case types: a
+  two-way dependency that existed before #163 (architecture-reviewer, Nov 12).
+  An alerts-owned product reader (like `ProductSnapshotReader`) would break
+  it, or the factories could move to a shared composition root.
 - Alerts' own controller (`price_alert_controller.py`) still wires its
   adapters by hand at four points; it could use `alerts/wiring.py` too.
 - Catalog controllers build concrete repositories and use cases themselves;
