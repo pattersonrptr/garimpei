@@ -16,6 +16,7 @@ characterization tests first, in their own PR, reviewed by the author.
 | SearchConfig characterization tests | #160 | — | Coverage was 100% but 5 of 14 mutations survived; 4 tests pin reactivation (stores and frequency from the alert) and relinking (store change relinks, store order does not). The fifth is equivalent for valid input. Approved by the author |
 | Alerts SearchConfig through its own port | #161 | Inappropriate Intimacy → Extract Interface + adapter | `KeywordSearches` + `KeywordSearch` (a dataclass) in alerts; `SearchConfigKeywordSearches` maps to the old pydantic entity and reads before updating, so preferred time and metadata survive. Alerts' domain core no longer imports `src/app/interfaces` or `src/app/entities`. No existing test changed; the adapter had no coverage (4 of 5 mutations survived the e2e suite), so 6 integration tests were added for the author's review |
 | Alerts request validator out of the domain | #162 | Divergent Change → Move Class | `alerts/rules.py` → `alerts/http/validators.py`, unchanged: `PriceAlertValidator` returns `JsonApiError`, so it is request validation, like catalog's in #154. Already covered (15 unit tests plus e2e); only the test's import line changed, approved by the author like #154 |
+| Catalog stops wiring alerts' adapters | (this PR) | Inappropriate Intimacy → Move Function | `alerts/wiring.py` builds `EvaluateBookAlertsUseCase` and `EvaluateProductAlertsUseCase` from the request's session and e-mail service; catalog's offer and product controllers call it and no longer import alerts' adapters or repositories. FastAPI still injects `get_db` and `get_email_service`, so the e2e overrides keep working. No test changed |
 
 ## Queue
 
@@ -27,8 +28,9 @@ before it starts.
   (`stores`, `owners`, `mailer`, `searches`) together with the tests, which
   also call the private `_find_or_create_search_config` helpers (needs the
   author's OK).
-- Catalog controllers import alerts' adapters to wire alerts use cases; an
-  alerts-owned wiring module would hide them.
+- `catalog/persistence/repositories.py` imports alerts' ORM models.
+- Alerts' own controller (`price_alert_controller.py`) still wires its
+  adapters by hand at four points; it could use `alerts/wiring.py` too.
 - Catalog controllers build concrete repositories and use cases themselves;
   that wiring belongs in FastAPI dependencies or a composition root.
 - Validator tests live in `tests/unit/domain/validators/` but the code is
