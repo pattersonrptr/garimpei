@@ -8,14 +8,8 @@ database repositories and the BrasilAPI metadata adapter into the use cases.
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
-from src.app.alerts.persistence.mailer import EmailServiceMailer
-from src.app.alerts.persistence.owners import UserAccountOwners
-from src.app.alerts.persistence.repositories import (
-    NotificationLogRepository,
-    PriceAlertRepository,
-)
-from src.app.alerts.persistence.stores import SourceWebsiteStores
-from src.app.alerts.use_cases import EvaluateBookAlertsUseCase, OpportunityNotifier
+from src.app.alerts import wiring as alerts_wiring
+from src.app.alerts.use_cases import EvaluateBookAlertsUseCase
 from src.app.catalog.adapters.brasilapi_books import BrasilApiBookMetadata
 from src.app.catalog.http.offer_schema import OfferIngestRequest
 from src.app.catalog.http.product_presenter import ProductPresenter
@@ -39,7 +33,6 @@ from src.app.infrastructure.database_config import get_db
 from src.app.infrastructure.repositories.source_website_repository import (
     SourceWebsiteRepository,
 )
-from src.app.infrastructure.repositories.user_repository import UserRepository
 from src.app.infrastructure.services.email_service import get_email_service
 from src.app.interfaces.services.email_service import EmailServiceInterface
 from src.app.security.auth import get_current_staff_user
@@ -72,18 +65,7 @@ def get_book_alerts_use_case(
     email_service: EmailServiceInterface = Depends(get_email_service),
 ) -> EvaluateBookAlertsUseCase:
     """Book alerts are checked right after an offer for the book comes in."""
-    alerts = PriceAlertRepository(db)
-    return EvaluateBookAlertsUseCase(
-        product_repo=ProductRepository(db),
-        price_alert_repo=alerts,
-        source_website_repo=SourceWebsiteStores(SourceWebsiteRepository(db)),
-        notifier=OpportunityNotifier(
-            NotificationLogRepository(db),
-            UserAccountOwners(UserRepository(db)),
-            alerts,
-            EmailServiceMailer(email_service),
-        ),
-    )
+    return alerts_wiring.evaluate_book_alerts(db, email_service)
 
 
 def get_source_website_repository(db=Depends(get_db)) -> SourceWebsiteRepository:

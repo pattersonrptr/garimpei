@@ -1,16 +1,8 @@
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
-from src.app.alerts.persistence.mailer import EmailServiceMailer
-from src.app.alerts.persistence.owners import UserAccountOwners
-from src.app.alerts.persistence.repositories import (
-    NotificationLogRepository,
-    PriceAlertRepository,
-)
-from src.app.alerts.persistence.stores import SourceWebsiteStores
-from src.app.alerts.use_cases import (
-    EvaluateProductAlertsUseCase,
-)
+from src.app.alerts import wiring as alerts_wiring
+from src.app.alerts.use_cases import EvaluateProductAlertsUseCase
 from src.app.catalog.entities import Product as ProductEntity
 from src.app.catalog.entities import ProductListFilters
 from src.app.catalog.http.product_presenter import ProductPresenter
@@ -21,10 +13,7 @@ from src.app.catalog.http.product_schema import (
     ProductUpdateRequest,
 )
 from src.app.catalog.http.validators import ProductValidator
-from src.app.catalog.persistence.repositories import (
-    PriceHistoryRepository,
-    ProductRepository,
-)
+from src.app.catalog.persistence.repositories import ProductRepository
 from src.app.catalog.use_cases import (
     CreateProductUseCase,
     DeleteProductUseCase,
@@ -35,10 +24,6 @@ from src.app.catalog.use_cases import (
 )
 from src.app.entities.user import User as UserEntity
 from src.app.infrastructure.database_config import get_db
-from src.app.infrastructure.repositories.source_website_repository import (
-    SourceWebsiteRepository,
-)
-from src.app.infrastructure.repositories.user_repository import UserRepository
 from src.app.infrastructure.services.email_service import get_email_service
 from src.app.interfaces.services.email_service import EmailServiceInterface
 from src.app.security.auth import (
@@ -59,31 +44,19 @@ def get_product_repository(db=Depends(get_db)) -> ProductRepository:
     return ProductRepository(db)
 
 
+def get_product_alerts_use_case(
+    db=Depends(get_db),
+    email_service: EmailServiceInterface = Depends(get_email_service),
+) -> EvaluateProductAlertsUseCase:
+    """The use case behind POST /products/{id}/evaluate-alerts."""
+    return alerts_wiring.evaluate_product_alerts(db, email_service)
+
+
 def get_product_validator(
     product_repo: ProductRepository = Depends(get_product_repository),
 ) -> ProductValidator:
     """Dependency injection for ProductValidator."""
     return ProductValidator(product_repo)
-
-
-def get_price_alert_repository(db=Depends(get_db)) -> PriceAlertRepository:
-    return PriceAlertRepository(db)
-
-
-def get_price_history_repository(db=Depends(get_db)) -> PriceHistoryRepository:
-    return PriceHistoryRepository(db)
-
-
-def get_notification_log_repository(db=Depends(get_db)) -> NotificationLogRepository:
-    return NotificationLogRepository(db)
-
-
-def get_user_repository(db=Depends(get_db)) -> UserRepository:
-    return UserRepository(db)
-
-
-def get_source_website_repository(db=Depends(get_db)) -> SourceWebsiteRepository:
-    return SourceWebsiteRepository(db)
 
 
 @router.post("/", response_model=ProductReadResponse, status_code=201)
@@ -428,17 +401,7 @@ def delete_product(
 @router.post("/{product_id}/evaluate-alerts", status_code=200)
 def evaluate_product_alerts(
     product_id: int,
-    product_repo: ProductRepository = Depends(get_product_repository),
-    price_history_repo: PriceHistoryRepository = Depends(get_price_history_repository),
-    price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
-    notification_log_repo: NotificationLogRepository = Depends(
-        get_notification_log_repository
-    ),
-    user_repo: UserRepository = Depends(get_user_repository),
-    source_website_repo: SourceWebsiteRepository = Depends(
-        get_source_website_repository
-    ),
-    email_service: EmailServiceInterface = Depends(get_email_service),
+    use_case: EvaluateProductAlertsUseCase = Depends(get_product_alerts_use_case),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
     """
@@ -465,15 +428,6 @@ def evaluate_product_alerts(
         },
     )
 
-    use_case = EvaluateProductAlertsUseCase(
-        product_repo=product_repo,
-        price_history_repo=price_history_repo,
-        price_alert_repo=price_alert_repo,
-        notification_log_repo=notification_log_repo,
-        user_repo=UserAccountOwners(user_repo),
-        source_website_repo=SourceWebsiteStores(source_website_repo),
-        email_service=EmailServiceMailer(email_service),
-    )
     sent_logs, skipped, error = use_case.execute(product_id)
 
     if error:
