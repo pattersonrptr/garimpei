@@ -99,12 +99,12 @@ class TestEvaluateProductAlertsUseCase:
         email_service=None,
     ):
         return EvaluateProductAlertsUseCase(
-            product_repo=product_repo or MagicMock(),
+            listings=product_repo or MagicMock(),
             price_alert_repo=price_alert_repo or MagicMock(),
             notification_log_repo=notification_log_repo or MagicMock(),
-            user_repo=user_repo or MagicMock(),
-            source_website_repo=source_website_repo or MagicMock(),
-            email_service=email_service or MagicMock(),
+            owners=user_repo or MagicMock(),
+            stores=source_website_repo or MagicMock(),
+            mailer=email_service or MagicMock(),
         )
 
     # ------------------------------------------------------------------
