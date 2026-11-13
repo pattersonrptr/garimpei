@@ -14,12 +14,11 @@ Tests all code paths with mocked repositories and email service:
 from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
+from src.app.alerts.entities import Listing
 from src.app.alerts.entities import PriceAlert as PriceAlertEntity
 from src.app.alerts.use_cases import (
     EvaluateProductAlertsUseCase,
 )
-from src.app.catalog.entities import PriceHistory as PriceHistoryEntity
-from src.app.catalog.entities import Product as ProductEntity
 from src.app.entities.source_website import SourceWebsite as SourceWebsiteEntity
 from src.app.entities.user import User as UserEntity
 from src.app.interfaces.services.email_service import EmailResult
@@ -29,29 +28,19 @@ from src.app.interfaces.services.email_service import EmailResult
 # ============================================================================
 
 
-def make_product(**overrides):
+def make_listing(**overrides):
+    """A listing with its latest price (2000.00 unless given)."""
     defaults = {
         "id": 100,
         "url": "https://example.com/product/1",
         "title": "iPhone 13 128GB Preto",
-        "source_website_id": 1,
-        "is_available": True,
-        "created_at": datetime(2024, 1, 1, tzinfo=UTC),
-        "updated_at": datetime(2024, 1, 1, tzinfo=UTC),
-    }
-    defaults.update(overrides)
-    return ProductEntity(**defaults)
-
-
-def make_price_history(**overrides):
-    defaults = {
-        "id": 1,
-        "product_id": 100,
+        "store_id": 1,
         "price": 2000.00,
-        "created_at": datetime(2024, 1, 1, tzinfo=UTC),
+        "condition": "undetermined",
+        "is_available": True,
     }
     defaults.update(overrides)
-    return PriceHistoryEntity(**defaults)
+    return Listing(**defaults)
 
 
 def make_price_alert(**overrides):
@@ -103,7 +92,6 @@ class TestEvaluateProductAlertsUseCase:
     def _build_use_case(
         self,
         product_repo=None,
-        price_history_repo=None,
         price_alert_repo=None,
         notification_log_repo=None,
         user_repo=None,
@@ -112,7 +100,6 @@ class TestEvaluateProductAlertsUseCase:
     ):
         return EvaluateProductAlertsUseCase(
             product_repo=product_repo or MagicMock(),
-            price_history_repo=price_history_repo or MagicMock(),
             price_alert_repo=price_alert_repo or MagicMock(),
             notification_log_repo=notification_log_repo or MagicMock(),
             user_repo=user_repo or MagicMock(),
@@ -137,12 +124,9 @@ class TestEvaluateProductAlertsUseCase:
 
     def test_returns_error_when_no_price_history(self):
         prod_repo = MagicMock()
-        prod_repo.get_by_id.return_value = make_product()
+        prod_repo.get_by_id.return_value = make_listing(price=None)
 
-        ph_repo = MagicMock()
-        ph_repo.get_latest_by_product_id.return_value = None
-
-        uc = self._build_use_case(product_repo=prod_repo, price_history_repo=ph_repo)
+        uc = self._build_use_case(product_repo=prod_repo)
         sent, skipped, error = uc.execute(100)
 
         assert sent == []
@@ -151,17 +135,13 @@ class TestEvaluateProductAlertsUseCase:
 
     def test_returns_error_when_no_matching_alerts(self):
         prod_repo = MagicMock()
-        prod_repo.get_by_id.return_value = make_product()
-
-        ph_repo = MagicMock()
-        ph_repo.get_latest_by_product_id.return_value = make_price_history()
+        prod_repo.get_by_id.return_value = make_listing()
 
         pa_repo = MagicMock()
         pa_repo.find_matching_alerts_for_product.return_value = []
 
         uc = self._build_use_case(
             product_repo=prod_repo,
-            price_history_repo=ph_repo,
             price_alert_repo=pa_repo,
         )
         sent, skipped, error = uc.execute(100)
@@ -176,10 +156,7 @@ class TestEvaluateProductAlertsUseCase:
 
     def test_skips_already_notified_alert(self):
         prod_repo = MagicMock()
-        prod_repo.get_by_id.return_value = make_product()
-
-        ph_repo = MagicMock()
-        ph_repo.get_latest_by_product_id.return_value = make_price_history()
+        prod_repo.get_by_id.return_value = make_listing()
 
         pa_repo = MagicMock()
         pa_repo.find_matching_alerts_for_product.return_value = [make_price_alert()]
@@ -192,7 +169,6 @@ class TestEvaluateProductAlertsUseCase:
 
         uc = self._build_use_case(
             product_repo=prod_repo,
-            price_history_repo=ph_repo,
             price_alert_repo=pa_repo,
             notification_log_repo=nl_repo,
             source_website_repo=sw_repo,
@@ -212,12 +188,7 @@ class TestEvaluateProductAlertsUseCase:
 
     def test_sends_email_and_creates_log_on_success(self):
         prod_repo = MagicMock()
-        prod_repo.get_by_id.return_value = make_product()
-
-        ph_repo = MagicMock()
-        ph_repo.get_latest_by_product_id.return_value = make_price_history(
-            price=2000.00
-        )
+        prod_repo.get_by_id.return_value = make_listing(price=2000.00)
 
         pa_repo = MagicMock()
         alert = make_price_alert()
@@ -240,7 +211,6 @@ class TestEvaluateProductAlertsUseCase:
 
         uc = self._build_use_case(
             product_repo=prod_repo,
-            price_history_repo=ph_repo,
             price_alert_repo=pa_repo,
             notification_log_repo=nl_repo,
             user_repo=user_repo,
@@ -273,12 +243,8 @@ class TestEvaluateProductAlertsUseCase:
 
     def test_finds_matching_alerts_with_correct_params(self):
         prod_repo = MagicMock()
-        product = make_product(title="Galaxy S24 Ultra", source_website_id=3)
-        prod_repo.get_by_id.return_value = product
-
-        ph_repo = MagicMock()
-        ph_repo.get_latest_by_product_id.return_value = make_price_history(
-            price=4500.00
+        prod_repo.get_by_id.return_value = make_listing(
+            title="Galaxy S24 Ultra", store_id=3, price=4500.00
         )
 
         pa_repo = MagicMock()
@@ -286,7 +252,6 @@ class TestEvaluateProductAlertsUseCase:
 
         uc = self._build_use_case(
             product_repo=prod_repo,
-            price_history_repo=ph_repo,
             price_alert_repo=pa_repo,
         )
         uc.execute(100)
@@ -303,10 +268,7 @@ class TestEvaluateProductAlertsUseCase:
 
     def test_records_failed_log_when_email_fails(self):
         prod_repo = MagicMock()
-        prod_repo.get_by_id.return_value = make_product()
-
-        ph_repo = MagicMock()
-        ph_repo.get_latest_by_product_id.return_value = make_price_history()
+        prod_repo.get_by_id.return_value = make_listing()
 
         pa_repo = MagicMock()
         pa_repo.find_matching_alerts_for_product.return_value = [make_price_alert()]
@@ -328,7 +290,6 @@ class TestEvaluateProductAlertsUseCase:
 
         uc = self._build_use_case(
             product_repo=prod_repo,
-            price_history_repo=ph_repo,
             price_alert_repo=pa_repo,
             notification_log_repo=nl_repo,
             user_repo=user_repo,
@@ -357,10 +318,7 @@ class TestEvaluateProductAlertsUseCase:
 
     def test_skips_alert_when_user_not_found(self):
         prod_repo = MagicMock()
-        prod_repo.get_by_id.return_value = make_product()
-
-        ph_repo = MagicMock()
-        ph_repo.get_latest_by_product_id.return_value = make_price_history()
+        prod_repo.get_by_id.return_value = make_listing()
 
         pa_repo = MagicMock()
         pa_repo.find_matching_alerts_for_product.return_value = [make_price_alert()]
@@ -376,7 +334,6 @@ class TestEvaluateProductAlertsUseCase:
 
         uc = self._build_use_case(
             product_repo=prod_repo,
-            price_history_repo=ph_repo,
             price_alert_repo=pa_repo,
             notification_log_repo=nl_repo,
             user_repo=user_repo,
@@ -395,10 +352,7 @@ class TestEvaluateProductAlertsUseCase:
     def test_handles_multiple_alerts_with_mixed_outcomes(self):
         """Test with 3 alerts: 1 already notified, 1 success, 1 email fail."""
         prod_repo = MagicMock()
-        prod_repo.get_by_id.return_value = make_product()
-
-        ph_repo = MagicMock()
-        ph_repo.get_latest_by_product_id.return_value = make_price_history()
+        prod_repo.get_by_id.return_value = make_listing()
 
         alert_dedup = make_price_alert(id=10, user_id=1)
         alert_success = make_price_alert(id=20, user_id=2)
@@ -438,7 +392,6 @@ class TestEvaluateProductAlertsUseCase:
 
         uc = self._build_use_case(
             product_repo=prod_repo,
-            price_history_repo=ph_repo,
             price_alert_repo=pa_repo,
             notification_log_repo=nl_repo,
             user_repo=user_repo,
@@ -459,10 +412,7 @@ class TestEvaluateProductAlertsUseCase:
 
     def test_uses_unknown_when_source_website_not_found(self):
         prod_repo = MagicMock()
-        prod_repo.get_by_id.return_value = make_product()
-
-        ph_repo = MagicMock()
-        ph_repo.get_latest_by_product_id.return_value = make_price_history()
+        prod_repo.get_by_id.return_value = make_listing()
 
         pa_repo = MagicMock()
         pa_repo.find_matching_alerts_for_product.return_value = [make_price_alert()]
@@ -484,7 +434,6 @@ class TestEvaluateProductAlertsUseCase:
 
         uc = self._build_use_case(
             product_repo=prod_repo,
-            price_history_repo=ph_repo,
             price_alert_repo=pa_repo,
             notification_log_repo=nl_repo,
             user_repo=user_repo,
