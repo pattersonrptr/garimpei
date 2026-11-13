@@ -70,7 +70,7 @@ async function main() {
   mkdirSync(outDir, { recursive: true })
   const env = dotEnv()
   const site = process.env.E2E_SITE_URL ?? env.E2E_SITE_URL ?? 'http://localhost:3000'
-  const browser = await chromium.launch({ channel: process.env.E2E_CHANNEL ?? 'msedge' })
+  const browser = await chromium.launch({ channel: process.env.E2E_CHANNEL || undefined })
   try {
     for (const [size, viewport] of Object.entries(SIZES)) {
       const context = await browser.newContext({ viewport, locale: 'pt-BR' })

@@ -17,12 +17,13 @@
       "Bash(npm run typecheck:*)",
       "Bash(npm run build:*)",
       "Bash(npx tsc:*)",
-      "Bash(.venv/Scripts/python -m pytest:*)",
-      "Bash(backend/.venv/Scripts/python -m pytest:*)",
-      "Bash(.venv/Scripts/ruff:*)",
-      "Bash(backend/.venv/Scripts/ruff:*)",
       "Bash(poetry run pytest:*)",
+      "Bash(poetry run python -m pytest:*)",
       "Bash(poetry run ruff:*)",
+      "Bash(poetry run mypy:*)",
+      "Bash(uvx poetry@2 run pytest:*)",
+      "Bash(uvx poetry@2 run ruff:*)",
+      "Bash(bash .claude/skills/refactor-slice-pr/slice.sh:*)",
       "Bash(git push:*)",
       "Bash(gh pr merge:*)"
     ],
@@ -47,7 +48,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/session_brief.py\"",
+            "command": "\"$(command -v python || command -v python3)\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/session_brief.py\"",
             "timeout": 15
           }
         ]
@@ -59,7 +60,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_files.py\"",
+            "command": "\"$(command -v python || command -v python3)\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_files.py\"",
             "timeout": 10
           }
         ]
@@ -69,7 +70,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_git.py\"",
+            "command": "\"$(command -v python || command -v python3)\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_git.py\"",
             "timeout": 10
           }
         ]
@@ -81,7 +82,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/ruff_on_edit.py\"",
+            "command": "\"$(command -v python || command -v python3)\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/ruff_on_edit.py\"",
             "timeout": 30
           }
         ]

@@ -1,6 +1,6 @@
 ---
 name: e2e-local
-description: Run Garimpei's end-to-end check against the local Docker Compose stack - rebuild the changed services, wait for the API, site and admin to answer, run the Playwright suite in the installed Edge, and take mobile and desktop screenshots. Use before asking for a merge of any user-facing change, or when the author asks to "rodar o e2e", "testar ponta a ponta" or for prints.
+description: Run Garimpei's end-to-end check against the local Docker Compose stack - rebuild the changed services, wait for the API, site and admin to answer, run the Playwright suite in Playwright's Chromium, and take mobile and desktop screenshots. Use before asking for a merge of any user-facing change, or when the author asks to "rodar o e2e", "testar ponta a ponta" or for prints.
 ---
 
 # Local end-to-end check
@@ -35,10 +35,12 @@ It waits (up to 3 min) until the API `:8000`, the site `:3000` and the admin
 From `frontend/`:
 
 ```bash
-E2E_CHANNEL=msedge npx playwright test --project=chromium
+npx playwright test --project=chromium
 ```
 
-- Uses the installed Edge, not a downloaded browser.
+- Uses Playwright's own Chromium on any OS (`npx playwright install
+  chromium` once). `E2E_CHANNEL=chrome` or `msedge` uses an installed
+  browser instead.
 - Accounts come from the `E2E_*` values in `.env` (read by
   `e2e/fixtures.ts`; never print them). E-mails land in Mailpit
   (`http://localhost:8026`).

@@ -89,13 +89,16 @@ Settings come from the root `.env` (see `.env.example`): `DATABASE_URL`,
 From `backend/`:
 
 ```bash
-.venv/Scripts/python -m pytest src/tests       # ~880 tests
-.venv/Scripts/ruff check src
-.venv/Scripts/ruff format --check src
+poetry install                     # once
+poetry run pytest src/tests        # ~910 tests
+poetry run ruff check src
+poetry run ruff format --check src
 ```
 
-CI runs the same with Poetry (`poetry install`, `poetry run pytest`); mypy is
-reported but not blocking. Pre-commit runs ruff and ruff-format on commit.
+The same commands work on Linux, macOS, BSD and Windows, and CI runs them
+too. Without Poetry installed, `uvx poetry@2` works in its place. mypy blocks
+CI on the paths listed in `.github/workflows/ci.yml` and only reports on the
+rest. Pre-commit runs ruff and ruff-format on commit.
 
 ## Migrations
 

@@ -25,7 +25,9 @@ summarize() {
 run_tests() {
   local kind=$1
   shift
-  (cd "$ROOT/backend" && .venv/Scripts/python -m pytest "$@" -q 2>&1) \
+  # Poetry finds the virtualenv on any OS (.venv/bin or .venv/Scripts, or
+  # its own cache); POETRY can point to another launcher, e.g. "uvx poetry@2".
+  (cd "$ROOT/backend" && ${POETRY:-poetry} run python -m pytest "$@" -q 2>&1) \
     | summarize >"$OUT/$kind.txt"
   cat "$OUT/$kind.txt"
   if [ "$kind" = red ] && ! grep -q 'failed' "$OUT/red.txt"; then

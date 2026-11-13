@@ -101,20 +101,23 @@ ports in unit tests, the real database in e2e tests.
 
 | Module | Commands (from the module folder) |
 |---|---|
-| backend | `.venv/Scripts/python -m pytest src/tests` · `.venv/Scripts/ruff check src` · `.venv/Scripts/ruff format --check src` (CI uses Poetry; mypy is non-blocking) |
+| backend | `poetry run pytest src/tests` · `poetry run ruff check src` · `poetry run ruff format --check src` (mypy: blocking paths in `ci.yml`, the rest report-only) |
 | scrapers | `poetry run pytest src/tests` · `poetry run ruff check src` |
 | web | `npm test` · `npm run typecheck` · `npm run build` |
 | frontend | `npm run lint` · `npm test` · `npx tsc -b` |
 
-**Poetry is not installed locally**; the author's machine has `uv`. CI and
-the lock files still use Poetry. Locally, run Poetry through `uvx`
-(`uvx poetry@2 lock`, `uvx poetry@2 update --lock <pkg>`) and ruff at the
-version pinned in the module's `poetry.lock` (`uvx ruff@<version> check src`).
-The backend `.venv` was created with `uv`.
+**Python modules run through Poetry** (`poetry install`, then
+`poetry run …`), the same as CI, on any OS: Poetry finds the virtualenv
+whether it is `.venv/bin` (Linux, macOS, BSD) or `.venv/Scripts` (Windows).
+Never call a path inside `.venv` directly. Without Poetry installed, use
+`uvx poetry@2` in its place (`uvx poetry@2 run pytest src/tests`); scripts
+read the launcher from `POETRY` (`POETRY="uvx poetry@2"`).
 
 **End to end (local):** `docker compose up -d --build <service>`, wait until
 `:8000`, `:3000` and `:80` answer, then from `frontend/`:
-`E2E_CHANNEL=msedge npx playwright test --project=chromium`. Test accounts
+`npx playwright test --project=chromium` (Playwright's own Chromium:
+`npx playwright install chromium` once; `E2E_CHANNEL=chrome` or `msedge`
+uses an installed browser instead). Test accounts
 are `E2E_*` in `.env`; e-mails land in Mailpit (`http://localhost:8026`).
 
 Local addresses: site `http://localhost:3000`, admin `http://localhost`
@@ -122,7 +125,7 @@ Local addresses: site `http://localhost:3000`, admin `http://localhost`
 
 ## Known traps
 
-- **Windows bind mount:** uvicorn `--reload` misses changes; run
+- **Windows bind mount** (Windows hosts only): uvicorn `--reload` misses changes; run
   `docker compose restart web` after backend edits.
 - `docker compose up --build site` (or `frontend`) **also restarts `web`**:
   wait for `:8000` before running e2e tests.

@@ -24,12 +24,26 @@ def repo_root() -> Path:
     )
 
 
-def find_ruff(root: Path, module: str) -> str | None:
+def find_ruff(root: Path, module: str) -> list[str] | None:
+    """The module's ruff: its in-project venv (bin/ on Linux, macOS and BSD,
+    Scripts/ on Windows), then ``poetry run ruff``, then any ruff on PATH."""
     for base in (root / module, root / "backend"):
-        for candidate in (base / ".venv/Scripts/ruff.exe", base / ".venv/bin/ruff"):
+        for candidate in (
+            base / ".venv/bin/ruff",
+            base / ".venv/Scripts/ruff.exe",
+            base / ".venv/Scripts/ruff",
+        ):
             if candidate.exists():
-                return str(candidate)
-    return shutil.which("ruff")
+                return [str(candidate)]
+    if shutil.which("poetry"):
+        poetry_ruff = ["poetry", "run", "ruff"]
+        probe = subprocess.run(
+            [*poetry_ruff, "--version"], cwd=root / module, capture_output=True
+        )
+        if probe.returncode == 0:
+            return poetry_ruff
+    found = shutil.which("ruff")
+    return [found] if found else None
 
 
 def main() -> int:
@@ -49,14 +63,14 @@ def main() -> int:
         cwd = root / module
         target = str(Path(file_path).resolve())
         check = subprocess.run(
-            [ruff, "check", "--fix", "--quiet", target],
+            [*ruff, "check", "--fix", "--quiet", target],
             cwd=cwd,
             capture_output=True,
             text=True,
         )
         # Format after fixing: a removed import must not leave a blank line.
         subprocess.run(
-            [ruff, "format", "--quiet", target], cwd=cwd, capture_output=True
+            [*ruff, "format", "--quiet", target], cwd=cwd, capture_output=True
         )
     except Exception:  # never let a hook bug block work
         return 0

@@ -16,7 +16,7 @@ const channel = process.env.E2E_CHANNEL
 
 // Screenshots and demo video for the READMEs (e2e/media/*.media.ts). Only
 // added when asked for, so a plain `playwright test` never runs it:
-//   MEDIA=1 E2E_CHANNEL=msedge npx playwright test --project=media
+//   MEDIA=1 npx playwright test --project=media
 const media = {
   name: 'media',
   testMatch: /\.media\.ts$/,
