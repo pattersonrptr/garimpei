@@ -8,9 +8,9 @@ without a price, which no other test covered.
 from types import SimpleNamespace
 from unittest.mock import Mock
 
+from src.app.alerts.entities import Listing
 from src.app.alerts.entities import PriceAlert as PriceAlertEntity
 from src.app.alerts.use_cases import NotifyAlertOpportunitiesUseCase
-from src.app.catalog.entities import Product as ProductEntity
 
 
 def make_keyword_alert() -> PriceAlertEntity:
@@ -25,19 +25,21 @@ def make_keyword_alert() -> PriceAlertEntity:
 
 
 def make_listing(product_id: int, source_website_id: int = 1, price=2000.00):
-    return ProductEntity(
+    return Listing(
         id=product_id,
         url=f"https://example.com/product/{product_id}",
         title=f"iPhone 13 #{product_id}",
-        source_website_id=source_website_id,
-        current_price=price,
+        store_id=source_website_id,
+        price=price,
+        condition="undetermined",
+        is_available=True,
     )
 
 
 def make_use_case(listings, stores):
     """The use case over fakes that send every e-mail successfully."""
     product_repo = Mock()
-    product_repo.get_all.return_value = (listings, len(listings))
+    product_repo.opportunities_for_alert.return_value = listings
     notification_log_repo = Mock()
     notification_log_repo.exists_for_alert_and_product.return_value = False
     notification_log_repo.create.side_effect = lambda log: log

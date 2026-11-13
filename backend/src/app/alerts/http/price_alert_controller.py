@@ -109,7 +109,7 @@ def get_alert_opportunities_use_case(
 ) -> NotifyAlertOpportunitiesUseCase:
     """The use case that checks collected listings when an alert changes."""
     return NotifyAlertOpportunitiesUseCase(
-        product_repo=ProductRepository(db),
+        product_repo=CatalogListings(db),
         price_alert_repo=PriceAlertRepository(db),
         notification_log_repo=NotificationLogRepository(db),
         user_repo=UserAccountOwners(UserRepository(db)),

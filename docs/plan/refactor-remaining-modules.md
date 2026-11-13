@@ -20,6 +20,7 @@ characterization tests first, in their own PR, reviewed by the author.
 | Alerts-owned Listings port and its adapter | (this PR) | Inappropriate Intimacy → Extract Interface (port owned by the client) + adapter, step 1 | `Listings` + `Listing` (a frozen dataclass) in alerts; `CatalogListings` adapts catalog's `ProductRepository`. 12 integration tests approved by the author (Nov 12, 2026), red then green. Not wired yet: the notification use cases move to it one PR each, showing the author the mock-setup diff first. `GetProductsByPriceAlertUseCase` stays on catalog's repository: it lists full catalog products for a catalog presenter (own queue item) |
 | SendPriceAlertNotification through Listings | (this PR) | Inappropriate Intimacy → Change the dependency to the client-owned port | The use case asks `Listings.cheapest_match` for the best match instead of catalog's `search_by_term_and_sources(limit=1)`; `POST /price-alerts/{id}/notify` wires `CatalogListings`. Test diff (mock setup and one interaction assertion: `cheapest_match` with the alert's term, stores and max price) approved by the author before the change. Red was a `ValueError` (old code unpacking the new mock), not an assertion: inherent to swapping a port. `listings.py` added to the blocking mypy paths |
 | EvaluateProductAlerts through Listings | (this PR) | Inappropriate Intimacy → depend on the client-owned port | `Listings.get_by_id` brings the listing with its latest price, so the use case no longer needs catalog's price history repository; `alerts/wiring.py` builds `CatalogListings`. Test diff (mock setup only, no assertion changed) approved by the author. **Behavior change approved by the author (Nov 12, 2026):** "latest price" is now the point with the highest id, like the rest of the site, instead of the highest `created_at`; they differ only for points saved out of order. `OpportunityNotifier.notify` takes `Listing \| Product` until the last use case moves |
+| NotifyAlertOpportunities and EvaluateBookAlerts through Listings | (this PR) | Inappropriate Intimacy → depend on the client-owned port | One PR because the first builds the second over the same repository. `opportunities_for_alert` and `available_offers_for_book` replace catalog's `get_all` + `ProductListFilters`; `OpportunityNotifier.notify` takes only `Listing`; `alerts/wiring.py` no longer imports catalog. Test diff (mock setup only) approved by the author; book alerts are covered by 12 e2e tests, unchanged |
 
 ## Queue
 
@@ -32,20 +33,13 @@ before it starts.
   also call the private `_find_or_create_search_config` helpers (needs the
   author's OK).
 - `catalog/persistence/repositories.py` imports alerts' ORM models.
-- Move the notification use cases to `Listings`, one PR each
-  (`SendPriceAlertNotificationUseCase`, `EvaluateProductAlertsUseCase` done):
-  `NotifyAlertOpportunitiesUseCase`, `EvaluateBookAlertsUseCase` (with
-  `OpportunityNotifier`). Show the author each test diff (mock setup only)
-  first.
 - `GetProductsByPriceAlertUseCase` lists full catalog products for
   `/price-alerts/{id}/products` and `/opportunities`; decide whether it
   belongs in catalog (a query by alert) rather than in alerts.
-- Alerts' use cases take catalog's repository interfaces (`catalog/ports.py`)
-  instead of alerts-owned ports, so `alerts/wiring.py` builds catalog's
-  repositories and catalog's controllers import alerts' use case types: a
-  two-way dependency that existed before #163 (architecture-reviewer, Nov 12).
-  An alerts-owned product reader (like `ProductSnapshotReader`) would break
-  it, or the factories could move to a shared composition root.
+- After the `Listings` slices, alerts' use cases import catalog only for
+  `GetProductsByPriceAlertUseCase` (item above). Catalog's controllers still
+  import alerts' use case types and `alerts/wiring.py`; a shared composition
+  root would remove that direction too.
 - Alerts' own controller (`price_alert_controller.py`) still wires its
   adapters by hand at four points; it could use `alerts/wiring.py` too.
 - Catalog controllers build concrete repositories and use cases themselves;
