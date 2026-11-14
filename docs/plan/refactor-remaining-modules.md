@@ -26,7 +26,8 @@ characterization tests first, in their own PR, reviewed by the author.
 | Port parameters named after the ports | #171 | Mysterious Name → Rename Variable | In alerts' use cases `product_repo`, `user_repo`, `source_website_repo`, `email_service` and `search_config_repo` held alerts' ports; they are now `listings`, `owners`, `stores`, `mailer` and `searches` (parameters and attributes), plus `PriceAlertValidator`'s `stores` (found by the architecture-reviewer; its tests pass it by position). Test diff (the 4 keyword names in two `_build_use_case` helpers) approved by the author; red was a `TypeError` (unexpected keyword), as expected for a rename |
 | Characterization tests for the alerts controller's wiring | #172 | — | Before moving its wiring to `alerts/wiring.py`: 3 of 6 wiring mutations survived the suite (`/notify` sending through the real e-mail service, `/notify` finding no listing, delete leaving the search active). 2 e2e tests kill all three on an assertion. Approved by the author (Nov 13, 2026) |
 | Alerts controller wired through `alerts/wiring.py` | (this PR) | Duplicated Code → Extract Function + Move Function | `price_alert_controller.py` built alerts' adapters by hand at four points (opportunities, validator, create/update/delete, notify); it now calls factories in `alerts/wiring.py` and no longer imports adapters or `src/app/infrastructure` repositories. Its four unused repository dependencies were removed. FastAPI still injects `get_db` and `get_email_service`. No test changed; #172's tests kill the wiring mutations the suite missed. `wiring.py` and the controller joined the blocking mypy paths |
-| Characterization tests for the alert-match filter | (this PR) | — | Before removing `catalog/persistence/repositories.py`'s imports of alerts' ORM models: 2 of 8 mutations of the alert-match filter and the delete survived the suite (a deleted alert still matching, the user filter ignored). 2 e2e tests kill both on an assertion. Approved by the author (Nov 14, 2026) |
+| Characterization tests for the alert-match filter | #175 | — | Before removing `catalog/persistence/repositories.py`'s imports of alerts' ORM models: 2 of 8 mutations of the alert-match filter and the delete survived the suite (a deleted alert still matching, the user filter ignored). 2 e2e tests kill both on an assertion. Approved by the author (Nov 14, 2026) |
+| SQLite enforces foreign keys in tests | (this PR) | — | Before slice B: `src/tests/conftest.py` turns on `PRAGMA foreign_keys=ON` for every SQLite connection, so test databases apply foreign keys and `ON DELETE` rules like Postgres. All 916 tests pass unchanged; deleting a notified product without clearing its log now fails with `FOREIGN KEY constraint failed`. Approved by the author (Nov 14, 2026) |
 
 ## Queue
 
@@ -35,15 +36,15 @@ before it starts.
 
 - `catalog/persistence/repositories.py` imports alerts' ORM models, in
   two places. Plan decided by the author (Nov 14, 2026), three PRs:
-  - **A. Characterization tests** (this PR): a mutation run over the
+  - **A. Characterization tests** (#175): a mutation run over the
     alert-match filter and the delete found two survivors (a deleted alert
     still matching, and the user filter ignored); one e2e test each.
     Clearing the notification log on delete was already covered.
   - **B. Notification log on product delete:** a new migration gives
     `notification_logs.product_id` `ON DELETE SET NULL`, and the
     repository stops updating `NotificationLog`. SQLite only applies it
-    with `PRAGMA foreign_keys=ON`, which the test engines do not turn on
-    yet.
+    with `PRAGMA foreign_keys=ON`; the test engines turn it on since the
+    PR below (approved by the author, Nov 14, 2026).
   - **C. Alert-match filter:** catalog owns a `ListingScope` port in
     `catalog/ports.py` that gives the "listings an alert found" condition;
     alerts implements it over its ORM, and it is injected into
