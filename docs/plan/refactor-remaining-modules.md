@@ -32,7 +32,21 @@ characterization tests first, in their own PR, reviewed by the author.
 Found while doing the slices above; each one is proposed to the author
 before it starts.
 
-- `catalog/persistence/repositories.py` imports alerts' ORM models.
+- `catalog/persistence/repositories.py` imports alerts' ORM models, in
+  two places. Plan decided by the author (Nov 14, 2026), three PRs:
+  - **A. Characterization tests** (this PR): a mutation run over the
+    alert-match filter and the delete found two survivors (a deleted alert
+    still matching, and the user filter ignored); one e2e test each.
+    Clearing the notification log on delete was already covered.
+  - **B. Notification log on product delete:** a new migration gives
+    `notification_logs.product_id` `ON DELETE SET NULL`, and the
+    repository stops updating `NotificationLog`. SQLite only applies it
+    with `PRAGMA foreign_keys=ON`, which the test engines do not turn on
+    yet.
+  - **C. Alert-match filter:** catalog owns a `ListingScope` port in
+    `catalog/ports.py` that gives the "listings an alert found" condition;
+    alerts implements it over its ORM, and it is injected into
+    `ProductRepository` through a FastAPI dependency.
 - Alerts' use cases no longer import catalog. Still coupled: alerts'
   adapters and http layer use catalog (expected for adapters), catalog's
   controllers import alerts' use case types and `alerts/wiring.py`, and

@@ -81,6 +81,25 @@ def service_headers(client, test_db):
     return {"Authorization": f"Bearer {token}"}
 
 
+def other_customer(client, test_db):
+    """A second regular user and their auth headers."""
+    user = User(
+        username="othercustomer",
+        email="othercustomer@example.com",
+        hashed_password=pwd_context.hash("Other@1234"),
+        is_superuser=False,
+        is_active=True,
+    )
+    test_db.add(user)
+    test_db.commit()
+    test_db.refresh(user)
+    response = client.post(
+        "/auth/login", data={"username": "othercustomer", "password": "Other@1234"}
+    )
+    token = response.json()["data"]["attributes"]["access_token"]
+    return user, {"Authorization": f"Bearer {token}"}
+
+
 def add_listing(test_db, site, title, price):
     product = ProductModel(
         url=f"https://example.com/{title.lower().replace(' ', '-')}",
@@ -156,6 +175,46 @@ class TestProductsList:
         listed = titles(client.get("/products/", headers=auth_headers))
 
         assert listed == {"Python Fluente 2a edição"}
+
+    def test_customer_does_not_see_what_other_customers_alerts_found(
+        self,
+        client,
+        auth_headers,
+        sample_user,
+        sample_source_website,
+        test_db,
+        email_service,
+    ):
+        add_listing(test_db, sample_source_website, "Python Fluente", 120)
+        add_listing(test_db, sample_source_website, "Clean Code", 120)
+        create_alert(
+            client, auth_headers, sample_user, sample_source_website, "python fluente"
+        )
+        other, other_headers = other_customer(client, test_db)
+        create_alert(client, other_headers, other, sample_source_website, "clean code")
+
+        assert titles(client.get("/products/", headers=auth_headers)) == {
+            "Python Fluente"
+        }
+        assert titles(client.get("/products/", headers=other_headers)) == {"Clean Code"}
+
+    def test_deleted_alert_no_longer_shows_its_listings(
+        self,
+        client,
+        auth_headers,
+        sample_user,
+        sample_source_website,
+        test_db,
+        email_service,
+    ):
+        add_listing(test_db, sample_source_website, "Python Fluente", 120)
+        alert = create_alert(
+            client, auth_headers, sample_user, sample_source_website, "python fluente"
+        )
+        deleted = client.delete(f"/price-alerts/{alert['id']}", headers=auth_headers)
+        assert deleted.status_code == 204, deleted.text
+
+        assert titles(client.get("/products/", headers=auth_headers)) == set()
 
     def test_staff_see_the_whole_catalog(
         self, client, superuser_auth_headers, sample_source_website, test_db
