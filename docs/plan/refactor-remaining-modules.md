@@ -33,6 +33,7 @@ characterization tests first, in their own PR, reviewed by the author.
 | Alert-match filter through a catalog-owned port | #182 | Inappropriate Intimacy → Extract Interface (port owned by the client) + Move Function to the adapter | Step C. `ListingScope` in `catalog/ports.py` (returns an SQL condition, so the product list stays one query; `ports.py` now imports `sqlalchemy.ColumnElement`); `AlertListingScope` in `alerts/persistence/listing_scope.py` holds the old filter, moved unchanged; `ProductRepository(db, scope=None)` refuses the filter without a scope (1 new test, 2 cases, approved by the author Nov 16, 2026; red was "DID NOT RAISE"). `CatalogListings` passes its own scope; `GET /products` gets it from `catalog/http/listing_scope.py`, a registry filled by the new composition root `src/app/composition.py` (called in `src/main.py`). Catalog's persistence no longer imports alerts. The three new files joined the blocking mypy step |
 | Catalog's controllers ask alerts through a catalog-owned port | #183 | Inappropriate Intimacy → Extract Interface (port owned by the client) + adapter | `PriceAlertChecks` (`check_book`, `check_product`) in `catalog/ports.py` and `AlertEvaluation` in `catalog/entities.py`; `CatalogAlertChecks` in `alerts/wiring.py` runs alerts' evaluation use cases; `catalog/http/price_alert_checks.py` is a registry the composition root fills with a per-request factory (db session, e-mail service). `offer_controller` and `product_controller` no longer import alerts, so catalog imports nothing from alerts. Covered before and after: a no-op at either wiring point (then in the adapter) fails 2 book-alert and 6 product-alert e2e tests. No test changed |
 | Catalog's controllers wired through `catalog/wiring.py` | #184 | Inappropriate Intimacy → Move Function (construction to a factory module) | `catalog/wiring.py` builds the concrete repositories, the BrasilAPI client and the composed use cases (ingest offer, collection queue); the four controllers take catalog's ports (`ProductRepositoryInterface`, `PriceHistoryRepositoryInterface`, `BookCatalogReader`, `BookMetadataGateway`) and no longer import `catalog.persistence` or `catalog.adapters`. The controllers and `wiring.py` joined the blocking mypy step. Also, approved by the author (Nov 16, 2026): `test_evaluate_product_alerts.py` imports `get_email_service` from `src.app.infrastructure.services.email_service`, so `product_controller` drops its re-export. A mutation (`products()` dropping the scope) fails 5 e2e tests |
+| Alerts' controllers stop building catalog's repository | (this PR) | Inappropriate Intimacy → Move Function (to `catalog/wiring.py`); Remove Dead Code | `price_alert_controller` gets catalog's products from `catalog.wiring.products(db)`, typed as `ProductRepositoryInterface`. `notification_log_controller` had four unused dependency functions (price alert, product, user and store repositories); removed, with their imports of catalog's persistence and the old `src/app/infrastructure` repositories. A mutation (the dependency returning `None`) fails 6 e2e tests of `/products` and `/opportunities`. No test changed; `notification_log_controller` joined the blocking mypy step |
 
 ## Queue
 
@@ -62,8 +63,10 @@ before it starts.
   handlers, but gets the validator and opportunities through `Depends`; one
   way for all would let `dependency_overrides` swap any of them (found by the
   architecture-reviewer, low priority).
-- Alerts' controller imports catalog's presenter, schema, `ProductRepository`
-  and `SearchProductsByTermUseCase` for `/products` and `/opportunities`.
+- Alerts' controller uses catalog's presenter, schema and
+  `SearchProductsByTermUseCase` for `/products` and `/opportunities` (allowed
+  direction); since this PR it gets the repository from `catalog/wiring.py`
+  as `ProductRepositoryInterface` instead of building `ProductRepository`.
 - Done (#184): catalog controllers built concrete repositories and use
   cases themselves. Still open: `offer_controller` builds the old
   `SourceWebsiteRepository` (`src/app/infrastructure`), which belongs to
