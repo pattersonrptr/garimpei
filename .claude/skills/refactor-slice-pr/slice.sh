@@ -27,9 +27,26 @@ run_tests() {
   shift
   # Poetry finds the virtualenv on any OS (.venv/bin or .venv/Scripts, or
   # its own cache); POETRY can point to another launcher, e.g. "uvx poetry@2".
-  (cd "$ROOT/backend" && ${POETRY:-poetry} run python -m pytest "$@" -q 2>&1) \
+  # Without either, fall back to uvx (AGENTS.md, Verify).
+  local launcher=${POETRY:-}
+  if [ -z "$launcher" ]; then
+    if command -v poetry >/dev/null 2>&1; then
+      launcher=poetry
+    elif command -v uvx >/dev/null 2>&1; then
+      launcher="uvx poetry@2"
+    else
+      echo "Neither poetry nor uvx found; set POETRY." >&2
+      return 2
+    fi
+  fi
+  (cd "$ROOT/backend" && $launcher run python -m pytest "$@" -q 2>&1) \
     | summarize >"$OUT/$kind.txt"
   cat "$OUT/$kind.txt"
+  # No test totals means pytest never ran (wrong launcher, bad arguments).
+  if ! grep -Eq '[0-9]+ (failed|passed)' "$OUT/$kind.txt"; then
+    echo "ERROR: pytest did not run; check the launcher ($launcher) and arguments." >&2
+    return 2
+  fi
   if [ "$kind" = red ] && ! grep -q 'failed' "$OUT/red.txt"; then
     echo "WARNING: nothing failed; this is not a red run." >&2
     return 1
