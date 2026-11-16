@@ -175,3 +175,7 @@ skips = [
     "B101",  # assert_used - we use asserts in tests
     "B601",  # paramiko_calls - not applicable
 ]
+
+[tool.coverage.report]
+# Abstract method bodies have no behavior to test.
+exclude_also = ["raise NotImplementedError"]
