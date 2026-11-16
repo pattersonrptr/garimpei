@@ -11,22 +11,16 @@ from unittest.mock import Mock
 import pytest
 
 from src.app.accounts.entities import User as UserEntity
-from src.app.interfaces.http.schemas.user_schema import (
-    UserAttributesForCreation,
-    UserAttributesForUpdate,
-    UserCreateRequest,
-    UserResourceForCreation,
-    UserResourceForUpdate,
-    UserUpdateRequest,
-)
-from src.app.use_cases.user_use_cases import (
+from src.app.accounts.use_cases import (
     CreateUserUseCase,
     DeleteUserUseCase,
     GetAllUsersUseCase,
     GetUserByEmailUseCase,
     GetUserByIdUseCase,
     GetUserByUsernameUseCase,
+    NewUser,
     UpdateUserUseCase,
+    UserChanges,
 )
 
 # ============================================================================
@@ -58,33 +52,22 @@ def sample_user_entity():
 
 @pytest.fixture
 def sample_create_request():
-    """Sample user creation request."""
-    return UserCreateRequest(
-        data=UserResourceForCreation(
-            type="users",
-            attributes=UserAttributesForCreation(
-                username="newuser",
-                email="newuser@example.com",
-                password="password123",
-                is_active=True,
-                is_staff=False,
-                is_superuser=False,
-            ),
-        )
+    """Sample new user."""
+    return NewUser(
+        username="newuser",
+        email="newuser@example.com",
+        is_active=True,
+        is_staff=False,
+        is_superuser=False,
     )
 
 
 @pytest.fixture
 def sample_update_request():
-    """Sample user update request."""
-    return UserUpdateRequest(
-        data=UserResourceForUpdate(
-            type="users",
-            attributes=UserAttributesForUpdate(
-                username="updateduser",
-                email="updated@example.com",
-            ),
-        )
+    """Sample user changes."""
+    return UserChanges(
+        username="updateduser",
+        email="updated@example.com",
     )
 
 
@@ -132,15 +115,9 @@ class TestCreateUserUseCase:
         Then: Should use default values (is_active=True, is_staff=False, is_superuser=False)
         """
         # Given
-        create_request = UserCreateRequest(
-            data=UserResourceForCreation(
-                type="users",
-                attributes=UserAttributesForCreation(
-                    username="newuser",
-                    email="newuser@example.com",
-                    password="password123",
-                ),
-            )
+        create_request = NewUser(
+            username="newuser",
+            email="newuser@example.com",
         )
         mock_user_repo.create.return_value = UserEntity(
             id=1,
@@ -416,14 +393,9 @@ class TestUpdateUserUseCase:
         mock_user_repo.get_by_id.return_value = sample_user_entity
         mock_user_repo.update.return_value = sample_user_entity
 
-        update_request = UserUpdateRequest(
-            data=UserResourceForUpdate(
-                type="users",
-                attributes=UserAttributesForUpdate(
-                    username="onlynewusername",
-                    # email not provided
-                ),
-            )
+        update_request = UserChanges(
+            username="onlynewusername",
+            # email not provided
         )
         use_case = UpdateUserUseCase(mock_user_repo)
 
@@ -466,15 +438,10 @@ class TestUpdateUserUseCase:
         mock_user_repo.get_by_id.return_value = sample_user_entity
         mock_user_repo.update.return_value = sample_user_entity
 
-        update_request = UserUpdateRequest(
-            data=UserResourceForUpdate(
-                type="users",
-                attributes=UserAttributesForUpdate(
-                    is_active=False,
-                    is_staff=True,
-                    is_superuser=True,
-                ),
-            )
+        update_request = UserChanges(
+            is_active=False,
+            is_staff=True,
+            is_superuser=True,
         )
         use_case = UpdateUserUseCase(mock_user_repo)
 

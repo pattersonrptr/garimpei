@@ -1,9 +1,19 @@
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
+from src.app.accounts.adapters.passwords import pwd_context
 from src.app.accounts.entities import User as UserEntity
+from src.app.accounts.http.validators import UserValidator
 from src.app.accounts.persistence.repositories import UserRepository
-from src.app.domain.validators.user_validator import UserValidator
+from src.app.accounts.use_cases import (
+    CreateUserUseCase,
+    DeleteUserUseCase,
+    GetAllUsersUseCase,
+    GetUserByEmailUseCase,
+    GetUserByIdUseCase,
+    GetUserByUsernameUseCase,
+    UpdateUserUseCase,
+)
 from src.app.infrastructure.database_config import get_db
 from src.app.interfaces.http.presenters.user_presenter import UserPresenter
 from src.app.interfaces.http.schemas.user_schema import (
@@ -14,16 +24,6 @@ from src.app.interfaces.http.schemas.user_schema import (
     UserUpdateRequest,
 )
 from src.app.security.auth import get_current_staff_user, get_current_superuser
-from src.app.use_cases.user_use_cases import (
-    CreateUserUseCase,
-    DeleteUserUseCase,
-    GetAllUsersUseCase,
-    GetUserByEmailUseCase,
-    GetUserByIdUseCase,
-    GetUserByUsernameUseCase,
-    UpdateUserUseCase,
-    pwd_context,
-)
 from src.common.jsonapi import JsonApiErrorResponse
 from src.config.logging_config import get_logger
 
@@ -72,7 +72,7 @@ def create_user(
     attrs = user_in.data.attributes
     hashed_password = hash_password(attrs.password)
     use_case = CreateUserUseCase(user_repo)
-    created_user = use_case.execute(user_in, hashed_password)
+    created_user = use_case.execute(attrs.to_new_user(), hashed_password)
 
     logger.info(
         f"User created successfully: {created_user.username} (ID: {created_user.id})",
@@ -224,7 +224,7 @@ def update_user(
         return UserPresenter.handle_not_found(f"id {user_id}", "/data/id")
 
     update_uc = UpdateUserUseCase(user_repo)
-    updated_user = update_uc.execute(user_id, user_in)
+    updated_user = update_uc.execute(user_id, user_in.data.attributes.to_changes())
 
     logger.info(
         f"User updated successfully: {updated_user.username} (ID: {user_id})",
