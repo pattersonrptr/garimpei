@@ -11,6 +11,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from src.app.accounts.persistence.models import User
 from src.app.alerts.entities import KeywordSearch
 from src.app.alerts.persistence.keyword_searches import SearchConfigKeywordSearches
 from src.app.entities.search_config import SearchConfig as SearchConfigEntity
@@ -25,7 +26,6 @@ from src.app.infrastructure.database.models.search_config_source_website_model i
 from src.app.infrastructure.database.models.source_website_model import (
     SourceWebsite as SourceWebsiteModel,
 )
-from src.app.infrastructure.database.models.user_model import User
 from src.app.infrastructure.database_config import Base
 from src.app.infrastructure.repositories.search_config_repository import (
     SearchConfigRepository,

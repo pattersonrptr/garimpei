@@ -3,8 +3,8 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
+from src.app.accounts.persistence.repositories import UserRepository
 from src.app.infrastructure.database_config import get_db
-from src.app.infrastructure.repositories.user_repository import UserRepository
 from src.config import settings
 
 reusable_oauth2 = HTTPBearer()

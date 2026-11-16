@@ -1,10 +1,10 @@
 from passlib.context import CryptContext
 
 from src.app.accounts.entities import User as UserEntity
+from src.app.accounts.ports import UserRepositoryInterface
 from src.app.interfaces.http.schemas.user_schema import (
     UserCreateRequest,  # , UserUpdate
 )
-from src.app.interfaces.repositories.user_repository import UserRepositoryInterface
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

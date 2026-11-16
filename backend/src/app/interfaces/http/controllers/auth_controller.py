@@ -8,8 +8,8 @@ from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
 from src.app.accounts.entities import User as UserEntity
+from src.app.accounts.persistence.repositories import UserRepository
 from src.app.infrastructure.database_config import get_db
-from src.app.infrastructure.repositories.user_repository import UserRepository
 from src.app.interfaces.http.presenters.auth_presenter import AuthPresenter
 from src.app.interfaces.http.presenters.user_presenter import UserPresenter
 from src.app.interfaces.http.schemas.auth_schema import (

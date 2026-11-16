@@ -12,7 +12,7 @@ from datetime import UTC, datetime, timedelta
 
 from jose import jwt
 
-from src.app.infrastructure.database.models.user_model import User as UserModel
+from src.app.accounts.persistence.models import User as UserModel
 from src.config import settings
 
 

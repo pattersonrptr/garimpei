@@ -21,6 +21,7 @@ from sqlalchemy.pool import StaticPool
 os.environ["ENABLE_FILE_LOGGING"] = "false"
 
 # Import models first so they register with Base.metadata before create_all()
+from src.app.accounts.persistence.models import User  # noqa: F401
 from src.app.alerts.persistence.models import (
     NotificationLog as NotificationLogModel,  # noqa: F401
 )
@@ -54,7 +55,6 @@ from src.app.infrastructure.database.models.source_website_model import (  # noq
 from src.app.infrastructure.database.models.subscription_model import (
     Subscription as SubscriptionModel,  # noqa: F401
 )
-from src.app.infrastructure.database.models.user_model import User  # noqa: F401
 
 # Then import database config and app
 from src.app.infrastructure.database_config import Base, get_db
@@ -82,13 +82,13 @@ def test_db():
     with SQLAlchemy's Base.metadata before create_all() is called.
     """
     # Ensure all models are imported to register with Base.metadata
+    from src.app.accounts.persistence.models import User  # noqa: F401
     from src.app.catalog.persistence.models import (  # noqa: F401
         Product as ProductModel,
     )
     from src.app.infrastructure.database.models.source_website_model import (  # noqa: F401
         SourceWebsite as SourceWebsiteModel,
     )
-    from src.app.infrastructure.database.models.user_model import User  # noqa: F401
 
     engine = create_engine(
         "sqlite:///:memory:",

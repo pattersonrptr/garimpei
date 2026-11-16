@@ -96,7 +96,7 @@ class TestAuthLogin:
         """
         from passlib.context import CryptContext
 
-        from src.app.infrastructure.database.models.user_model import User
+        from src.app.accounts.persistence.models import User
 
         pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

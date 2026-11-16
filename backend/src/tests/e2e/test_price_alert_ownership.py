@@ -14,10 +14,10 @@ from unittest.mock import patch
 import pytest
 from passlib.context import CryptContext
 
+from src.app.accounts.persistence.models import User
 from src.app.infrastructure.database.models.search_execution_log_model import (
     SearchExecutionLog as SearchExecutionLogModel,
 )
-from src.app.infrastructure.database.models.user_model import User
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
