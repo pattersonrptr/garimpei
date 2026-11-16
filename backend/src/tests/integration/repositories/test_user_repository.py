@@ -10,8 +10,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
+from src.app.accounts.entities import User as UserEntity
 from src.app.alerts.persistence.models import PriceAlert
-from src.app.entities.user import User as UserEntity
 from src.app.infrastructure.database_config import Base
 from src.app.infrastructure.repositories.user_repository import UserRepository
 

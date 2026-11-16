@@ -10,7 +10,7 @@ from datetime import datetime
 import pytest
 from fastapi.responses import JSONResponse
 
-from src.app.entities.user import User as UserEntity
+from src.app.accounts.entities import User as UserEntity
 from src.app.interfaces.http.presenters.user_presenter import UserPresenter
 from src.common.jsonapi import JsonApiError
 
