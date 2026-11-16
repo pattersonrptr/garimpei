@@ -119,3 +119,30 @@ class TestUserUpdate:
         )
 
         assert response.status_code == 422
+
+
+def expires_in_minutes(token):
+    claims = jwt.get_unverified_claims(token)
+    return (claims["exp"] - datetime.now(UTC).timestamp()) / 60
+
+
+class TestTokenExpiry:
+    def test_a_login_token_lasts_the_configured_minutes(self, client, sample_user):
+        response = client.post(
+            "/auth/login", data={"username": "testuser", "password": "Test@1234"}
+        )
+
+        token = response.json()["data"]["attributes"]["access_token"]
+        minutes = expires_in_minutes(token)
+        assert minutes > settings.ACCESS_TOKEN_EXPIRE_MINUTES - 1
+        assert minutes <= settings.ACCESS_TOKEN_EXPIRE_MINUTES
+
+    def test_a_refreshed_token_lasts_the_configured_minutes(self, client, user_token):
+        response = client.post(
+            "/auth/refresh-token", headers={"Authorization": f"Bearer {user_token}"}
+        )
+
+        token = response.json()["data"]["attributes"]["access_token"]
+        minutes = expires_in_minutes(token)
+        assert minutes > settings.ACCESS_TOKEN_EXPIRE_MINUTES - 1
+        assert minutes <= settings.ACCESS_TOKEN_EXPIRE_MINUTES

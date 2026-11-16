@@ -10,6 +10,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
+from src.app.alerts.persistence.models import PriceAlert
 from src.app.entities.user import User as UserEntity
 from src.app.infrastructure.database_config import Base
 from src.app.infrastructure.repositories.user_repository import UserRepository
@@ -418,3 +419,19 @@ class TestUserRepositoryDelete:
 
         # Then
         assert result is False
+
+
+class TestUserRepositoryDeleteOwnerOfAnAlert:
+    """Characterization (Nov 16, 2026): a user who owns an alert is not deleted."""
+
+    def test_deleting_a_user_who_owns_an_alert_fails_and_keeps_the_user(
+        self, test_db, user_repository, sample_user_entity
+    ):
+        user = user_repository.create(sample_user_entity)
+        test_db.add(PriceAlert(search_term="duna", max_price=30.0, user_id=user.id))
+        test_db.commit()
+
+        with pytest.raises(IntegrityError):
+            user_repository.delete(user.id)
+
+        assert user_repository.get_by_id(user.id) is not None
