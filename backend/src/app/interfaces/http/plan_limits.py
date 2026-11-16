@@ -9,6 +9,7 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from src.app.accounts.entities import User as UserEntity
+from src.app.accounts.http.auth import get_current_active_user
 from src.app.alerts.persistence.repositories import (
     PriceAlertRepository,
 )
@@ -25,7 +26,6 @@ from src.app.infrastructure.repositories.plan_repository import PlanRepository
 from src.app.infrastructure.repositories.subscription_repository import (
     SubscriptionRepository,
 )
-from src.app.security.auth import get_current_active_user
 from src.common.jsonapi import JsonApiError
 
 

@@ -1,14 +1,15 @@
 from dataclasses import replace
-from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse, Response
 from fastapi.security import OAuth2PasswordRequestForm
-from jose import JWTError, jwt
+from jose import JWTError
 from sqlalchemy.orm import Session
 
 from src.app.accounts.adapters.passwords import pwd_context
 from src.app.accounts.entities import User as UserEntity
+from src.app.accounts.http.auth import get_current_active_user
+from src.app.accounts.http.tokens import create_access_token, decode_access_token
 from src.app.accounts.persistence.repositories import UserRepository
 from src.app.accounts.use_cases import (
     CreateUserUseCase,
@@ -28,7 +29,6 @@ from src.app.interfaces.http.schemas.user_schema import (
     UserCreateRequest,
     UserReadResponse,
 )
-from src.app.security.auth import get_current_active_user
 from src.common.jsonapi import JsonApiError, JsonApiErrorResponse
 from src.config import settings
 from src.config.logging_config import get_logger
@@ -43,21 +43,6 @@ def get_user_repository(db: Session = Depends(get_db)) -> UserRepository:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
-
-
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.now(UTC) + expires_delta
-    else:
-        expire = datetime.now(UTC) + timedelta(
-            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-        )
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(
-        to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
-    )
-    return encoded_jwt
 
 
 @auth_router.post("/login", response_model=TokenResponse)
@@ -100,17 +85,7 @@ async def login(
         )
         return AuthPresenter.handle_invalid_credentials()
 
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={
-            "sub": user.username,
-            "user_id": user.id,
-            "email": user.email,
-            "is_staff": user.is_staff,
-            "is_superuser": user.is_superuser,
-        },
-        expires_delta=access_token_expires,
-    )
+    access_token = create_access_token(user)
 
     logger.info(
         f"Login successful for user: {user.username} (ID: {user.id})",
@@ -157,7 +132,7 @@ async def verify_token(request: TokenValidationRequest):
     token = request.data.attributes.token
 
     try:
-        jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        decode_access_token(token)
         logger.debug("Token verification successful")
         return AuthPresenter.present_token_validation(
             is_valid=True, message="Token is valid"
@@ -182,17 +157,7 @@ async def refresh_token(current_user: UserEntity = Depends(get_current_active_us
         extra={"action": "refresh_token", "user_id": current_user.id},
     )
 
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    new_access_token = create_access_token(
-        data={
-            "sub": current_user.username,
-            "user_id": current_user.id,
-            "email": current_user.email,
-            "is_staff": current_user.is_staff,
-            "is_superuser": current_user.is_superuser,
-        },
-        expires_delta=access_token_expires,
-    )
+    new_access_token = create_access_token(current_user)
 
     return AuthPresenter.present_token(
         access_token=new_access_token,

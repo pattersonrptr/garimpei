@@ -4,6 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 
 from src.app.accounts.entities import User as UserEntity
+from src.app.accounts.http.auth import (
+    can_access_owned_resource,
+    get_current_active_user,
+    get_current_staff_user,
+    is_staff_or_superuser,
+)
 from src.app.alerts.persistence.repositories import (
     PriceAlertRepository,
 )
@@ -34,12 +40,6 @@ from src.app.interfaces.http.schemas.search_config_schema import (
     SearchConfigReadResponse,
     SearchConfigsCollectionResponse,
     SearchConfigUpdateRequest,
-)
-from src.app.security.auth import (
-    can_access_owned_resource,
-    get_current_active_user,
-    get_current_staff_user,
-    is_staff_or_superuser,
 )
 from src.app.use_cases.search_config_use_cases import (
     CreateSearchConfigUseCase,

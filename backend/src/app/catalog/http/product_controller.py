@@ -2,6 +2,11 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
 from src.app.accounts.entities import User as UserEntity
+from src.app.accounts.http.auth import (
+    get_current_active_user,
+    get_current_staff_user,
+    is_staff_or_superuser,
+)
 from src.app.catalog import wiring
 from src.app.catalog.entities import Product as ProductEntity
 from src.app.catalog.entities import ProductListFilters
@@ -29,11 +34,6 @@ from src.app.catalog.use_cases import (
     UpdateProductUseCase,
 )
 from src.app.infrastructure.database_config import get_db
-from src.app.security.auth import (
-    get_current_active_user,
-    get_current_staff_user,
-    is_staff_or_superuser,
-)
 from src.common.jsonapi import JsonApiError, JsonApiErrorResponse
 from src.config.logging_config import get_logger
 

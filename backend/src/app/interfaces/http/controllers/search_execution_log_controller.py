@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query, status
 
 from src.app.accounts.entities import User as UserEntity
+from src.app.accounts.http.auth import get_current_staff_user
 from src.app.entities.search_execution_log import (
     SearchExecutionLog as SearchExecutionLogEntity,
 )
@@ -17,7 +18,6 @@ from src.app.interfaces.http.schemas.search_execution_log_schema import (
     SearchExecutionLogsCollectionResponse,
     SearchExecutionLogUpdateRequest,
 )
-from src.app.security.auth import get_current_staff_user
 from src.app.use_cases.search_execution_log_use_cases import (
     CreateSearchExecutionLogUseCase,
     GetSearchExecutionLogByIdUseCase,
