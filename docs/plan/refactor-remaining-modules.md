@@ -23,7 +23,8 @@ characterization tests first, in their own PR, reviewed by the author.
 | NotifyAlertOpportunities and EvaluateBookAlerts through Listings | #167 | Inappropriate Intimacy → depend on the client-owned port | One PR because the first builds the second over the same repository. `opportunities_for_alert` and `available_offers_for_book` replace catalog's `get_all` + `ProductListFilters`; `OpportunityNotifier.notify` takes only `Listing`; `alerts/wiring.py` no longer imports catalog. Test diff (mock setup only) approved by the author; book alerts are covered by 12 e2e tests, unchanged |
 | Characterization tests for alert products | #168 | — | 4 e2e tests for `GET /price-alerts/{id}/products` (max price on and off, cheapest first, pagination, 404); filter off had no test above the unit level. A mutation (always filter) fails 2. Approved by the author |
 | Products by alert searched in catalog | #169 | Feature Envy → Move Function | `GetProductsByPriceAlertUseCase` only searched catalog's products for a catalog presenter. The alerts controller already loads the alert to check its owner, so it now calls catalog's new `SearchProductsByTermUseCase` with the alert's term, stores and max price. The 4 unit tests of the old use case were removed (covered by #168 and 1 new catalog test, approved by the author; red on an assertion). Alerts' use cases no longer import catalog |
-| Port parameters named after the ports | (this PR) | Mysterious Name → Rename Variable | In alerts' use cases `product_repo`, `user_repo`, `source_website_repo`, `email_service` and `search_config_repo` held alerts' ports; they are now `listings`, `owners`, `stores`, `mailer` and `searches` (parameters and attributes), plus `PriceAlertValidator`'s `stores` (found by the architecture-reviewer; its tests pass it by position). Test diff (the 4 keyword names in two `_build_use_case` helpers) approved by the author; red was a `TypeError` (unexpected keyword), as expected for a rename |
+| Port parameters named after the ports | #171 | Mysterious Name → Rename Variable | In alerts' use cases `product_repo`, `user_repo`, `source_website_repo`, `email_service` and `search_config_repo` held alerts' ports; they are now `listings`, `owners`, `stores`, `mailer` and `searches` (parameters and attributes), plus `PriceAlertValidator`'s `stores` (found by the architecture-reviewer; its tests pass it by position). Test diff (the 4 keyword names in two `_build_use_case` helpers) approved by the author; red was a `TypeError` (unexpected keyword), as expected for a rename |
+| Characterization tests for alert notify | (this PR) | — | Before moving the alerts controller's wiring to `alerts/wiring.py`: replacing any of its adapters with `None` failed 3 to 39 tests at five of the six wiring points, but at `POST /price-alerts/{id}/notify` all 912 still passed (its only e2e test checked the answer was not 403). 4 e2e tests pin the e-mail about the cheapest listing under the max price (owner, title, price, URL, store name), skip without a match, the rate limit and 404. Replacing any of its five adapters with `None` fails 2 or 3 of them. Approved by the author (Nov 16, 2026) |
 
 ## Queue
 
@@ -42,8 +43,6 @@ before it starts.
   that wiring belongs in FastAPI dependencies or a composition root.
 - Validator tests live in `tests/unit/domain/validators/` but the code is
   now http-layer.
-- `POST /price-alerts/{id}/notify` has one e2e test, which only checks the
-  answer is not 403; it catches a broken wiring (500) but not a wrong match.
 - Checks that need a repository (unique URL, product exists) may belong in
   the use cases rather than in request validation.
 - mypy: 271 errors in 44 files outside the blocking list (#153); add paths
