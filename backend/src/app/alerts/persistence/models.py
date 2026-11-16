@@ -88,7 +88,10 @@ class NotificationLog(Base):
     id = Column(Integer, primary_key=True)
     price_alert_id = Column(Integer, ForeignKey("price_alerts.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    product_id = Column(Integer, ForeignKey("products.id"), nullable=True)
+    # Sent e-mails are history: deleting the listing keeps the log, without it.
+    product_id = Column(
+        Integer, ForeignKey("products.id", ondelete="SET NULL"), nullable=True
+    )
     email_to = Column(String(255), nullable=False)
     subject = Column(String(500), nullable=False)
     status = Column(String(20), default="sent", nullable=False)
