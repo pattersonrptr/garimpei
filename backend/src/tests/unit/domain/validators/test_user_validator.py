@@ -5,8 +5,8 @@ from unittest.mock import Mock
 import pytest
 from pydantic import ValidationError
 
+from src.app.accounts.entities import User as UserEntity
 from src.app.domain.validators.user_validator import UserValidator
-from src.app.entities.user import User as UserEntity
 from src.app.interfaces.http.schemas.user_schema import (
     UserAttributesForCreation,
     UserAttributesForUpdate,

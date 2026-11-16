@@ -8,6 +8,7 @@ database repositories and the BrasilAPI metadata adapter into the use cases.
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
+from src.app.accounts.entities import User as UserEntity
 from src.app.catalog import wiring
 from src.app.catalog.http.offer_schema import OfferIngestRequest
 from src.app.catalog.http.price_alert_checks import get_price_alert_checks
@@ -25,7 +26,6 @@ from src.app.catalog.use_cases import (
     ListCollectionQueueUseCase,
     OfferInput,
 )
-from src.app.entities.user import User as UserEntity
 from src.app.infrastructure.database_config import get_db
 from src.app.infrastructure.repositories.source_website_repository import (
     SourceWebsiteRepository,

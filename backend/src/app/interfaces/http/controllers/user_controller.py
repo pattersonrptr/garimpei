@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
+from src.app.accounts.entities import User as UserEntity
 from src.app.domain.validators.user_validator import UserValidator
-from src.app.entities.user import User as UserEntity
 from src.app.infrastructure.database_config import get_db
 from src.app.infrastructure.repositories.user_repository import UserRepository
 from src.app.interfaces.http.presenters.user_presenter import UserPresenter

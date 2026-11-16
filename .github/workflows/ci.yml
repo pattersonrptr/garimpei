@@ -82,7 +82,8 @@ jobs:
             src/app/composition.py \
             src/app/alerts/wiring.py \
             src/app/alerts/http/price_alert_controller.py \
-            src/app/alerts/http/notification_log_controller.py
+            src/app/alerts/http/notification_log_controller.py \
+            src/app/accounts/entities.py
 
       - name: Type check with mypy (whole backend, report only)
         run: poetry run mypy src/

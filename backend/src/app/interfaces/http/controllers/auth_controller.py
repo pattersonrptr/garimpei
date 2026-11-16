@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends
@@ -6,7 +7,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
-from src.app.entities.user import User as UserEntity
+from src.app.accounts.entities import User as UserEntity
 from src.app.infrastructure.database_config import get_db
 from src.app.infrastructure.repositories.user_repository import UserRepository
 from src.app.interfaces.http.presenters.auth_presenter import AuthPresenter
@@ -325,9 +326,7 @@ async def change_password(
 
     user_repo.update(
         user.id,
-        user.model_copy(
-            update={"hashed_password": pwd_context.hash(attrs.new_password)}
-        ),
+        replace(user, hashed_password=pwd_context.hash(attrs.new_password)),
     )
     logger.info(
         "Password changed",

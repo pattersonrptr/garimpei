@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, Query
 
+from src.app.accounts.entities import User as UserEntity
 from src.app.domain.validators.source_website_validator import SourceWebsiteValidator
 from src.app.entities.source_website import SourceWebsite as SourceWebsiteEntity
-from src.app.entities.user import User as UserEntity
 from src.app.infrastructure.database_config import get_db
 from src.app.infrastructure.repositories.source_website_repository import (
     SourceWebsiteRepository,

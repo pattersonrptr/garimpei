@@ -8,6 +8,7 @@ This module is the composition root for that read.
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
+from src.app.accounts.entities import User as UserEntity
 from src.app.alerts.entities import MyAlert
 from src.app.alerts.persistence.product_snapshots import CatalogProductSnapshots
 from src.app.alerts.persistence.repositories import (
@@ -15,7 +16,6 @@ from src.app.alerts.persistence.repositories import (
     PriceAlertRepository,
 )
 from src.app.alerts.use_cases import ListMyAlertsUseCase
-from src.app.entities.user import User as UserEntity
 from src.app.infrastructure.database_config import get_db
 from src.app.security.auth import get_current_active_user
 

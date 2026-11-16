@@ -4,12 +4,12 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, not_
 from sqlalchemy.orm import Session
 
+from src.app.accounts.entities import User as UserEntity
 from src.app.alerts.persistence.models import (
     PriceAlert,
     price_alert_source_website,
 )
 from src.app.catalog.persistence.models import Product
-from src.app.entities.user import User as UserEntity
 from src.app.infrastructure.database.models.search_execution_log_model import (
     SearchExecutionLog,
 )
