@@ -86,7 +86,10 @@ jobs:
             src/app/accounts/entities.py \
             src/app/accounts/ports.py \
             src/app/accounts/persistence/models.py \
-            src/app/accounts/persistence/repositories.py
+            src/app/accounts/persistence/repositories.py \
+            src/app/accounts/use_cases.py \
+            src/app/accounts/http/validators.py \
+            src/app/accounts/adapters/passwords.py
 
       - name: Type check with mypy (whole backend, report only)
         run: poetry run mypy src/

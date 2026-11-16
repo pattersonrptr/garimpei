@@ -7,8 +7,14 @@ from fastapi.security import OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
+from src.app.accounts.adapters.passwords import pwd_context
 from src.app.accounts.entities import User as UserEntity
 from src.app.accounts.persistence.repositories import UserRepository
+from src.app.accounts.use_cases import (
+    CreateUserUseCase,
+    GetUserByEmailUseCase,
+    GetUserByUsernameUseCase,
+)
 from src.app.infrastructure.database_config import get_db
 from src.app.interfaces.http.presenters.auth_presenter import AuthPresenter
 from src.app.interfaces.http.presenters.user_presenter import UserPresenter
@@ -23,12 +29,6 @@ from src.app.interfaces.http.schemas.user_schema import (
     UserReadResponse,
 )
 from src.app.security.auth import get_current_active_user
-from src.app.use_cases.user_use_cases import (
-    CreateUserUseCase,
-    GetUserByEmailUseCase,
-    GetUserByUsernameUseCase,
-    pwd_context,
-)
 from src.common.jsonapi import JsonApiError, JsonApiErrorResponse
 from src.config import settings
 from src.config.logging_config import get_logger
@@ -270,7 +270,9 @@ async def register(
 
     hashed_password = pwd_context.hash(user_in.data.attributes.password)
     use_case = CreateUserUseCase(user_repo)
-    created_user = use_case.execute(user_in, hashed_password)
+    created_user = use_case.execute(
+        user_in.data.attributes.to_new_user(), hashed_password
+    )
 
     logger.info(
         f"User registered successfully: {created_user.username} (ID: {created_user.id})",

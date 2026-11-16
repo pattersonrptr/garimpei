@@ -1,37 +1,43 @@
-from passlib.context import CryptContext
+from dataclasses import dataclass
 
 from src.app.accounts.entities import User as UserEntity
 from src.app.accounts.ports import UserRepositoryInterface
-from src.app.interfaces.http.schemas.user_schema import (
-    UserCreateRequest,  # , UserUpdate
-)
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+@dataclass(frozen=True, kw_only=True)
+class NewUser:
+    """What it takes to create an account (the password comes hashed apart)."""
+
+    username: str
+    email: str
+    is_active: bool = True
+    is_staff: bool = False
+    is_superuser: bool = False
+
+
+@dataclass(frozen=True, kw_only=True)
+class UserChanges:
+    """Fields to change on an account; None keeps the current value."""
+
+    username: str | None = None
+    email: str | None = None
+    is_active: bool | None = None
+    is_staff: bool | None = None
+    is_superuser: bool | None = None
 
 
 class CreateUserUseCase:
     def __init__(self, user_repo: UserRepositoryInterface):
         self.user_repo = user_repo
 
-    def execute(self, user_data: UserCreateRequest, hashed_password: str) -> UserEntity:
-        attrs = user_data.data.attributes
-        # existing_user_by_username = self.user_repo.get_by_username(user_data.username)
-        # if existing_user_by_username:
-        #     raise ValueError("Username already registered")
-
-        # existing_user_by_email = self.user_repo.get_by_email(user_data.email)
-        # if existing_user_by_email:
-        #     raise ValueError("Email already registered")
-
+    def execute(self, new_user: NewUser, hashed_password: str) -> UserEntity:
         new_user_entity = UserEntity(
-            username=attrs.username,
-            email=attrs.email,
+            username=new_user.username,
+            email=new_user.email,
             hashed_password=hashed_password,
-            is_active=attrs.is_active if attrs.is_active is not None else True,
-            is_staff=attrs.is_staff if attrs.is_staff is not None else False,
-            is_superuser=attrs.is_superuser
-            if attrs.is_superuser is not None
-            else False,
+            is_active=new_user.is_active,
+            is_staff=new_user.is_staff,
+            is_superuser=new_user.is_superuser,
         )
         created_user = self.user_repo.create(new_user_entity)
         return created_user
@@ -73,7 +79,7 @@ class UpdateUserUseCase:
     def __init__(self, user_repo: UserRepositoryInterface):
         self.user_repo = user_repo
 
-    def execute(self, user_id: int, user_data) -> UserEntity | None:
+    def execute(self, user_id: int, attrs: UserChanges) -> UserEntity | None:
         """
         Updates a user with the provided data.
         Only non-None fields are updated.
@@ -81,8 +87,6 @@ class UpdateUserUseCase:
         existing_user = self.user_repo.get_by_id(user_id)
         if not existing_user:
             return None
-
-        attrs = user_data.data.attributes
 
         # Update only provided fields (non-None)
         if attrs.username is not None:
