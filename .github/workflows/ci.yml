@@ -74,6 +74,11 @@ jobs:
             src/app/catalog/http/listing_scope.py \
             src/app/catalog/http/price_alert_checks.py \
             src/app/catalog/ports.py \
+            src/app/catalog/wiring.py \
+            src/app/catalog/http/book_controller.py \
+            src/app/catalog/http/offer_controller.py \
+            src/app/catalog/http/price_history_controller.py \
+            src/app/catalog/http/product_controller.py \
             src/app/composition.py \
             src/app/alerts/wiring.py \
             src/app/alerts/http/price_alert_controller.py

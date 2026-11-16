@@ -8,16 +8,11 @@ database repositories and the BrasilAPI metadata adapter into the use cases.
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
-from src.app.catalog.adapters.brasilapi_books import BrasilApiBookMetadata
+from src.app.catalog import wiring
 from src.app.catalog.http.offer_schema import OfferIngestRequest
 from src.app.catalog.http.price_alert_checks import get_price_alert_checks
 from src.app.catalog.http.product_presenter import ProductPresenter
 from src.app.catalog.isbn import InvalidIsbnError
-from src.app.catalog.persistence.repositories import (
-    CanonicalProductRepository,
-    PriceHistoryRepository,
-    ProductRepository,
-)
 from src.app.catalog.ports import (
     BookMetadataGateway,
     BookMetadataUnavailableError,
@@ -25,7 +20,6 @@ from src.app.catalog.ports import (
 )
 from src.app.catalog.use_cases import (
     BookNotFoundError,
-    GetOrCreateBookByIsbnUseCase,
     IngestOfferUseCase,
     InvalidOfferError,
     ListCollectionQueueUseCase,
@@ -47,18 +41,14 @@ logger = get_logger(__name__)
 
 def get_book_metadata_gateway() -> BookMetadataGateway:
     """The book metadata source (overridden in tests)."""
-    return BrasilApiBookMetadata()
+    return wiring.book_metadata()
 
 
 def get_ingest_offer_use_case(
     db=Depends(get_db),
     metadata: BookMetadataGateway = Depends(get_book_metadata_gateway),
 ) -> IngestOfferUseCase:
-    return IngestOfferUseCase(
-        get_book=GetOrCreateBookByIsbnUseCase(CanonicalProductRepository(db), metadata),
-        offers=ProductRepository(db),
-        prices=PriceHistoryRepository(db),
-    )
+    return wiring.ingest_offer(db, metadata)
 
 
 def get_source_website_repository(db=Depends(get_db)) -> SourceWebsiteRepository:
@@ -66,7 +56,7 @@ def get_source_website_repository(db=Depends(get_db)) -> SourceWebsiteRepository
 
 
 def get_collection_queue_use_case(db=Depends(get_db)) -> ListCollectionQueueUseCase:
-    return ListCollectionQueueUseCase(CanonicalProductRepository(db))
+    return wiring.collection_queue(db)
 
 
 def _error(status: int, code: str, title: str, detail: str, pointer: str):
