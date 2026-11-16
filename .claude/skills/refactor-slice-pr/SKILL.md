@@ -59,5 +59,7 @@ bash .claude/skills/refactor-slice-pr/slice.sh merge <pr>
 ```
 
 It waits for CI and merges only when every check passes; when one is red,
-fix the cause first. Then update the memory (`xp-tdd-adoption.md` and its
+fix the cause first. It refuses to start with uncommitted changes, and when
+the merge itself fails (e.g. the branch is behind `main`: run
+`gh pr update-branch <pr>`) it exits 1 and stays on the branch. Then update the memory (`xp-tdd-adoption.md` and its
 line in `MEMORY.md`) with the PR number and the next step.
