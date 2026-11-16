@@ -34,6 +34,7 @@ characterization tests first, in their own PR, reviewed by the author.
 | Catalog's controllers ask alerts through a catalog-owned port | #183 | Inappropriate Intimacy → Extract Interface (port owned by the client) + adapter | `PriceAlertChecks` (`check_book`, `check_product`) in `catalog/ports.py` and `AlertEvaluation` in `catalog/entities.py`; `CatalogAlertChecks` in `alerts/wiring.py` runs alerts' evaluation use cases; `catalog/http/price_alert_checks.py` is a registry the composition root fills with a per-request factory (db session, e-mail service). `offer_controller` and `product_controller` no longer import alerts, so catalog imports nothing from alerts. Covered before and after: a no-op at either wiring point (then in the adapter) fails 2 book-alert and 6 product-alert e2e tests. No test changed |
 | Catalog's controllers wired through `catalog/wiring.py` | #184 | Inappropriate Intimacy → Move Function (construction to a factory module) | `catalog/wiring.py` builds the concrete repositories, the BrasilAPI client and the composed use cases (ingest offer, collection queue); the four controllers take catalog's ports (`ProductRepositoryInterface`, `PriceHistoryRepositoryInterface`, `BookCatalogReader`, `BookMetadataGateway`) and no longer import `catalog.persistence` or `catalog.adapters`. The controllers and `wiring.py` joined the blocking mypy step. Also, approved by the author (Nov 16, 2026): `test_evaluate_product_alerts.py` imports `get_email_service` from `src.app.infrastructure.services.email_service`, so `product_controller` drops its re-export. A mutation (`products()` dropping the scope) fails 5 e2e tests |
 | Alerts' controllers stop building catalog's repository | #186 | Inappropriate Intimacy → Move Function (to `catalog/wiring.py`); Remove Dead Code | `price_alert_controller` gets catalog's products from `catalog.wiring.products(db)`, typed as `ProductRepositoryInterface`. `notification_log_controller` had four unused dependency functions (price alert, product, user and store repositories); removed, with their imports of catalog's persistence and the old `src/app/infrastructure` repositories. A mutation (the dependency returning `None`) fails 6 e2e tests of `/products` and `/opportunities`. No test changed; `notification_log_controller` joined the blocking mypy step |
+| Characterization tests for accounts | #187 | — | Before users and login move into an `accounts` module (decided by the author, Nov 16, 2026: users, sign-up, login/tokens and the logged-in user; plans and subscriptions later in `billing`; `User` becomes a pure dataclass and the e-mail format is checked only in the request schemas). 9 e2e tests in `test_accounts_characterization.py`: public sign-up (regular user, staff rights ignored, taken username and e-mail, invalid e-mail), the logged-in user (token without a username 401, deleted user 404, deactivated user 400, today's codes) and an invalid e-mail on update (422). Three mutations (sign-up keeping staff rights, 404 → 401, inactive user let through) each fail one test. Approved by the author (Nov 16, 2026) |
 
 ## Queue
 
@@ -65,7 +66,7 @@ before it starts.
   architecture-reviewer, low priority).
 - Alerts' controller uses catalog's presenter, schema and
   `SearchProductsByTermUseCase` for `/products` and `/opportunities` (allowed
-  direction); since this PR it gets the repository from `catalog/wiring.py`
+  direction); since #186 it gets the repository from `catalog/wiring.py`
   as `ProductRepositoryInterface` instead of building `ProductRepository`.
 - Done (#184): catalog controllers built concrete repositories and use
   cases themselves. Still open: `offer_controller` builds the old
@@ -76,5 +77,11 @@ before it starts.
   now http-layer.
 - Checks that need a repository (unique URL, product exists) may belong in
   the use cases rather than in request validation.
+- Accounts, still uncovered after the characterization PR (the author asked
+  for tests later, Nov 16, 2026): `create_access_token` with an explicit
+  expiry, the rollback when deleting a user fails, and the abstract
+  `UserRepositoryInterface`. Also a question for the author: a deleted user's
+  token answers 404 and a deactivated user 400; 401 and 403 would fit better
+  (a fix, tests first).
 - mypy: 271 errors in 44 files outside the blocking list (#153); add paths
   to the blocking step as each area is fixed.
