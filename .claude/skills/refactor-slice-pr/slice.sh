@@ -58,14 +58,24 @@ case "${1:-}" in
     ;;
   merge)
     pr=${2:?pr number required}
+    # Switching to main afterwards would carry uncommitted changes along.
+    if [ -n "$(git -C "$ROOT" status --porcelain --untracked-files=no)" ]; then
+      git -C "$ROOT" status --short --untracked-files=no
+      echo "Not merging: commit or stash these changes first." >&2
+      exit 1
+    fi
     gh pr checks "$pr" --watch --interval 30 >/dev/null 2>&1
     if checks "$pr" | grep -vq ': pass$'; then
       checks "$pr"
       echo "Not merging: some check is not green." >&2
       exit 1
     fi
-    gh pr merge "$pr" --squash --delete-branch
-    git -C "$ROOT" switch -q main && git -C "$ROOT" pull -q
+    # Fails, for example, when the branch is behind main (gh pr update-branch).
+    if ! gh pr merge "$pr" --squash --delete-branch; then
+      echo "Merge failed; staying on $(git -C "$ROOT" branch --show-current)." >&2
+      exit 1
+    fi
+    git -C "$ROOT" switch -q main && git -C "$ROOT" pull -q || exit 1
     git -C "$ROOT" log --oneline -1
     ;;
   *)
