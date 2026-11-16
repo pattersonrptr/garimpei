@@ -44,8 +44,8 @@ to another port), say so in the PR. Then run the module's full checks from
 
 - Run the `architecture-reviewer` subagent on `git diff main...HEAD`; fix
   what is in scope, queue the rest.
-- Phase doc: add a row to *Done* (PR column `(this PR)` until merged) and
-  update the *Queue*. Use a Python script with `newline="\n"` (or Edit);
+- Phase doc: add a row to *Done* (PR column `(this PR)`; `merge` writes the
+  number in) and update the *Queue*. Use a Python script with `newline="\n"` (or Edit);
   keep each file's line endings.
 - PR body from `.github/pull_request_template.md`: *What and why*, *Tests
   first* (approval date, red and green from `$OUT/red.txt` and
@@ -61,5 +61,13 @@ bash .claude/skills/refactor-slice-pr/slice.sh merge <pr>
 It waits for CI and merges only when every check passes; when one is red,
 fix the cause first. It refuses to start with uncommitted changes, and when
 the merge itself fails (e.g. the branch is behind `main`: run
-`gh pr update-branch <pr>`) it exits 1 and stays on the branch. Then update the memory (`xp-tdd-adoption.md` and its
-line in `MEMORY.md`) with the PR number and the next step.
+`gh pr update-branch <pr>`) it exits 1 and stays on the branch.
+
+Run it from the PR's branch: before waiting for CI it replaces `(this PR)`
+in `docs/plan/*.md` with `#<pr>`, commits and pushes (from another branch it
+only warns). After the merge it restarts the local `web` container, when it
+is running, and waits for the API to answer. Do not start other branch work
+while it runs: it switches to `main` at the end.
+
+Then update the memory (`xp-tdd-adoption.md` and its line in `MEMORY.md`)
+with the PR number and the next step.

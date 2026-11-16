@@ -57,6 +57,52 @@ run_tests() {
   echo "saved: $OUT/$kind.txt"
 }
 
+# The phase docs say "(this PR)" until the number is known; on the PR's own
+# branch, write the number in, commit and push (CI then runs on that commit).
+number_phase_docs() {
+  local pr=$1 head files
+  head=$(gh pr view "$pr" --json headRefName -q .headRefName) || return 1
+  files=$(git -C "$ROOT" grep -l '(this PR)' -- 'docs/plan/*.md' || true)
+  [ -n "$files" ] || return 0
+  if [ "$(git -C "$ROOT" branch --show-current)" != "$head" ]; then
+    echo "NOTE: not on $head; left '(this PR)' in: $files" >&2
+    return 0
+  fi
+  for f in $files; do
+    sed -i "s/(this PR)/#$pr/g" "$ROOT/$f"
+  done
+  (cd "$ROOT" && git add -- $files &&
+    git commit -q -m "docs(plan): number #$pr in the phase doc" &&
+    git push -q) || return 1
+  echo "Phase doc: (this PR) -> #$pr ($files)"
+  # Wait until GitHub lists checks for the new commit before watching them.
+  local sha
+  sha=$(git -C "$ROOT" rev-parse HEAD)
+  for _ in $(seq 1 24); do
+    [ "$(gh pr view "$pr" --json headRefOid -q .headRefOid)" = "$sha" ] &&
+      [ -n "$(gh pr view "$pr" --json statusCheckRollup -q '.statusCheckRollup[]')" ] &&
+      return 0
+    sleep 5
+  done
+  echo "WARNING: no checks listed for $sha after 2 min." >&2
+}
+
+# Windows bind mounts miss uvicorn's reload: restart the local API so it runs
+# the merged code, and wait until it answers. Skipped when it is not running.
+restart_api() {
+  docker compose -f "$ROOT/docker-compose.yml" ps --status running --services 2>/dev/null |
+    grep -qx web || { echo "Local API not running; no restart."; return 0; }
+  docker compose -f "$ROOT/docker-compose.yml" restart web >/dev/null 2>&1
+  for _ in $(seq 1 45); do
+    if [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/docs)" = 200 ]; then
+      echo "Local API restarted and answering."
+      return 0
+    fi
+    sleep 2
+  done
+  echo "WARNING: local API did not answer within 90 s after the restart." >&2
+}
+
 checks() {
   gh pr checks "$@" 2>&1 | awk -F'\t' '{print $1 ": " $2}'
 }
@@ -81,6 +127,7 @@ case "${1:-}" in
       echo "Not merging: commit or stash these changes first." >&2
       exit 1
     fi
+    number_phase_docs "$pr" || exit 1
     gh pr checks "$pr" --watch --interval 30 >/dev/null 2>&1
     if checks "$pr" | grep -vq ': pass$'; then
       checks "$pr"
@@ -94,6 +141,7 @@ case "${1:-}" in
     fi
     git -C "$ROOT" switch -q main && git -C "$ROOT" pull -q || exit 1
     git -C "$ROOT" log --oneline -1
+    restart_api
     ;;
   *)
     sed -n '2,11p' "$0"
