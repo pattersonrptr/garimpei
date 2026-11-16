@@ -21,9 +21,10 @@ from src.app.alerts.use_cases import (
     ListPriceAlertsUseCase,
     NotifyAlertOpportunitiesUseCase,
 )
+from src.app.catalog import wiring as catalog_wiring
 from src.app.catalog.http.product_presenter import ProductPresenter
 from src.app.catalog.http.product_schema import ProductsCollectionResponse
-from src.app.catalog.persistence.repositories import ProductRepository
+from src.app.catalog.ports import ProductRepositoryInterface
 from src.app.catalog.use_cases import SearchProductsByTermUseCase
 from src.app.domain.plan_limits import PlanLimits
 from src.app.entities.user import User as UserEntity
@@ -57,9 +58,9 @@ def get_price_alert_repository(db=Depends(get_db)) -> PriceAlertRepository:
     return PriceAlertRepository(db)
 
 
-def get_product_repository(db=Depends(get_db)) -> ProductRepository:
-    """Dependency injection for ProductRepository."""
-    return ProductRepository(db)
+def get_product_repository(db=Depends(get_db)) -> ProductRepositoryInterface:
+    """Catalog's products, for the listings an alert found."""
+    return catalog_wiring.products(db)
 
 
 def get_alert_opportunities_use_case(
@@ -284,7 +285,7 @@ def get_products_by_price_alert(
         description="When true, only return products at or below the alert's max_price",
     ),
     price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
-    product_repo: ProductRepository = Depends(get_product_repository),
+    product_repo: ProductRepositoryInterface = Depends(get_product_repository),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
@@ -330,7 +331,7 @@ def get_opportunities_by_price_alert(
     limit: int = Query(default=20, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
     price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
-    product_repo: ProductRepository = Depends(get_product_repository),
+    product_repo: ProductRepositoryInterface = Depends(get_product_repository),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """

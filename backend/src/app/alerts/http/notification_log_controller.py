@@ -9,7 +9,6 @@ from src.app.alerts.http.notification_log_schema import (
 )
 from src.app.alerts.persistence.repositories import (
     NotificationLogRepository,
-    PriceAlertRepository,
 )
 from src.app.alerts.use_cases import (
     DeleteNotificationLogUseCase,
@@ -17,13 +16,8 @@ from src.app.alerts.use_cases import (
     GetNotificationLogsByPriceAlertIdUseCase,
     ListNotificationLogsUseCase,
 )
-from src.app.catalog.persistence.repositories import ProductRepository
 from src.app.entities.user import User as UserEntity
 from src.app.infrastructure.database_config import get_db
-from src.app.infrastructure.repositories.source_website_repository import (
-    SourceWebsiteRepository,
-)
-from src.app.infrastructure.repositories.user_repository import UserRepository
 from src.app.security.auth import get_current_staff_user
 from src.config.logging_config import get_logger
 
@@ -42,22 +36,6 @@ def get_notification_log_repository(
 ) -> NotificationLogRepository:
     """Dependency injection for NotificationLogRepository."""
     return NotificationLogRepository(db)
-
-
-def get_price_alert_repository(db=Depends(get_db)) -> PriceAlertRepository:
-    return PriceAlertRepository(db)
-
-
-def get_product_repository(db=Depends(get_db)) -> ProductRepository:
-    return ProductRepository(db)
-
-
-def get_user_repository(db=Depends(get_db)) -> UserRepository:
-    return UserRepository(db)
-
-
-def get_source_website_repository(db=Depends(get_db)) -> SourceWebsiteRepository:
-    return SourceWebsiteRepository(db)
 
 
 # ---------------------------------------------------------------------------
