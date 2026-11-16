@@ -8,10 +8,9 @@ database repositories and the BrasilAPI metadata adapter into the use cases.
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
-from src.app.alerts import wiring as alerts_wiring
-from src.app.alerts.use_cases import EvaluateBookAlertsUseCase
 from src.app.catalog.adapters.brasilapi_books import BrasilApiBookMetadata
 from src.app.catalog.http.offer_schema import OfferIngestRequest
+from src.app.catalog.http.price_alert_checks import get_price_alert_checks
 from src.app.catalog.http.product_presenter import ProductPresenter
 from src.app.catalog.isbn import InvalidIsbnError
 from src.app.catalog.persistence.repositories import (
@@ -19,7 +18,11 @@ from src.app.catalog.persistence.repositories import (
     PriceHistoryRepository,
     ProductRepository,
 )
-from src.app.catalog.ports import BookMetadataGateway, BookMetadataUnavailableError
+from src.app.catalog.ports import (
+    BookMetadataGateway,
+    BookMetadataUnavailableError,
+    PriceAlertChecks,
+)
 from src.app.catalog.use_cases import (
     BookNotFoundError,
     GetOrCreateBookByIsbnUseCase,
@@ -33,8 +36,6 @@ from src.app.infrastructure.database_config import get_db
 from src.app.infrastructure.repositories.source_website_repository import (
     SourceWebsiteRepository,
 )
-from src.app.infrastructure.services.email_service import get_email_service
-from src.app.interfaces.services.email_service import EmailServiceInterface
 from src.app.security.auth import get_current_staff_user
 from src.common.jsonapi import JsonApiError, JsonApiErrorResponse
 from src.config.logging_config import get_logger
@@ -58,14 +59,6 @@ def get_ingest_offer_use_case(
         offers=ProductRepository(db),
         prices=PriceHistoryRepository(db),
     )
-
-
-def get_book_alerts_use_case(
-    db=Depends(get_db),
-    email_service: EmailServiceInterface = Depends(get_email_service),
-) -> EvaluateBookAlertsUseCase:
-    """Book alerts are checked right after an offer for the book comes in."""
-    return alerts_wiring.evaluate_book_alerts(db, email_service)
 
 
 def get_source_website_repository(db=Depends(get_db)) -> SourceWebsiteRepository:
@@ -99,7 +92,8 @@ def ingest_offer(
     offer_in: OfferIngestRequest,
     use_case: IngestOfferUseCase = Depends(get_ingest_offer_use_case),
     source_websites: SourceWebsiteRepository = Depends(get_source_website_repository),
-    book_alerts: EvaluateBookAlertsUseCase = Depends(get_book_alerts_use_case),
+    # Book alerts are checked right after an offer for the book comes in.
+    alerts: PriceAlertChecks = Depends(get_price_alert_checks),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
     """
@@ -174,7 +168,7 @@ def ingest_offer(
     )
     if result.book.id is not None:
         try:
-            book_alerts.execute(result.book.id)
+            alerts.check_book(result.book.id)
         except Exception:  # an alert problem must not lose the price point
             logger.exception("Book alerts failed for book %s", result.book.id)
     body = ProductPresenter.handle_success(result.offer).model_dump(mode="json")

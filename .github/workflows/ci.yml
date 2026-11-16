@@ -72,6 +72,8 @@ jobs:
             src/app/alerts/persistence/listings.py \
             src/app/alerts/persistence/listing_scope.py \
             src/app/catalog/http/listing_scope.py \
+            src/app/catalog/http/price_alert_checks.py \
+            src/app/catalog/ports.py \
             src/app/composition.py \
             src/app/alerts/wiring.py \
             src/app/alerts/http/price_alert_controller.py

@@ -29,6 +29,8 @@ from src.app.alerts.use_cases import (
     SendPriceAlertNotificationUseCase,
     UpdatePriceAlertUseCase,
 )
+from src.app.catalog.entities import AlertEvaluation
+from src.app.catalog.ports import PriceAlertChecks
 from src.app.infrastructure.repositories.search_config_repository import (
     SearchConfigRepository,
 )
@@ -131,3 +133,20 @@ def evaluate_product_alerts(
         stores=_stores(db),
         mailer=EmailServiceMailer(email_service),
     )
+
+
+class CatalogAlertChecks(PriceAlertChecks):
+    """Catalog's PriceAlertChecks port over alerts' evaluation use cases."""
+
+    def __init__(self, db: Session, email_service: EmailServiceInterface):
+        self.db = db
+        self.email_service = email_service
+
+    def check_book(self, canonical_product_id: int) -> None:
+        evaluate_book_alerts(self.db, self.email_service).execute(canonical_product_id)
+
+    def check_product(self, product_id: int) -> AlertEvaluation:
+        sent, skipped, stop_reason = evaluate_product_alerts(
+            self.db, self.email_service
+        ).execute(product_id)
+        return AlertEvaluation(sent=len(sent), skipped=skipped, stop_reason=stop_reason)
