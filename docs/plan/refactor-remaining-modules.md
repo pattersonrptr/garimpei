@@ -28,6 +28,7 @@ characterization tests first, in their own PR, reviewed by the author.
 | Alerts controller wired through `alerts/wiring.py` | (this PR) | Duplicated Code → Extract Function + Move Function | `price_alert_controller.py` built alerts' adapters by hand at four points (opportunities, validator, create/update/delete, notify); it now calls factories in `alerts/wiring.py` and no longer imports adapters or `src/app/infrastructure` repositories. Its four unused repository dependencies were removed. FastAPI still injects `get_db` and `get_email_service`. No test changed; #172's tests kill the wiring mutations the suite missed. `wiring.py` and the controller joined the blocking mypy paths |
 | Characterization tests for the alert-match filter | #175 | — | Before removing `catalog/persistence/repositories.py`'s imports of alerts' ORM models: 2 of 8 mutations of the alert-match filter and the delete survived the suite (a deleted alert still matching, the user filter ignored). 2 e2e tests kill both on an assertion. Approved by the author (Nov 14, 2026) |
 | SQLite enforces foreign keys in tests | (this PR) | — | Before slice B: `src/tests/conftest.py` turns on `PRAGMA foreign_keys=ON` for every SQLite connection, so test databases apply foreign keys and `ON DELETE` rules like Postgres. All 916 tests pass unchanged; deleting a notified product without clearing its log now fails with `FOREIGN KEY constraint failed`. Approved by the author (Nov 14, 2026) |
+| Extra characterization tests for alert notify | (this PR) | — | Three cases #172 left out, from a duplicate PR (#177, closed): no match under the max price (skipped, no e-mail), a second call within the rate limit (skipped, one e-mail), unknown alert (404). Added to `test_price_alert_wiring.py`; they pass on today's code. Approved by the author (Nov 16, 2026) |
 
 ## Queue
 
@@ -64,8 +65,6 @@ before it starts.
   that wiring belongs in FastAPI dependencies or a composition root.
 - Validator tests live in `tests/unit/domain/validators/` but the code is
   now http-layer.
-- `POST /price-alerts/{id}/notify` has one e2e test, which only checks the
-  answer is not 403; it catches a broken wiring (500) but not a wrong match.
 - Checks that need a repository (unique URL, product exists) may belong in
   the use cases rather than in request validation.
 - mypy: 271 errors in 44 files outside the blocking list (#153); add paths

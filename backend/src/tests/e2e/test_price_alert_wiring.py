@@ -144,3 +144,41 @@ def test_deleting_the_only_alert_of_a_search_stops_the_search(
     after = client.get(search, headers=auth_headers)
     assert after.status_code == 200
     assert after.json()["data"]["attributes"]["is_active"] is False
+
+
+def test_notify_sends_nothing_when_no_match_is_under_the_max_price(
+    client, staff_auth_headers, mailer, alert, test_db, sample_source_website
+):
+    a_listing(test_db, "Premium Headphones", 800.0, sample_source_website.id)
+
+    response = client.post(
+        f"/price-alerts/{alert.id}/notify", headers=staff_auth_headers
+    )
+
+    assert response.status_code == 200
+    result = response.json()["data"]["attributes"]
+    assert result["status"] == "skipped"
+    assert result["notifications_sent"] == 0
+    mailer.send_price_alert_email.assert_not_called()
+
+
+def test_notify_skips_a_second_call_within_the_rate_limit(
+    client, staff_auth_headers, mailer, alert, listings
+):
+    client.post(f"/price-alerts/{alert.id}/notify", headers=staff_auth_headers)
+
+    response = client.post(
+        f"/price-alerts/{alert.id}/notify", headers=staff_auth_headers
+    )
+
+    assert response.status_code == 200
+    result = response.json()["data"]["attributes"]
+    assert result["status"] == "skipped"
+    assert result["message"].startswith("Rate limited")
+    mailer.send_price_alert_email.assert_called_once()
+
+
+def test_notify_an_unknown_alert_is_not_found(client, staff_auth_headers, mailer):
+    response = client.post("/price-alerts/999999/notify", headers=staff_auth_headers)
+
+    assert response.status_code == 404
