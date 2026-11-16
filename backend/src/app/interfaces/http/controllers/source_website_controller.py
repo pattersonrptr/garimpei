@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 
 from src.app.accounts.entities import User as UserEntity
+from src.app.accounts.http.auth import get_current_active_user, get_current_staff_user
 from src.app.domain.validators.source_website_validator import SourceWebsiteValidator
 from src.app.entities.source_website import SourceWebsite as SourceWebsiteEntity
 from src.app.infrastructure.database_config import get_db
@@ -16,7 +17,6 @@ from src.app.interfaces.http.schemas.source_website_schema import (
     SourceWebsitesCollectionResponse,
     SourceWebsiteUpdateRequest,
 )
-from src.app.security.auth import get_current_active_user, get_current_staff_user
 from src.app.use_cases.source_website_use_cases import (
     CreateSourceWebsiteUseCase,
     DeleteSourceWebsiteUseCase,

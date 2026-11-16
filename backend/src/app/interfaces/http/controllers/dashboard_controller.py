@@ -5,6 +5,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from src.app.accounts.entities import User as UserEntity
+from src.app.accounts.http.auth import get_current_active_user
 from src.app.alerts.persistence.models import (
     PriceAlert,
     price_alert_source_website,
@@ -18,7 +19,6 @@ from src.app.infrastructure.database.models.search_execution_log_model import (
 )
 from src.app.infrastructure.database.text_match import title_contains
 from src.app.infrastructure.database_config import get_db
-from src.app.security.auth import get_current_active_user
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 

@@ -3,6 +3,12 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from src.app.accounts.entities import User as UserEntity
+from src.app.accounts.http.auth import (
+    can_access_owned_resource,
+    get_current_active_user,
+    get_current_staff_user,
+    is_staff_or_superuser,
+)
 from src.app.alerts import wiring
 from src.app.alerts.entities import PriceAlert as PriceAlertEntity
 from src.app.alerts.http.price_alert_presenter import (
@@ -37,12 +43,6 @@ from src.app.interfaces.http.plan_limits import (
     get_user_plan_limits,
 )
 from src.app.interfaces.services.email_service import EmailServiceInterface
-from src.app.security.auth import (
-    can_access_owned_resource,
-    get_current_active_user,
-    get_current_staff_user,
-    is_staff_or_superuser,
-)
 from src.common.jsonapi import JsonApiError, JsonApiErrorResponse
 from src.config.logging_config import get_logger
 

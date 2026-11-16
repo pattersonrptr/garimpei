@@ -89,6 +89,8 @@ jobs:
             src/app/accounts/persistence/repositories.py \
             src/app/accounts/use_cases.py \
             src/app/accounts/http/validators.py \
+            src/app/accounts/http/auth.py \
+            src/app/accounts/http/tokens.py \
             src/app/accounts/adapters/passwords.py
 
       - name: Type check with mypy (whole backend, report only)

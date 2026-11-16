@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
 from src.app.accounts.entities import User as UserEntity
+from src.app.accounts.http.auth import get_current_staff_user
 from src.app.catalog import wiring
 from src.app.catalog.http.offer_schema import OfferIngestRequest
 from src.app.catalog.http.price_alert_checks import get_price_alert_checks
@@ -30,7 +31,6 @@ from src.app.infrastructure.database_config import get_db
 from src.app.infrastructure.repositories.source_website_repository import (
     SourceWebsiteRepository,
 )
-from src.app.security.auth import get_current_staff_user
 from src.common.jsonapi import JsonApiError, JsonApiErrorResponse
 from src.config.logging_config import get_logger
 
