@@ -10,7 +10,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from src.app.catalog.entities import Product as ProductEntity
-from src.app.catalog.entities import ProductCondition
+from src.app.catalog.entities import ProductCondition, ProductListFilters
 from src.app.catalog.persistence.repositories import ProductRepository
 
 # Import models to register with Base.metadata
@@ -403,3 +403,25 @@ class TestProductRepositoryFreshness:
         offer = product_repository.create(sample_product_entity)
 
         assert product_repository.get_by_id(offer.id).last_checked_at is None
+
+
+class TestProductRepositoryAlertMatches:
+    """The "listings an alert found" filter comes from a ListingScope.
+
+    Without one, the repository must not quietly ignore the filter: a regular
+    user would see the whole catalog instead of what their alerts found.
+    """
+
+    @pytest.mark.parametrize(
+        "filters",
+        [
+            ProductListFilters(matching_user_id=1),
+            ProductListFilters(matching_alert_id=1, opportunities_only=True),
+        ],
+        ids=["by-user", "by-alert"],
+    )
+    def test_alert_match_filter_without_a_listing_scope_is_refused(
+        self, product_repository, filters
+    ):
+        with pytest.raises(ValueError, match="ListingScope"):
+            product_repository.get_all(filters=filters)
