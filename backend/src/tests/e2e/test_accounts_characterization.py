@@ -109,6 +109,22 @@ class TestLoggedInUser:
 
 
 class TestUserUpdate:
+    def test_a_staff_member_changes_a_users_email(
+        self, client, sample_user, superuser_auth_headers, test_db
+    ):
+        response = client.put(
+            f"/users/{sample_user.id}",
+            json={
+                "data": {"type": "users", "attributes": {"email": "new@example.com"}}
+            },
+            headers=superuser_auth_headers,
+        )
+
+        assert response.status_code == 200
+        assert response.json()["data"]["attributes"]["email"] == "new@example.com"
+        test_db.refresh(sample_user)
+        assert sample_user.email == "new@example.com"
+
     def test_an_invalid_email_is_refused_on_update(
         self, client, sample_user, superuser_auth_headers
     ):
