@@ -10,6 +10,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from src.app.accounts.persistence.models import User
 from src.app.alerts.entities import Listing
 from src.app.alerts.persistence.listings import CatalogListings
 from src.app.alerts.persistence.models import PriceAlert as PriceAlertModel
@@ -28,7 +29,6 @@ from src.app.infrastructure.database import models  # noqa: F401
 from src.app.infrastructure.database.models.source_website_model import (
     SourceWebsite as SourceWebsiteModel,
 )
-from src.app.infrastructure.database.models.user_model import User
 from src.app.infrastructure.database_config import Base
 
 OLX, ENJOEI = 1, 2

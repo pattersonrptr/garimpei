@@ -9,6 +9,7 @@ from unittest.mock import MagicMock
 import pytest
 from passlib.context import CryptContext
 
+from src.app.accounts.persistence.models import User
 from src.app.alerts.http.price_alert_controller import (
     get_email_service,
 )
@@ -27,7 +28,6 @@ from src.app.infrastructure.database.models.search_execution_log_model import (
 from src.app.infrastructure.database.models.source_website_model import (
     SourceWebsite as SourceWebsiteModel,
 )
-from src.app.infrastructure.database.models.user_model import User
 from src.app.interfaces.services.email_service import EmailResult
 from src.main import app
 

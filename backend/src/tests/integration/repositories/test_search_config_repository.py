@@ -11,6 +11,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from src.app.accounts.persistence.models import User  # noqa: F401
 from src.app.entities.search_config import SearchConfig as SearchConfigEntity
 
 # Import all models to register with Base.metadata
@@ -23,7 +24,6 @@ from src.app.infrastructure.database.models.search_config_source_website_model i
 from src.app.infrastructure.database.models.source_website_model import (  # noqa: F401
     SourceWebsite as SourceWebsiteModel,
 )
-from src.app.infrastructure.database.models.user_model import User  # noqa: F401
 from src.app.infrastructure.database_config import Base
 from src.app.infrastructure.repositories.search_config_repository import (
     SearchConfigRepository,
