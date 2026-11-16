@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
+from src.app.accounts.entities import User as UserEntity
 from src.app.catalog import wiring
 from src.app.catalog.entities import Product as ProductEntity
 from src.app.catalog.entities import ProductListFilters
@@ -27,7 +28,6 @@ from src.app.catalog.use_cases import (
     ListProductsUseCase,
     UpdateProductUseCase,
 )
-from src.app.entities.user import User as UserEntity
 from src.app.infrastructure.database_config import get_db
 from src.app.security.auth import (
     get_current_active_user,

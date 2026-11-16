@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 
+from src.app.accounts.entities import User as UserEntity
 from src.app.entities.plan import Plan as PlanEntity
-from src.app.entities.user import User as UserEntity
 from src.app.infrastructure.database_config import get_db
 from src.app.infrastructure.repositories.plan_repository import PlanRepository
 from src.app.interfaces.http.presenters.plan_presenter import PlanPresenter

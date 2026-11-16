@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 
+from src.app.accounts.entities import User as UserEntity
 from src.app.catalog import wiring
 from src.app.catalog.entities import PriceHistory as PriceHistoryEntity
 from src.app.catalog.http.price_history_presenter import (
@@ -23,7 +24,6 @@ from src.app.catalog.use_cases import (
     GetPriceHistoryByProductIdUseCase,
     ListPriceHistoriesUseCase,
 )
-from src.app.entities.user import User as UserEntity
 from src.app.infrastructure.database_config import get_db
 from src.app.security.auth import get_current_active_user, get_current_staff_user
 from src.config.logging_config import get_logger

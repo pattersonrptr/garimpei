@@ -8,6 +8,7 @@ src/app/domain/plan_limits.py.
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
+from src.app.accounts.entities import User as UserEntity
 from src.app.alerts.persistence.repositories import (
     PriceAlertRepository,
 )
@@ -19,7 +20,6 @@ from src.app.domain.plan_limits import (
     limits_for_plan,
     source_limit_violation,
 )
-from src.app.entities.user import User as UserEntity
 from src.app.infrastructure.database_config import get_db
 from src.app.infrastructure.repositories.plan_repository import PlanRepository
 from src.app.infrastructure.repositories.subscription_repository import (

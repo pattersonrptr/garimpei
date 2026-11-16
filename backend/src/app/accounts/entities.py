@@ -1,14 +1,15 @@
+from dataclasses import dataclass
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr
 
-
-class User(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+@dataclass(kw_only=True)
+class User:
+    """A person with an account. The e-mail format is checked by the request
+    schemas, not here."""
 
     id: int | None = None
     username: str
-    email: EmailStr
+    email: str
     hashed_password: str | None = None
     is_active: bool = True
     is_staff: bool = False

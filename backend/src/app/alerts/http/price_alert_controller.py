@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from src.app.accounts.entities import User as UserEntity
 from src.app.alerts import wiring
 from src.app.alerts.entities import PriceAlert as PriceAlertEntity
 from src.app.alerts.http.price_alert_presenter import (
@@ -27,7 +28,6 @@ from src.app.catalog.http.product_schema import ProductsCollectionResponse
 from src.app.catalog.ports import ProductRepositoryInterface
 from src.app.catalog.use_cases import SearchProductsByTermUseCase
 from src.app.domain.plan_limits import PlanLimits
-from src.app.entities.user import User as UserEntity
 from src.app.infrastructure.database_config import get_db
 from src.app.infrastructure.services.email_service import get_email_service
 from src.app.interfaces.http.plan_limits import (

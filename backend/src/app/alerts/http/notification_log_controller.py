@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 
+from src.app.accounts.entities import User as UserEntity
 from src.app.alerts.http.notification_log_presenter import (
     NotificationLogPresenter,
 )
@@ -16,7 +17,6 @@ from src.app.alerts.use_cases import (
     GetNotificationLogsByPriceAlertIdUseCase,
     ListNotificationLogsUseCase,
 )
-from src.app.entities.user import User as UserEntity
 from src.app.infrastructure.database_config import get_db
 from src.app.security.auth import get_current_staff_user
 from src.config.logging_config import get_logger

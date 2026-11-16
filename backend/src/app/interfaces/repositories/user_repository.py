@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from src.app.entities.user import User as UserEntity
+from src.app.accounts.entities import User as UserEntity
 
 
 class UserRepositoryInterface(ABC):

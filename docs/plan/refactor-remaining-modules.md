@@ -36,6 +36,29 @@ characterization tests first, in their own PR, reviewed by the author.
 | Alerts' controllers stop building catalog's repository | #186 | Inappropriate Intimacy → Move Function (to `catalog/wiring.py`); Remove Dead Code | `price_alert_controller` gets catalog's products from `catalog.wiring.products(db)`, typed as `ProductRepositoryInterface`. `notification_log_controller` had four unused dependency functions (price alert, product, user and store repositories); removed, with their imports of catalog's persistence and the old `src/app/infrastructure` repositories. A mutation (the dependency returning `None`) fails 6 e2e tests of `/products` and `/opportunities`. No test changed; `notification_log_controller` joined the blocking mypy step |
 | Characterization tests for accounts | #187 | — | Before users and login move into an `accounts` module (decided by the author, Nov 16, 2026: users, sign-up, login/tokens and the logged-in user; plans and subscriptions later in `billing`; `User` becomes a pure dataclass and the e-mail format is checked only in the request schemas). 9 e2e tests in `test_accounts_characterization.py`: public sign-up (regular user, staff rights ignored, taken username and e-mail, invalid e-mail), the logged-in user (token without a username 401, deleted user 404, deactivated user 400, today's codes) and an invalid e-mail on update (422). Three mutations (sign-up keeping staff rights, 404 → 401, inactive user let through) each fail one test. Approved by the author (Nov 16, 2026) |
 | Accounts gaps covered | #188 | — | The gaps #187 left, approved by the author (Nov 16, 2026): login and refresh tokens last `ACCESS_TOKEN_EXPIRE_MINUTES` (2 e2e tests), and deleting a user who owns an alert fails with `IntegrityError` and keeps the user (1 integration test; the rollback path). Mutations (each token twice as long, delete without rollback) each fail one test. `create_access_token`'s default expiry is never used (both callers pass one): removed in the first accounts slice (Remove Dead Code). Abstract bodies (`raise NotImplementedError`) are excluded from the coverage report in `pyproject.toml` |
+| Accounts slice 1: `User` is a pure dataclass | (this PR) | Primitive Obsession on a framework type → Move Class (to `accounts/entities.py`) + Replace Pydantic model with dataclass | `User` was a Pydantic model that validated the e-mail on every construction, reads from the database included; it is now `@dataclass(kw_only=True)` in `accounts/entities.py` with the same fields and defaults, and `entities/user.py` is gone (21 app files and a script import the new path). The e-mail format is checked only by the request schemas (decided by the author, Nov 16, 2026; #187 pins sign-up and update refusing an invalid e-mail). The old `UserRepository` maps ORM rows to the entity field by field and writes with `asdict`; the password change uses `dataclasses.replace`. Test diff (the import line in 6 test files) approved by the author; red was a `ModuleNotFoundError`, as expected for a move. `accounts/entities.py` joined the blocking mypy step |
+
+## Accounts module plan
+
+Approved by the author (Nov 16, 2026). `accounts` holds users, sign-up,
+login/tokens and the logged-in user; plans and subscriptions go to a
+`billing` module later. One PR per slice, behavior unchanged:
+
+1. **Entity** (this PR): `User` becomes a pure dataclass in
+   `accounts/entities.py`; the e-mail format is checked only by the request
+   schemas.
+2. **Persistence**: the ORM model, the repository and its interface move to
+   `accounts/persistence/` and `accounts/ports.py`.
+3. **Use cases and validation**: `user_use_cases.py` to
+   `accounts/use_cases.py`, `user_validator.py` to
+   `accounts/http/validators.py`.
+4. **Login and the logged-in user**: `security/auth.py` and token creation
+   to `accounts/http/`; `create_access_token`'s unused default expiry is
+   removed (Remove Dead Code).
+5. **Controllers**: auth and users, with presenters and schemas, to
+   `accounts/http/`, built by `accounts/wiring.py`; `security/` is gone.
+
+Other modules' http layers may depend on `accounts` (the logged-in user).
 
 ## Queue
 

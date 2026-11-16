@@ -23,7 +23,7 @@ from getpass import getpass
 
 from sqlalchemy.orm import Session
 
-from src.app.entities.user import User as UserEntity
+from src.app.accounts.entities import User as UserEntity
 from src.app.infrastructure.database_config import SessionLocal
 from src.app.infrastructure.repositories.user_repository import UserRepository
 from src.app.use_cases.user_use_cases import pwd_context

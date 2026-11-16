@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, Query, status
 
+from src.app.accounts.entities import User as UserEntity
 from src.app.entities.search_execution_log import (
     SearchExecutionLog as SearchExecutionLogEntity,
 )
-from src.app.entities.user import User as UserEntity
 from src.app.infrastructure.database_config import get_db
 from src.app.infrastructure.repositories.search_execution_log_repository import (
     SearchExecutionLogRepository,
