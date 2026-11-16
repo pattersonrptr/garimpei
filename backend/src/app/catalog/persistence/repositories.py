@@ -6,9 +6,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from src.app.alerts.persistence.models import (
-    NotificationLog as NotificationLogModel,
-)
-from src.app.alerts.persistence.models import (
     PriceAlert as PriceAlertModel,
 )
 from src.app.alerts.persistence.models import (
@@ -282,10 +279,8 @@ class ProductRepository(ProductRepositoryInterface):
             return False
 
         try:
-            # Sent notifications are history: keep them, without the product.
-            self.db.query(NotificationLogModel).filter(
-                NotificationLogModel.product_id == product_id
-            ).update({NotificationLogModel.product_id: None}, synchronize_session=False)
+            # Sent notifications stay as history: the database clears their
+            # product (ON DELETE SET NULL on notification_logs.product_id).
             self.db.delete(db_product)
             self.db.commit()
             return True
