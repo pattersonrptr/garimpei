@@ -3,6 +3,7 @@
 from sqlalchemy.orm import Session
 
 from src.app.alerts.entities import Listing
+from src.app.alerts.persistence.listing_scope import AlertListingScope
 from src.app.alerts.ports import Listings
 from src.app.catalog.entities import Product, ProductListFilters
 from src.app.catalog.persistence.repositories import ProductRepository
@@ -10,7 +11,7 @@ from src.app.catalog.persistence.repositories import ProductRepository
 
 class CatalogListings(Listings):
     def __init__(self, db: Session):
-        self.products = ProductRepository(db)
+        self.products = ProductRepository(db, AlertListingScope())
 
     def get_by_id(self, listing_id: int) -> Listing | None:
         product = self.products.get_by_id(listing_id)

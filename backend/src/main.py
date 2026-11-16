@@ -21,6 +21,7 @@ import os
 # ============================================================================
 from fastapi import FastAPI
 
+from src.app.composition import compose
 from src.app.infrastructure.database import (
     models,  # noqa: F401 - Ensure models are loaded
 )
@@ -67,7 +68,8 @@ setup_middleware(app)
 # ============================================================================
 # ROUTER REGISTRATION
 # ============================================================================
-# Register all API endpoints
+# Register all API endpoints, after connecting modules through their ports
+compose()
 setup_routers(app)
 
 # ============================================================================

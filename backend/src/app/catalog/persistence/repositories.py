@@ -1,16 +1,10 @@
 from dataclasses import asdict
 from datetime import UTC, datetime, timedelta, timezone
 
-from sqlalchemy import and_, asc, desc, exists, func
+from sqlalchemy import asc, desc, exists, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
-from src.app.alerts.persistence.models import (
-    PriceAlert as PriceAlertModel,
-)
-from src.app.alerts.persistence.models import (
-    price_alert_source_website,
-)
 from src.app.catalog.entities import (
     BookDetail,
     BookSummary,
@@ -39,6 +33,7 @@ from src.app.catalog.ports import (
     BookCatalogReader,
     CanonicalProductRepositoryInterface,
     CollectionQueueRepositoryInterface,
+    ListingScope,
     PriceHistoryRepositoryInterface,
     ProductRepositoryInterface,
 )
@@ -99,8 +94,10 @@ def _persisted_fields(product: ProductEntity) -> dict:
 class ProductRepository(ProductRepositoryInterface):
     """SQLAlchemy implementation of ProductRepositoryInterface."""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, scope: ListingScope | None = None):
         self.db = db
+        # Narrows lists to what alerts found (ProductListFilters.matching_*).
+        self.scope = scope
 
     def create(self, product: ProductEntity) -> ProductEntity:
         """Create a new product in the database."""
@@ -202,8 +199,9 @@ class ProductRepository(ProductRepositoryInterface):
 
         return self._rows_to_entities(results), total
 
-    @staticmethod
-    def _filter_conditions(filters: ProductListFilters | None, current_price) -> list:
+    def _filter_conditions(
+        self, filters: ProductListFilters | None, current_price
+    ) -> list:
         """SQL conditions for a ProductListFilters (see its docstring)."""
         if filters is None:
             return []
@@ -228,25 +226,16 @@ class ProductRepository(ProductRepositoryInterface):
             filters.matching_user_id is not None
             or filters.matching_alert_id is not None
         ):
-            alert_matches = [
-                PriceAlertModel.deleted_at.is_(None),
-                price_alert_source_website.c.price_alert_id == PriceAlertModel.id,
-                price_alert_source_website.c.source_website_id
-                == ProductModel.source_website_id,
-                title_contains(ProductModel.title, PriceAlertModel.search_term),
-            ]
-            if filters.matching_user_id is not None:
-                alert_matches.append(
-                    PriceAlertModel.user_id == filters.matching_user_id
-                )
-            if filters.matching_alert_id is not None:
-                alert_matches.append(PriceAlertModel.id == filters.matching_alert_id)
-            if filters.opportunities_only:
-                alert_matches.append(current_price <= PriceAlertModel.max_price)
+            # Never ignore this filter: without it a user would see the
+            # whole catalog instead of what their alerts found.
+            if self.scope is None:
+                raise ValueError("Filtering by what alerts found needs a ListingScope")
             conditions.append(
-                exists()
-                .where(and_(*alert_matches))
-                .correlate_except(PriceAlertModel, price_alert_source_website)
+                self.scope.found_by_alerts(
+                    user_id=filters.matching_user_id,
+                    alert_id=filters.matching_alert_id,
+                    current_price=current_price if filters.opportunities_only else None,
+                )
             )
         return conditions
 
