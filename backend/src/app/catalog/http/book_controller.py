@@ -8,6 +8,7 @@ the catalog's read model.
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
+from src.app.catalog import wiring
 from src.app.catalog.entities import (
     BookDetail,
     BookSummary,
@@ -16,7 +17,6 @@ from src.app.catalog.entities import (
     PublicOffer,
 )
 from src.app.catalog.isbn import InvalidIsbnError
-from src.app.catalog.persistence.repositories import BookCatalogRepository
 from src.app.catalog.ports import BookCatalogReader
 from src.app.catalog.use_cases import (
     MAX_HISTORY_DAYS,
@@ -37,7 +37,7 @@ JSONAPI = "application/vnd.api+json"
 
 
 def get_book_catalog(db=Depends(get_db)) -> BookCatalogReader:
-    return BookCatalogRepository(db)
+    return wiring.book_catalog(db)
 
 
 def _iso(moment) -> str | None:

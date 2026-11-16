@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
+from src.app.catalog import wiring
 from src.app.catalog.entities import Product as ProductEntity
 from src.app.catalog.entities import ProductListFilters
 from src.app.catalog.http.listing_scope import get_listing_scope
@@ -13,8 +14,11 @@ from src.app.catalog.http.product_schema import (
     ProductUpdateRequest,
 )
 from src.app.catalog.http.validators import ProductValidator
-from src.app.catalog.persistence.repositories import ProductRepository
-from src.app.catalog.ports import ListingScope, PriceAlertChecks
+from src.app.catalog.ports import (
+    ListingScope,
+    PriceAlertChecks,
+    ProductRepositoryInterface,
+)
 from src.app.catalog.use_cases import (
     CreateProductUseCase,
     DeleteProductUseCase,
@@ -25,11 +29,6 @@ from src.app.catalog.use_cases import (
 )
 from src.app.entities.user import User as UserEntity
 from src.app.infrastructure.database_config import get_db
-
-# Re-exported: test_evaluate_product_alerts.py overrides it through this module.
-from src.app.infrastructure.services.email_service import (  # noqa: F401
-    get_email_service,
-)
 from src.app.security.auth import (
     get_current_active_user,
     get_current_staff_user,
@@ -45,13 +44,13 @@ logger = get_logger(__name__)
 
 def get_product_repository(
     db=Depends(get_db), scope: ListingScope = Depends(get_listing_scope)
-) -> ProductRepository:
-    """Dependency injection for ProductRepository."""
-    return ProductRepository(db, scope)
+) -> ProductRepositoryInterface:
+    """Dependency injection for the product repository."""
+    return wiring.products(db, scope)
 
 
 def get_product_validator(
-    product_repo: ProductRepository = Depends(get_product_repository),
+    product_repo: ProductRepositoryInterface = Depends(get_product_repository),
 ) -> ProductValidator:
     """Dependency injection for ProductValidator."""
     return ProductValidator(product_repo)
@@ -60,7 +59,7 @@ def get_product_validator(
 @router.post("/", response_model=ProductReadResponse, status_code=201)
 def create_product(
     product_in: ProductCreateRequest,
-    product_repo: ProductRepository = Depends(get_product_repository),
+    product_repo: ProductRepositoryInterface = Depends(get_product_repository),
     product_validator: ProductValidator = Depends(get_product_validator),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
@@ -132,7 +131,7 @@ def list_products(
     is_available: bool | None = Query(default=None),
     source_website_id: int | None = Query(default=None),
     opportunities_only: bool = Query(default=False),
-    product_repo: ProductRepository = Depends(get_product_repository),
+    product_repo: ProductRepositoryInterface = Depends(get_product_repository),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
@@ -188,7 +187,7 @@ def list_products(
 @router.get("/url", response_model=ProductReadResponse)
 def get_product_by_url(
     url: str = Query(..., description="Product URL to search for"),
-    product_repo: ProductRepository = Depends(get_product_repository),
+    product_repo: ProductRepositoryInterface = Depends(get_product_repository),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
     """
@@ -217,7 +216,7 @@ def get_product_by_url(
 @router.get("/{product_id}", response_model=ProductReadResponse)
 def get_product(
     product_id: int,
-    product_repo: ProductRepository = Depends(get_product_repository),
+    product_repo: ProductRepositoryInterface = Depends(get_product_repository),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
@@ -251,7 +250,7 @@ def get_product(
 def update_product(
     product_id: int,
     product_in: ProductUpdateRequest,
-    product_repo: ProductRepository = Depends(get_product_repository),
+    product_repo: ProductRepositoryInterface = Depends(get_product_repository),
     product_validator: ProductValidator = Depends(get_product_validator),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
@@ -349,7 +348,7 @@ def update_product(
 @router.delete("/{product_id}", status_code=204)
 def delete_product(
     product_id: int,
-    product_repo: ProductRepository = Depends(get_product_repository),
+    product_repo: ProductRepositoryInterface = Depends(get_product_repository),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
     """

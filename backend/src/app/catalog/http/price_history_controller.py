@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 
+from src.app.catalog import wiring
 from src.app.catalog.entities import PriceHistory as PriceHistoryEntity
 from src.app.catalog.http.price_history_presenter import (
     PriceHistoryPresenter,
@@ -10,9 +11,9 @@ from src.app.catalog.http.price_history_schema import (
     PriceHistoryReadResponse,
 )
 from src.app.catalog.http.validators import PriceHistoryValidator
-from src.app.catalog.persistence.repositories import (
-    PriceHistoryRepository,
-    ProductRepository,
+from src.app.catalog.ports import (
+    PriceHistoryRepositoryInterface,
+    ProductRepositoryInterface,
 )
 from src.app.catalog.use_cases import (
     CreatePriceHistoryUseCase,
@@ -32,19 +33,23 @@ router = APIRouter(tags=["price_histories"], prefix="/price-histories")
 logger = get_logger(__name__)
 
 
-def get_price_history_repository(db=Depends(get_db)) -> PriceHistoryRepository:
-    """Dependency injection for PriceHistoryRepository."""
-    return PriceHistoryRepository(db)
+def get_price_history_repository(
+    db=Depends(get_db),
+) -> PriceHistoryRepositoryInterface:
+    """Dependency injection for the price history repository."""
+    return wiring.price_histories(db)
 
 
-def get_product_repository(db=Depends(get_db)) -> ProductRepository:
-    """Dependency injection for ProductRepository (used by validator)."""
-    return ProductRepository(db)
+def get_product_repository(db=Depends(get_db)) -> ProductRepositoryInterface:
+    """Dependency injection for the product repository (used by validator)."""
+    return wiring.products(db)
 
 
 def get_price_history_validator(
-    price_history_repo: PriceHistoryRepository = Depends(get_price_history_repository),
-    product_repo: ProductRepository = Depends(get_product_repository),
+    price_history_repo: PriceHistoryRepositoryInterface = Depends(
+        get_price_history_repository
+    ),
+    product_repo: ProductRepositoryInterface = Depends(get_product_repository),
 ) -> PriceHistoryValidator:
     """Dependency injection for PriceHistoryValidator."""
     return PriceHistoryValidator(price_history_repo, product_repo)
@@ -53,7 +58,9 @@ def get_price_history_validator(
 @router.post("/", response_model=PriceHistoryReadResponse, status_code=201)
 def create_price_history(
     price_history_in: PriceHistoryCreateRequest,
-    price_history_repo: PriceHistoryRepository = Depends(get_price_history_repository),
+    price_history_repo: PriceHistoryRepositoryInterface = Depends(
+        get_price_history_repository
+    ),
     price_history_validator: PriceHistoryValidator = Depends(
         get_price_history_validator
     ),
@@ -113,7 +120,9 @@ def list_price_histories(
     offset: int = Query(default=0, ge=0),
     sort_by: str | None = Query(default=None),
     sort_order: str | None = Query(default="desc", pattern="^(asc|desc)$"),
-    price_history_repo: PriceHistoryRepository = Depends(get_price_history_repository),
+    price_history_repo: PriceHistoryRepositoryInterface = Depends(
+        get_price_history_repository
+    ),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
@@ -138,7 +147,9 @@ def list_price_histories(
 @router.get("/product/{product_id}/latest", response_model=PriceHistoryReadResponse)
 def get_latest_price_by_product(
     product_id: int,
-    price_history_repo: PriceHistoryRepository = Depends(get_price_history_repository),
+    price_history_repo: PriceHistoryRepositoryInterface = Depends(
+        get_price_history_repository
+    ),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
@@ -168,7 +179,9 @@ def get_latest_price_by_product(
 @router.get("/product/{product_id}", response_model=PriceHistoriesCollectionResponse)
 def get_price_history_by_product(
     product_id: int,
-    price_history_repo: PriceHistoryRepository = Depends(get_price_history_repository),
+    price_history_repo: PriceHistoryRepositoryInterface = Depends(
+        get_price_history_repository
+    ),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
@@ -191,7 +204,9 @@ def get_price_history_by_product(
 @router.get("/{price_history_id}", response_model=PriceHistoryReadResponse)
 def get_price_history(
     price_history_id: int,
-    price_history_repo: PriceHistoryRepository = Depends(get_price_history_repository),
+    price_history_repo: PriceHistoryRepositoryInterface = Depends(
+        get_price_history_repository
+    ),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
@@ -221,7 +236,9 @@ def get_price_history(
 @router.delete("/{price_history_id}", status_code=204)
 def delete_price_history(
     price_history_id: int,
-    price_history_repo: PriceHistoryRepository = Depends(get_price_history_repository),
+    price_history_repo: PriceHistoryRepositoryInterface = Depends(
+        get_price_history_repository
+    ),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
     """
