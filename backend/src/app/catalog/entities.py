@@ -251,3 +251,17 @@ class PriceVerdict:
     high: float | None = None
     p25: float | None = None
     p75: float | None = None
+
+
+@dataclass(frozen=True, kw_only=True)
+class AlertEvaluation:
+    """What checking the price alerts against one product did.
+
+    ``stop_reason`` says why nothing was checked (product not found, no
+    price, no matching alert); otherwise ``sent`` e-mails went out and
+    ``skipped`` alerts had already been told about this product.
+    """
+
+    sent: int = 0
+    skipped: int = 0
+    stop_reason: str | None = None

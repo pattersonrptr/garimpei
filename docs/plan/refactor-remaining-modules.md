@@ -30,7 +30,8 @@ characterization tests first, in their own PR, reviewed by the author.
 | SQLite enforces foreign keys in tests | (this PR) | — | Before slice B: `src/tests/conftest.py` turns on `PRAGMA foreign_keys=ON` for every SQLite connection, so test databases apply foreign keys and `ON DELETE` rules like Postgres. All 916 tests pass unchanged; deleting a notified product without clearing its log now fails with `FOREIGN KEY constraint failed`. Approved by the author (Nov 14, 2026) |
 | Extra characterization tests for alert notify | (this PR) | — | Three cases #172 left out, from a duplicate PR (#177, closed): no match under the max price (skipped, no e-mail), a second call within the rate limit (skipped, one e-mail), unknown alert (404). Added to `test_price_alert_wiring.py`; they pass on today's code. Approved by the author (Nov 16, 2026) |
 | Notification log cleared by the database | #180 | Inappropriate Intimacy → Move Function (to the schema: `ON DELETE SET NULL`) | Step B of the plan for catalog's repositories importing alerts' ORM models. `ProductRepository.delete` no longer nulls `NotificationLog.product_id` itself; migration `e5f1a7c3d904` recreates `notification_logs_product_id_fkey` with `ON DELETE SET NULL` (upgrade, downgrade and upgrade checked on a scratch Postgres database, and a deleted product left its log with a null `product_id`). Spec: the existing `test_a_notified_listing_can_still_be_deleted`, unchanged; red was an `IntegrityError` (the test client re-raises server errors), not an assertion. Catalog's repository still imports `PriceAlert` and `price_alert_source_website` (step C) |
-| Alert-match filter through a catalog-owned port | (this PR) | Inappropriate Intimacy → Extract Interface (port owned by the client) + Move Function to the adapter | Step C. `ListingScope` in `catalog/ports.py` (returns an SQL condition, so the product list stays one query; `ports.py` now imports `sqlalchemy.ColumnElement`); `AlertListingScope` in `alerts/persistence/listing_scope.py` holds the old filter, moved unchanged; `ProductRepository(db, scope=None)` refuses the filter without a scope (1 new test, 2 cases, approved by the author Nov 16, 2026; red was "DID NOT RAISE"). `CatalogListings` passes its own scope; `GET /products` gets it from `catalog/http/listing_scope.py`, a registry filled by the new composition root `src/app/composition.py` (called in `src/main.py`). Catalog's persistence no longer imports alerts. The three new files joined the blocking mypy step |
+| Alert-match filter through a catalog-owned port | #182 | Inappropriate Intimacy → Extract Interface (port owned by the client) + Move Function to the adapter | Step C. `ListingScope` in `catalog/ports.py` (returns an SQL condition, so the product list stays one query; `ports.py` now imports `sqlalchemy.ColumnElement`); `AlertListingScope` in `alerts/persistence/listing_scope.py` holds the old filter, moved unchanged; `ProductRepository(db, scope=None)` refuses the filter without a scope (1 new test, 2 cases, approved by the author Nov 16, 2026; red was "DID NOT RAISE"). `CatalogListings` passes its own scope; `GET /products` gets it from `catalog/http/listing_scope.py`, a registry filled by the new composition root `src/app/composition.py` (called in `src/main.py`). Catalog's persistence no longer imports alerts. The three new files joined the blocking mypy step |
+| Catalog's controllers ask alerts through a catalog-owned port | (this PR) | Inappropriate Intimacy → Extract Interface (port owned by the client) + adapter | `PriceAlertChecks` (`check_book`, `check_product`) in `catalog/ports.py` and `AlertEvaluation` in `catalog/entities.py`; `CatalogAlertChecks` in `alerts/wiring.py` runs alerts' evaluation use cases; `catalog/http/price_alert_checks.py` is a registry the composition root fills with a per-request factory (db session, e-mail service). `offer_controller` and `product_controller` no longer import alerts, so catalog imports nothing from alerts. Covered before and after: a no-op at either wiring point (then in the adapter) fails 2 book-alert and 6 product-alert e2e tests. No test changed |
 
 ## Queue
 
@@ -49,16 +50,17 @@ before it starts.
     repository stops updating `NotificationLog`. SQLite only applies it
     with `PRAGMA foreign_keys=ON`; the test engines turn it on since the
     PR below (approved by the author, Nov 14, 2026).
-  - **C. Alert-match filter** (this PR): catalog owns a `ListingScope`
+  - **C. Alert-match filter** (#182): catalog owns a `ListingScope`
     port in `catalog/ports.py` that gives the "listings an alert found"
     condition; alerts implements it over its ORM, and catalog's HTTP layer
     gets it from a registry the composition root fills (decided by the
     author, Nov 16, 2026).
-- Alerts' use cases no longer import catalog. Still coupled: alerts'
-  adapters and http layer use catalog (expected for adapters), catalog's
-  controllers import alerts' use case types and `alerts/wiring.py`. The
-  composition root (`src/app/composition.py`, started in the `ListingScope`
-  PR) could register alerts' use cases for catalog the same way.
+- Catalog imports nothing from alerts (this PR). Alerts' adapters and
+  http layer still use catalog, which is the allowed direction.
+- `product_controller.py` re-exports `get_email_service` only because
+  `test_evaluate_product_alerts.py` imports it from there; moving that
+  import line to `src.app.infrastructure.services.email_service` needs the
+  author's OK (approved test).
 - Alerts' controller builds create/update/delete through `wiring` inside the
   handlers, but gets the validator and opportunities through `Depends`; one
   way for all would let `dependency_overrides` swap any of them (found by the

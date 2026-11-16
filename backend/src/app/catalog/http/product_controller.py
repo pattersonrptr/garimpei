@@ -1,11 +1,10 @@
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
-from src.app.alerts import wiring as alerts_wiring
-from src.app.alerts.use_cases import EvaluateProductAlertsUseCase
 from src.app.catalog.entities import Product as ProductEntity
 from src.app.catalog.entities import ProductListFilters
 from src.app.catalog.http.listing_scope import get_listing_scope
+from src.app.catalog.http.price_alert_checks import get_price_alert_checks
 from src.app.catalog.http.product_presenter import ProductPresenter
 from src.app.catalog.http.product_schema import (
     ProductCreateRequest,
@@ -15,7 +14,7 @@ from src.app.catalog.http.product_schema import (
 )
 from src.app.catalog.http.validators import ProductValidator
 from src.app.catalog.persistence.repositories import ProductRepository
-from src.app.catalog.ports import ListingScope
+from src.app.catalog.ports import ListingScope, PriceAlertChecks
 from src.app.catalog.use_cases import (
     CreateProductUseCase,
     DeleteProductUseCase,
@@ -26,8 +25,11 @@ from src.app.catalog.use_cases import (
 )
 from src.app.entities.user import User as UserEntity
 from src.app.infrastructure.database_config import get_db
-from src.app.infrastructure.services.email_service import get_email_service
-from src.app.interfaces.services.email_service import EmailServiceInterface
+
+# Re-exported: test_evaluate_product_alerts.py overrides it through this module.
+from src.app.infrastructure.services.email_service import (  # noqa: F401
+    get_email_service,
+)
 from src.app.security.auth import (
     get_current_active_user,
     get_current_staff_user,
@@ -46,14 +48,6 @@ def get_product_repository(
 ) -> ProductRepository:
     """Dependency injection for ProductRepository."""
     return ProductRepository(db, scope)
-
-
-def get_product_alerts_use_case(
-    db=Depends(get_db),
-    email_service: EmailServiceInterface = Depends(get_email_service),
-) -> EvaluateProductAlertsUseCase:
-    """The use case behind POST /products/{id}/evaluate-alerts."""
-    return alerts_wiring.evaluate_product_alerts(db, email_service)
 
 
 def get_product_validator(
@@ -405,7 +399,7 @@ def delete_product(
 @router.post("/{product_id}/evaluate-alerts", status_code=200)
 def evaluate_product_alerts(
     product_id: int,
-    use_case: EvaluateProductAlertsUseCase = Depends(get_product_alerts_use_case),
+    alerts: PriceAlertChecks = Depends(get_price_alert_checks),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
     """
@@ -432,7 +426,8 @@ def evaluate_product_alerts(
         },
     )
 
-    sent_logs, skipped, error = use_case.execute(product_id)
+    evaluation = alerts.check_product(product_id)
+    error, skipped = evaluation.stop_reason, evaluation.skipped
 
     if error:
         if "not found" in error.lower():
@@ -464,7 +459,7 @@ def evaluate_product_alerts(
             }
         }
 
-    sent_count = len(sent_logs)
+    sent_count = evaluation.sent
     return {
         "data": {
             "type": "evaluate_alerts_results",

@@ -4,6 +4,7 @@ from datetime import datetime
 from sqlalchemy import ColumnElement
 
 from src.app.catalog.entities import (
+    AlertEvaluation,
     BookDetail,
     BookMetadata,
     BookSummary,
@@ -290,4 +291,22 @@ class ListingScope(ABC):
         user's alerts (``user_id``) or that one alert (``alert_id``). With
         ``current_price``, the listing's price must also be at or under the
         alert's max price."""
+        raise NotImplementedError
+
+
+class PriceAlertChecks(ABC):
+    """The price alerts catalog asks to look at a product or book that changed.
+
+    Catalog owns this port and alerts implements it, so catalog's controllers
+    trigger the checks without importing alerts.
+    """
+
+    @abstractmethod
+    def check_book(self, canonical_product_id: int) -> None:
+        """Check the book's alerts right after an offer for it came in."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def check_product(self, product_id: int) -> AlertEvaluation:
+        """Check every active alert against one product (staff endpoint)."""
         raise NotImplementedError
