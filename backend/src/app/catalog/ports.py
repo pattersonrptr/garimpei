@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 
+from sqlalchemy import ColumnElement
+
 from src.app.catalog.entities import (
     BookDetail,
     BookMetadata,
@@ -263,4 +265,29 @@ class BookCatalogReader(ABC):
     def daily_lows(self, isbn13: str, since: datetime) -> list[DailyLow]:
         """The book's lowest price per day and condition from ``since`` on,
         oldest day first (days in Brazil's time zone)."""
+        raise NotImplementedError
+
+
+class ListingScope(ABC):
+    """Which listings price alerts found.
+
+    Catalog owns this port and alerts implements it, so catalog's product
+    list can narrow to "what my alerts found" without knowing alerts' tables.
+    The answer is an SQL condition on catalog's products, so the list keeps
+    one query with its paging and sorting.
+    """
+
+    @abstractmethod
+    def found_by_alerts(
+        self,
+        *,
+        user_id: int | None = None,
+        alert_id: int | None = None,
+        current_price: ColumnElement | None = None,
+    ) -> ColumnElement[bool]:
+        """True for a listing that a live alert found: the alert's search term
+        is in its title and it comes from one of the alert's stores. Only that
+        user's alerts (``user_id``) or that one alert (``alert_id``). With
+        ``current_price``, the listing's price must also be at or under the
+        alert's max price."""
         raise NotImplementedError

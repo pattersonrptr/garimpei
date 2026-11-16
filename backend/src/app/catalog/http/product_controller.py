@@ -5,6 +5,7 @@ from src.app.alerts import wiring as alerts_wiring
 from src.app.alerts.use_cases import EvaluateProductAlertsUseCase
 from src.app.catalog.entities import Product as ProductEntity
 from src.app.catalog.entities import ProductListFilters
+from src.app.catalog.http.listing_scope import get_listing_scope
 from src.app.catalog.http.product_presenter import ProductPresenter
 from src.app.catalog.http.product_schema import (
     ProductCreateRequest,
@@ -14,6 +15,7 @@ from src.app.catalog.http.product_schema import (
 )
 from src.app.catalog.http.validators import ProductValidator
 from src.app.catalog.persistence.repositories import ProductRepository
+from src.app.catalog.ports import ListingScope
 from src.app.catalog.use_cases import (
     CreateProductUseCase,
     DeleteProductUseCase,
@@ -39,9 +41,11 @@ router = APIRouter(tags=["products"], prefix="/products")
 logger = get_logger(__name__)
 
 
-def get_product_repository(db=Depends(get_db)) -> ProductRepository:
+def get_product_repository(
+    db=Depends(get_db), scope: ListingScope = Depends(get_listing_scope)
+) -> ProductRepository:
     """Dependency injection for ProductRepository."""
-    return ProductRepository(db)
+    return ProductRepository(db, scope)
 
 
 def get_product_alerts_use_case(
