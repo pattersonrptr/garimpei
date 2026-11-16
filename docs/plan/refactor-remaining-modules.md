@@ -37,6 +37,7 @@ characterization tests first, in their own PR, reviewed by the author.
 | Characterization tests for accounts | #187 | — | Before users and login move into an `accounts` module (decided by the author, Nov 16, 2026: users, sign-up, login/tokens and the logged-in user; plans and subscriptions later in `billing`; `User` becomes a pure dataclass and the e-mail format is checked only in the request schemas). 9 e2e tests in `test_accounts_characterization.py`: public sign-up (regular user, staff rights ignored, taken username and e-mail, invalid e-mail), the logged-in user (token without a username 401, deleted user 404, deactivated user 400, today's codes) and an invalid e-mail on update (422). Three mutations (sign-up keeping staff rights, 404 → 401, inactive user let through) each fail one test. Approved by the author (Nov 16, 2026) |
 | Accounts gaps covered | #188 | — | The gaps #187 left, approved by the author (Nov 16, 2026): login and refresh tokens last `ACCESS_TOKEN_EXPIRE_MINUTES` (2 e2e tests), and deleting a user who owns an alert fails with `IntegrityError` and keeps the user (1 integration test; the rollback path). Mutations (each token twice as long, delete without rollback) each fail one test. `create_access_token`'s default expiry is never used (both callers pass one): removed in the first accounts slice (Remove Dead Code). Abstract bodies (`raise NotImplementedError`) are excluded from the coverage report in `pyproject.toml` |
 | Accounts slice 1: `User` is a pure dataclass | #189 | Primitive Obsession on a framework type → Move Class (to `accounts/entities.py`) + Replace Pydantic model with dataclass | `User` was a Pydantic model that validated the e-mail on every construction, reads from the database included; it is now `@dataclass(kw_only=True)` in `accounts/entities.py` with the same fields and defaults, and `entities/user.py` is gone (21 app files and a script import the new path). The e-mail format is checked only by the request schemas (decided by the author, Nov 16, 2026; #187 pins sign-up and update refusing an invalid e-mail). The old `UserRepository` maps ORM rows to the entity field by field and writes with `asdict`; the password change uses `dataclasses.replace`. Test diff (the import line in 6 test files) approved by the author; red was a `ModuleNotFoundError`, as expected for a move. `accounts/entities.py` joined the blocking mypy step |
+| Accounts slice 2: persistence | (this PR) | Move Class (ORM model, repository and its interface into the module) | `user_model.py` → `accounts/persistence/models.py`, the old `UserRepository` → `accounts/persistence/repositories.py`, `UserRepositoryInterface` → `accounts/ports.py` (moved with `git mv`, content unchanged), and every import updated (alerts' owners and wiring, the old controllers, `security/auth.py`, validator, use cases, the model registries, two scripts). The repository's `updated_at` goes through the same assignment loop as the other fields, which clears its mypy error. Test diff (imports in 10 test files) approved by the author; red was a `ModuleNotFoundError`. The three files joined the blocking mypy step |
 
 ## Accounts module plan
 
@@ -47,7 +48,7 @@ login/tokens and the logged-in user; plans and subscriptions go to a
 1. **Entity** #189: `User` becomes a pure dataclass in
    `accounts/entities.py`; the e-mail format is checked only by the request
    schemas.
-2. **Persistence**: the ORM model, the repository and its interface move to
+2. **Persistence** (this PR): the ORM model, the repository and its interface move to
    `accounts/persistence/` and `accounts/ports.py`.
 3. **Use cases and validation**: `user_use_cases.py` to
    `accounts/use_cases.py`, `user_validator.py` to
@@ -97,6 +98,11 @@ before it starts.
   `SourceWebsiteRepository` (`src/app/infrastructure`), which belongs to
   whichever module ends up owning stores; handlers still build
   single-repository use cases inline from the injected port.
+- Accounts, for slice 5 (architecture-reviewer, slice 2): alerts'
+  `AlertOwnerReader` depends on accounts' whole `UserRepositoryInterface`;
+  give it a narrow reader through `accounts/wiring.py`. `admin_controller`
+  queries the accounts ORM model directly; move it behind an accounts use
+  case.
 - Validator tests live in `tests/unit/domain/validators/` but the code is
   now http-layer.
 - Checks that need a repository (unique URL, product exists) may belong in

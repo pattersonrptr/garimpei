@@ -1,8 +1,8 @@
-"""AlertOwnerReader over the older user repository."""
+"""AlertOwnerReader over accounts' user repository."""
 
+from src.app.accounts.ports import UserRepositoryInterface
 from src.app.alerts.entities import AlertOwner
 from src.app.alerts.ports import AlertOwnerReader
-from src.app.interfaces.repositories.user_repository import UserRepositoryInterface
 
 
 class UserAccountOwners(AlertOwnerReader):

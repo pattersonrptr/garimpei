@@ -5,6 +5,7 @@ from sqlalchemy import func, not_
 from sqlalchemy.orm import Session
 
 from src.app.accounts.entities import User as UserEntity
+from src.app.accounts.persistence.models import User
 from src.app.alerts.persistence.models import (
     PriceAlert,
     price_alert_source_website,
@@ -14,7 +15,6 @@ from src.app.infrastructure.database.models.search_execution_log_model import (
     SearchExecutionLog,
 )
 from src.app.infrastructure.database.models.source_website_model import SourceWebsite
-from src.app.infrastructure.database.models.user_model import User
 from src.app.infrastructure.database.text_match import title_contains
 from src.app.infrastructure.database_config import get_db
 from src.app.security.auth import get_current_superuser

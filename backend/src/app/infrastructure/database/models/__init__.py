@@ -1,3 +1,4 @@
+from src.app.accounts.persistence.models import User
 from src.app.alerts.persistence.models import (  # noqa: F401
     NotificationLog,
     PriceAlert,
@@ -14,7 +15,6 @@ from src.app.infrastructure.database.models.search_execution_log_model import (
 )
 from src.app.infrastructure.database.models.source_website_model import SourceWebsite
 from src.app.infrastructure.database.models.subscription_model import Subscription
-from src.app.infrastructure.database.models.user_model import User
 
 __all__ = [
     "User",

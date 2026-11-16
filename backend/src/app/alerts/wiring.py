@@ -7,6 +7,7 @@ alerts' adapters (listings, stores, owners, mailer, keyword searches).
 
 from sqlalchemy.orm import Session
 
+from src.app.accounts.persistence.repositories import UserRepository
 from src.app.alerts.http.validators import PriceAlertValidator
 from src.app.alerts.persistence.book_finder import CatalogBookFinder
 from src.app.alerts.persistence.keyword_searches import SearchConfigKeywordSearches
@@ -37,7 +38,6 @@ from src.app.infrastructure.repositories.search_config_repository import (
 from src.app.infrastructure.repositories.source_website_repository import (
     SourceWebsiteRepository,
 )
-from src.app.infrastructure.repositories.user_repository import UserRepository
 from src.app.interfaces.services.email_service import EmailServiceInterface
 
 

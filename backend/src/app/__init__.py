@@ -1,3 +1,4 @@
+from src.app.accounts.persistence.models import User  # noqa: F401
 from src.app.alerts.persistence.models import (
     NotificationLog,  # noqa: F401
     PriceAlert,  # noqa: F401
@@ -19,7 +20,6 @@ from src.app.infrastructure.database.models.search_execution_log_model import (
 from src.app.infrastructure.database.models.source_website_model import (
     SourceWebsite,  # noqa: F401
 )
-from src.app.infrastructure.database.models.user_model import User  # noqa: F401
 
 __all__ = [
     "NotificationLog",

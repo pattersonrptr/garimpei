@@ -5,8 +5,8 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from src.app.accounts.entities import User as UserEntity
-from src.app.infrastructure.database.models.user_model import User as UserModel
-from src.app.interfaces.repositories.user_repository import UserRepositoryInterface
+from src.app.accounts.persistence.models import User as UserModel
+from src.app.accounts.ports import UserRepositoryInterface
 
 _USER_FIELDS = [f.name for f in fields(UserEntity)]
 
@@ -58,9 +58,9 @@ class UserRepository(UserRepositoryInterface):
         if not db_user:
             return None
         try:
-            for key, value in asdict(user).items():
+            values = asdict(user) | {"updated_at": datetime.now(UTC)}
+            for key, value in values.items():
                 setattr(db_user, key, value)
-            db_user.updated_at = datetime.now(UTC)
             self.db.commit()
             self.db.refresh(db_user)
             return _to_entity(db_user)
