@@ -6,11 +6,11 @@ from sqlalchemy.orm import Session
 from src.app.accounts.entities import User as UserEntity
 from src.app.accounts.http.auth import get_current_active_user
 from src.app.billing.entities import Subscription as SubscriptionEntity
-from src.app.infrastructure.database_config import get_db
-from src.app.infrastructure.repositories.plan_repository import PlanRepository
-from src.app.infrastructure.repositories.subscription_repository import (
+from src.app.billing.persistence.repositories import (
+    PlanRepository,
     SubscriptionRepository,
 )
+from src.app.infrastructure.database_config import get_db
 from src.app.interfaces.http.plan_limits import get_user_plan_limits
 from src.app.interfaces.http.presenters.subscription_presenter import (
     SubscriptionPresenter,

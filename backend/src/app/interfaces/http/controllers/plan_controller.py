@@ -3,8 +3,8 @@ from fastapi import APIRouter, Depends
 from src.app.accounts.entities import User as UserEntity
 from src.app.accounts.http.auth import get_current_superuser
 from src.app.billing.entities import Plan as PlanEntity
+from src.app.billing.persistence.repositories import PlanRepository
 from src.app.infrastructure.database_config import get_db
-from src.app.infrastructure.repositories.plan_repository import PlanRepository
 from src.app.interfaces.http.presenters.plan_presenter import PlanPresenter
 from src.app.interfaces.http.schemas.plan_schema import (
     PlanCreateRequest,

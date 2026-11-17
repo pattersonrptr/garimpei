@@ -13,6 +13,10 @@ from src.app.accounts.http.auth import get_current_active_user
 from src.app.alerts.persistence.repositories import (
     PriceAlertRepository,
 )
+from src.app.billing.persistence.repositories import (
+    PlanRepository,
+    SubscriptionRepository,
+)
 from src.app.domain.plan_limits import (
     PlanLimits,
     PlanLimitViolation,
@@ -22,10 +26,6 @@ from src.app.domain.plan_limits import (
     source_limit_violation,
 )
 from src.app.infrastructure.database_config import get_db
-from src.app.infrastructure.repositories.plan_repository import PlanRepository
-from src.app.infrastructure.repositories.subscription_repository import (
-    SubscriptionRepository,
-)
 from src.common.jsonapi import JsonApiError
 
 
