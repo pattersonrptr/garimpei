@@ -7,7 +7,7 @@ Tests:
 - POST /plans/ — create plan (superuser only)
 """
 
-from src.app.infrastructure.database.models.plan_model import Plan as PlanModel
+from src.app.billing.persistence.models import Plan as PlanModel
 
 # ============================================================================
 # Fixtures

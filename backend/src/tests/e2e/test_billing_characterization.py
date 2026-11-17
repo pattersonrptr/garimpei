@@ -5,10 +5,8 @@ subscriptions and plan limits into ``src/app/billing`` can prove it
 changed nothing.
 """
 
-from src.app.infrastructure.database.models.plan_model import Plan as PlanModel
-from src.app.infrastructure.database.models.subscription_model import (
-    Subscription as SubscriptionModel,
-)
+from src.app.billing.persistence.models import Plan as PlanModel
+from src.app.billing.persistence.models import Subscription as SubscriptionModel
 from src.tests.e2e.test_subscription_controller import _seed_plans
 
 
