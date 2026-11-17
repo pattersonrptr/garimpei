@@ -6,8 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 from src.app.accounts.entities import User as UserEntity
-from src.app.accounts.http.validators import UserValidator
-from src.app.interfaces.http.schemas.user_schema import (
+from src.app.accounts.http.user_schema import (
     UserAttributesForCreation,
     UserAttributesForUpdate,
     UserCreateRequest,
@@ -15,6 +14,7 @@ from src.app.interfaces.http.schemas.user_schema import (
     UserResourceForUpdate,
     UserUpdateRequest,
 )
+from src.app.accounts.http.validators import UserValidator
 
 
 class TestUserValidatorCreate:
