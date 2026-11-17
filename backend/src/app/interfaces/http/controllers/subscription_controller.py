@@ -1,14 +1,20 @@
-from datetime import UTC, datetime
-
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
 
 from src.app.accounts.entities import User as UserEntity
 from src.app.accounts.http.auth import get_current_active_user
-from src.app.billing.entities import Subscription as SubscriptionEntity
 from src.app.billing.persistence.repositories import (
     PlanRepository,
     SubscriptionRepository,
+)
+from src.app.billing.use_cases import (
+    AlreadyFreeError,
+    CancelSubscriptionUseCase,
+    GetMySubscriptionUseCase,
+    MySubscription,
+    NoSubscriptionError,
+    PlanInactiveError,
+    PlanNotFoundError,
+    SubscribeUseCase,
 )
 from src.app.infrastructure.database_config import get_db
 from src.app.interfaces.http.plan_limits import get_user_plan_limits
@@ -18,11 +24,8 @@ from src.app.interfaces.http.presenters.subscription_presenter import (
 from src.app.interfaces.http.schemas.subscription_schema import (
     SubscriptionReadResponse,
 )
-from src.config.logging_config import get_logger
 
 router = APIRouter(tags=["subscriptions"], prefix="/subscriptions")
-
-logger = get_logger(__name__)
 
 
 def get_subscription_repository(db=Depends(get_db)) -> SubscriptionRepository:
@@ -33,6 +36,12 @@ def get_plan_repository(db=Depends(get_db)) -> PlanRepository:
     return PlanRepository(db)
 
 
+def _present(mine: MySubscription) -> SubscriptionReadResponse:
+    return SubscriptionPresenter.handle_success(
+        mine.subscription, plan_name=mine.plan_name
+    )
+
+
 @router.get("/me", response_model=SubscriptionReadResponse)
 def get_my_subscription(
     current_user: UserEntity = Depends(get_current_active_user),
@@ -40,26 +49,10 @@ def get_my_subscription(
     plan_repo: PlanRepository = Depends(get_plan_repository),
 ):
     """Get the current user's active subscription (or free plan info)."""
-    sub = sub_repo.get_by_user_id(current_user.id)
-
-    if sub:
-        plan = plan_repo.get_by_id(sub.plan_id)
-        plan_name = plan.display_name if plan else None
-        return SubscriptionPresenter.handle_success(sub, plan_name=plan_name)
-
-    # No subscription → synthesize a "free" response
-    plan = plan_repo.get_by_name("free")
-    free_sub = SubscriptionEntity(
-        id=0,
-        user_id=current_user.id,
-        plan_id=plan.id if plan else 0,
-        status="active",
-        current_period_start=current_user.created_at or datetime.now(UTC),
-        current_period_end=None,
+    mine = GetMySubscriptionUseCase(plan_repo, sub_repo).execute(
+        current_user.id, member_since=current_user.created_at
     )
-    return SubscriptionPresenter.handle_success(
-        free_sub, plan_name=plan.display_name if plan else "Free"
-    )
+    return _present(mine)
 
 
 @router.post("/subscribe/{plan_id}", response_model=SubscriptionReadResponse)
@@ -68,7 +61,6 @@ def subscribe_to_plan(
     current_user: UserEntity = Depends(get_current_active_user),
     sub_repo: SubscriptionRepository = Depends(get_subscription_repository),
     plan_repo: PlanRepository = Depends(get_plan_repository),
-    db: Session = Depends(get_db),
 ):
     """
     Subscribe the current user to a plan.
@@ -76,40 +68,18 @@ def subscribe_to_plan(
     For now this is a simple direct subscription (no payment flow).
     Payment integration (Stripe/Mercado Pago) will be added later.
     """
-    plan = plan_repo.get_by_id(plan_id)
-    if not plan:
+    try:
+        mine = SubscribeUseCase(plan_repo, sub_repo).execute(current_user.id, plan_id)
+    except PlanNotFoundError:
         return SubscriptionPresenter.handle_not_found(f"plan_id={plan_id}")
-
-    if not plan.is_active:
+    except PlanInactiveError:
         return SubscriptionPresenter.handle_error(
             400,
             "PLAN_INACTIVE",
             "Plan is not active",
             "This plan is no longer available.",
         )
-
-    # Cancel existing active subscription if any
-    existing = sub_repo.get_by_user_id(current_user.id)
-    if existing:
-        existing.status = "canceled"
-        existing.canceled_at = datetime.now(UTC)
-        sub_repo.update(existing.id, existing)
-
-    logger.info(
-        f"User {current_user.id} subscribing to plan {plan.name}",
-        extra={"action": "subscribe", "user_id": current_user.id, "plan_id": plan_id},
-    )
-
-    now = datetime.now(UTC)
-    new_sub = SubscriptionEntity(
-        user_id=current_user.id,
-        plan_id=plan_id,
-        status="active",
-        current_period_start=now,
-        current_period_end=None,  # Will be set when payment integration is added
-    )
-    created = sub_repo.create(new_sub)
-    return SubscriptionPresenter.handle_success(created, plan_name=plan.display_name)
+    return _present(mine)
 
 
 @router.post("/cancel", response_model=SubscriptionReadResponse)
@@ -119,34 +89,23 @@ def cancel_subscription(
     plan_repo: PlanRepository = Depends(get_plan_repository),
 ):
     """Cancel the current user's subscription (reverts to free plan)."""
-    sub = sub_repo.get_by_user_id(current_user.id)
-    if not sub:
+    try:
+        mine = CancelSubscriptionUseCase(plan_repo, sub_repo).execute(current_user.id)
+    except NoSubscriptionError:
         return SubscriptionPresenter.handle_error(
             400,
             "NO_SUBSCRIPTION",
             "No active subscription",
             "You don't have an active paid subscription to cancel.",
         )
-
-    plan = plan_repo.get_by_id(sub.plan_id)
-    if plan and plan.name == "free":
+    except AlreadyFreeError:
         return SubscriptionPresenter.handle_error(
             400,
             "ALREADY_FREE",
             "Already on free plan",
             "You are already on the free plan.",
         )
-
-    logger.info(
-        f"User {current_user.id} canceling subscription {sub.id}",
-        extra={"action": "cancel_subscription", "user_id": current_user.id},
-    )
-
-    sub.status = "canceled"
-    sub.canceled_at = datetime.now(UTC)
-    updated = sub_repo.update(sub.id, sub)
-    plan_name = plan.display_name if plan else None
-    return SubscriptionPresenter.handle_success(updated, plan_name=plan_name)
+    return _present(mine)
 
 
 @router.get("/me/limits")
