@@ -14,6 +14,7 @@ from src.app.alerts.persistence.keyword_searches import SearchConfigKeywordSearc
 from src.app.alerts.persistence.listings import CatalogListings
 from src.app.alerts.persistence.mailer import EmailServiceMailer
 from src.app.alerts.persistence.owners import UserAccountOwners
+from src.app.alerts.persistence.plan_limits import BillingAlertLimits
 from src.app.alerts.persistence.repositories import (
     NotificationLogRepository,
     PriceAlertRepository,
@@ -21,6 +22,7 @@ from src.app.alerts.persistence.repositories import (
 from src.app.alerts.persistence.stores import SourceWebsiteStores
 from src.app.alerts.ports import BookFinder
 from src.app.alerts.use_cases import (
+    CheckAlertLimitsUseCase,
     CreatePriceAlertUseCase,
     DeletePriceAlertUseCase,
     EvaluateBookAlertsUseCase,
@@ -30,6 +32,7 @@ from src.app.alerts.use_cases import (
     SendPriceAlertNotificationUseCase,
     UpdatePriceAlertUseCase,
 )
+from src.app.billing import wiring as billing_wiring
 from src.app.catalog.entities import AlertEvaluation
 from src.app.catalog.ports import PriceAlertChecks
 from src.app.infrastructure.repositories.search_config_repository import (
@@ -61,6 +64,14 @@ def book_finder(db: Session) -> BookFinder:
 def price_alert_validator(db: Session) -> PriceAlertValidator:
     """Checks create and update requests against stores and books."""
     return PriceAlertValidator(PriceAlertRepository(db), _stores(db), book_finder(db))
+
+
+def check_alert_limits(db: Session) -> CheckAlertLimitsUseCase:
+    """Checks an alert against the limits of its owner's plan (in billing)."""
+    return CheckAlertLimitsUseCase(
+        BillingAlertLimits(billing_wiring.user_plan_limits(db)),
+        PriceAlertRepository(db),
+    )
 
 
 def create_price_alert(db: Session) -> CreatePriceAlertUseCase:

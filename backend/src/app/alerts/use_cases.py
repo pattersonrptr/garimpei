@@ -1,11 +1,19 @@
 from datetime import UTC, datetime, timedelta
 from math import ceil
 
-from src.app.alerts.entities import KeywordSearch, Listing, MyAlert, NoticeHistory
+from src.app.alerts.entities import (
+    AlertLimits,
+    KeywordSearch,
+    LimitViolation,
+    Listing,
+    MyAlert,
+    NoticeHistory,
+)
 from src.app.alerts.entities import NotificationLog as NotificationLogEntity
 from src.app.alerts.entities import PriceAlert as PriceAlertEntity
 from src.app.alerts.notification_text import alert_subject
 from src.app.alerts.ports import (
+    AlertLimitsReader,
     AlertMailer,
     AlertOwnerReader,
     KeywordSearches,
@@ -725,3 +733,112 @@ class ListMyAlertsUseCase:
             )
             for alert in alerts
         ]
+
+
+def _active_alert_violation(
+    active_alerts: int, limits: AlertLimits
+) -> LimitViolation | None:
+    if limits.max_active_alerts is None or active_alerts < limits.max_active_alerts:
+        return None
+    return LimitViolation(
+        title="Alert limit reached",
+        detail=(
+            f"Your {limits.plan_name} plan allows up to "
+            f"{limits.max_active_alerts} active alerts. "
+            f"Upgrade your plan for more."
+        ),
+        pointer="/data/attributes/is_active",
+        meta={
+            "limit": "max_active_alerts",
+            "value": limits.max_active_alerts,
+            "plan": limits.plan_name,
+        },
+    )
+
+
+def _frequency_violation(
+    frequency_minutes: int, limits: AlertLimits
+) -> LimitViolation | None:
+    if frequency_minutes >= limits.min_frequency_minutes:
+        return None
+    return LimitViolation(
+        title="Frequency too high for your plan",
+        detail=(
+            f"Your {limits.plan_name} plan allows minimum frequency of "
+            f"{limits.min_frequency_minutes} minutes. "
+            f"Upgrade your plan for faster checks."
+        ),
+        pointer="/data/attributes/frequency_minutes",
+        meta={
+            "limit": "min_frequency_minutes",
+            "value": limits.min_frequency_minutes,
+            "plan": limits.plan_name,
+        },
+    )
+
+
+def _source_violation(source_count: int, limits: AlertLimits) -> LimitViolation | None:
+    if limits.max_sources is None or source_count <= limits.max_sources:
+        return None
+    return LimitViolation(
+        title="Source limit reached",
+        detail=(
+            f"Your {limits.plan_name} plan allows up to "
+            f"{limits.max_sources} sources per alert. "
+            f"Upgrade your plan for more."
+        ),
+        pointer="/data/attributes/source_website_ids",
+        meta={
+            "limit": "max_sources",
+            "value": limits.max_sources,
+            "plan": limits.plan_name,
+        },
+    )
+
+
+class CheckAlertLimitsUseCase:
+    """Does an alert fit the user's plan? The first broken limit is reported:
+    active alerts, then frequency, then stores."""
+
+    def __init__(
+        self, limits: AlertLimitsReader, alerts: PriceAlertRepositoryInterface
+    ):
+        self.limits = limits
+        self.alerts = alerts
+
+    def for_new_alert(
+        self, user_id: int, frequency_minutes: int, source_count: int
+    ) -> LimitViolation | None:
+        limits = self.limits.for_user(user_id)
+        return (
+            _active_alert_violation(self._active_alerts(user_id, limits), limits)
+            or _frequency_violation(frequency_minutes, limits)
+            or _source_violation(source_count, limits)
+        )
+
+    def for_changes(
+        self, before: PriceAlertEntity, after: PriceAlertEntity
+    ) -> LimitViolation | None:
+        """Only what changed is checked: a paused alert turned on, a new
+        frequency, a different set of stores."""
+        if before.user_id is None:
+            return None
+        limits = self.limits.for_user(before.user_id)
+        if after.is_active and not before.is_active:
+            violation = _active_alert_violation(
+                self._active_alerts(before.user_id, limits), limits
+            )
+            if violation:
+                return violation
+        if after.frequency_minutes != before.frequency_minutes:
+            violation = _frequency_violation(after.frequency_minutes, limits)
+            if violation:
+                return violation
+        if set(after.source_website_ids) != set(before.source_website_ids):
+            return _source_violation(len(after.source_website_ids), limits)
+        return None
+
+    def _active_alerts(self, user_id: int, limits: AlertLimits) -> int:
+        if limits.max_active_alerts is None:
+            return 0  # unlimited: no need to count
+        return self.alerts.count_active_by_user_id(user_id)

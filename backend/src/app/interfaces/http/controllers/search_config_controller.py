@@ -13,8 +13,10 @@ from src.app.accounts.http.auth import (
 from src.app.alerts.persistence.repositories import (
     PriceAlertRepository,
 )
+from src.app.billing.http.limits import get_user_plan_limits
 from src.app.billing.limits import PlanLimits
 from src.app.domain.plan_limits import (
+    PlanLimitViolation,
     manual_run_violation,
     source_limit_violation,
 )
@@ -31,7 +33,6 @@ from src.app.infrastructure.repositories.search_execution_log_repository import 
 from src.app.infrastructure.repositories.source_website_repository import (
     SourceWebsiteRepository,
 )
-from src.app.interfaces.http.plan_limits import get_user_plan_limits, to_jsonapi_error
 from src.app.interfaces.http.presenters.search_config_presenter import (
     SearchConfigPresenter,
 )
@@ -57,6 +58,18 @@ from src.config.logging_config import get_logger
 router = APIRouter(tags=["search_configs"], prefix="/search-configs")
 
 logger = get_logger(__name__)
+
+
+def _plan_limit_error(violation: PlanLimitViolation) -> JsonApiError:
+    """A plan limit a manual run breaks, as a JSON:API error."""
+    return JsonApiError(
+        status="403",
+        code="PLAN_LIMIT_REACHED",
+        title=violation.title,
+        detail=violation.detail,
+        source={"pointer": violation.pointer} if violation.pointer else None,
+        meta=violation.meta,
+    )
 
 
 def get_search_config_repository(db=Depends(get_db)) -> SearchConfigRepository:
@@ -497,7 +510,7 @@ def trigger_search_config(
             return JSONResponse(
                 status_code=403,
                 content=JsonApiErrorResponse(
-                    errors=[to_jsonapi_error(violation)]
+                    errors=[_plan_limit_error(violation)]
                 ).model_dump(),
                 media_type="application/vnd.api+json",
             )

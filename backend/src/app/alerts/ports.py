@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 
 from src.app.alerts.entities import (
+    AlertLimits,
     AlertOwner,
     BookRef,
     KeywordSearch,
@@ -297,4 +298,12 @@ class ProductSnapshotReader(ABC):
     @abstractmethod
     def snapshots(self, product_ids: list[int]) -> dict[int, ProductSnapshot]:
         """Each known product by id; unknown ids are left out."""
+        raise NotImplementedError
+
+
+class AlertLimitsReader(ABC):
+    """The alert limits of a user's plan."""
+
+    @abstractmethod
+    def for_user(self, user_id: int) -> AlertLimits:
         raise NotImplementedError

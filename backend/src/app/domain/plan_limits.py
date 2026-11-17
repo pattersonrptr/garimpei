@@ -2,9 +2,9 @@
 
 No framework or database here: callers load the data (limits, counts,
 timestamps) and these functions decide whether an operation is allowed.
-What a plan allows (PlanLimits) lives in src/app/billing/limits.py; the
-FastAPI dependency and the JSON:API error mapping live in
-src/app/interfaces/http/plan_limits.py.
+What a plan allows (PlanLimits) lives in src/app/billing/limits.py. These
+rules serve saved searches ("run now" and their stores) until saved searches
+get a module; alerts apply their own limits (src/app/alerts/use_cases.py).
 """
 
 from dataclasses import dataclass
@@ -23,52 +23,6 @@ class PlanLimitViolation:
     # Machine-readable facts so clients can explain it in the user's language:
     # {"limit": "<name>", "value": <number>, "plan": "<plan name>"}
     meta: dict | None = None
-
-
-def alert_limit_violation(
-    active_alert_count: int, limits: PlanLimits
-) -> PlanLimitViolation | None:
-    """Can the user create one more active alert?"""
-    if limits.max_active_alerts is None:
-        return None  # unlimited
-    if active_alert_count >= limits.max_active_alerts:
-        return PlanLimitViolation(
-            title="Alert limit reached",
-            detail=(
-                f"Your {limits.plan_name} plan allows up to "
-                f"{limits.max_active_alerts} active alerts. "
-                f"Upgrade your plan for more."
-            ),
-            pointer="/data/attributes/is_active",
-            meta={
-                "limit": "max_active_alerts",
-                "value": limits.max_active_alerts,
-                "plan": limits.plan_name,
-            },
-        )
-    return None
-
-
-def frequency_limit_violation(
-    frequency_minutes: int, limits: PlanLimits
-) -> PlanLimitViolation | None:
-    """Is the requested check frequency allowed by the plan?"""
-    if frequency_minutes < limits.min_frequency_minutes:
-        return PlanLimitViolation(
-            title="Frequency too high for your plan",
-            detail=(
-                f"Your {limits.plan_name} plan allows minimum frequency of "
-                f"{limits.min_frequency_minutes} minutes. "
-                f"Upgrade your plan for faster checks."
-            ),
-            pointer="/data/attributes/frequency_minutes",
-            meta={
-                "limit": "min_frequency_minutes",
-                "value": limits.min_frequency_minutes,
-                "plan": limits.plan_name,
-            },
-        )
-    return None
 
 
 def source_limit_violation(
