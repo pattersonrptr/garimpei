@@ -2,6 +2,12 @@
 HTTP Controllers (Adapters for HTTP requests/responses).
 """
 
+from src.app.accounts.http.auth_controller import (
+    auth_router as auth_controller,
+)
+from src.app.accounts.http.user_controller import (
+    router as user_controller,
+)
 from src.app.alerts.http.my_alerts_controller import (
     router as my_alerts_controller,
 )
@@ -26,9 +32,6 @@ from src.app.catalog.http.product_controller import (
 from src.app.interfaces.http.controllers.admin_controller import (
     router as admin_controller,
 )
-from src.app.interfaces.http.controllers.auth_controller import (
-    auth_router as auth_controller,
-)
 from src.app.interfaces.http.controllers.dashboard_controller import (
     router as dashboard_controller,
 )
@@ -46,9 +49,6 @@ from src.app.interfaces.http.controllers.source_website_controller import (
 )
 from src.app.interfaces.http.controllers.subscription_controller import (
     router as subscription_controller,
-)
-from src.app.interfaces.http.controllers.user_controller import (
-    router as user_controller,
 )
 
 __all__ = [
