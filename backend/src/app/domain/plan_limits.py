@@ -9,7 +9,7 @@ src/app/interfaces/http/plan_limits.py.
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
-from src.app.entities.plan import Plan
+from src.app.billing.entities import Plan
 
 # Default limits for users without a subscription (free tier)
 FREE_PLAN_DEFAULTS = {

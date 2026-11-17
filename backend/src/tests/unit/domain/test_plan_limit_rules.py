@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from src.app.billing.entities import Plan
 from src.app.domain import plan_limits
 from src.app.domain.plan_limits import (
     PlanLimits,
@@ -15,7 +16,6 @@ from src.app.domain.plan_limits import (
     manual_run_violation,
     source_limit_violation,
 )
-from src.app.entities.plan import Plan
 
 FREE = limits_for_plan(None)
 PRO = PlanLimits(

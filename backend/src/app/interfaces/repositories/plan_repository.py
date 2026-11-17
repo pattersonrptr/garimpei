@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from src.app.entities.plan import Plan as PlanEntity
+from src.app.billing.entities import Plan as PlanEntity
 
 
 class PlanRepositoryInterface(ABC):
