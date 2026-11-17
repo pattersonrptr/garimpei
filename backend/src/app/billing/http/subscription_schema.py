@@ -52,4 +52,4 @@ class SubscriptionReadResponse(SingleResourceResponse):
 
 
 class SubscriptionsCollectionResponse(CollectionResponse):
-    data: list[SubscriptionResource]
+    data: list[SubscriptionResource]  # type: ignore[assignment]

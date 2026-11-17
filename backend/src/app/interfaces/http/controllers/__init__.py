@@ -17,6 +17,12 @@ from src.app.alerts.http.notification_log_controller import (
 from src.app.alerts.http.price_alert_controller import (
     router as price_alert_controller,
 )
+from src.app.billing.http.plan_controller import (
+    router as plan_controller,
+)
+from src.app.billing.http.subscription_controller import (
+    router as subscription_controller,
+)
 from src.app.catalog.http.book_controller import (
     router as book_controller,
 )
@@ -35,9 +41,6 @@ from src.app.interfaces.http.controllers.admin_controller import (
 from src.app.interfaces.http.controllers.dashboard_controller import (
     router as dashboard_controller,
 )
-from src.app.interfaces.http.controllers.plan_controller import (
-    router as plan_controller,
-)
 from src.app.interfaces.http.controllers.search_config_controller import (
     router as search_config_controller,
 )
@@ -46,9 +49,6 @@ from src.app.interfaces.http.controllers.search_execution_log_controller import 
 )
 from src.app.interfaces.http.controllers.source_website_controller import (
     router as source_website_controller,
-)
-from src.app.interfaces.http.controllers.subscription_controller import (
-    router as subscription_controller,
 )
 
 __all__ = [

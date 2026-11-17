@@ -2,8 +2,15 @@ from fastapi import APIRouter, Depends
 
 from src.app.accounts.entities import User as UserEntity
 from src.app.accounts.http.auth import get_current_superuser
+from src.app.billing import wiring
 from src.app.billing.entities import Plan as PlanEntity
-from src.app.billing.persistence.repositories import PlanRepository
+from src.app.billing.http.plan_presenter import PlanPresenter
+from src.app.billing.http.plan_schema import (
+    PlanCreateRequest,
+    PlanReadResponse,
+    PlansCollectionResponse,
+)
+from src.app.billing.ports import PlanRepositoryInterface
 from src.app.billing.use_cases import (
     CreatePlanUseCase,
     GetPlanUseCase,
@@ -11,12 +18,6 @@ from src.app.billing.use_cases import (
     PlanNotFoundError,
 )
 from src.app.infrastructure.database_config import get_db
-from src.app.interfaces.http.presenters.plan_presenter import PlanPresenter
-from src.app.interfaces.http.schemas.plan_schema import (
-    PlanCreateRequest,
-    PlanReadResponse,
-    PlansCollectionResponse,
-)
 from src.config.logging_config import get_logger
 
 router = APIRouter(tags=["plans"], prefix="/plans")
@@ -24,13 +25,13 @@ router = APIRouter(tags=["plans"], prefix="/plans")
 logger = get_logger(__name__)
 
 
-def get_plan_repository(db=Depends(get_db)) -> PlanRepository:
-    return PlanRepository(db)
+def get_plan_repository(db=Depends(get_db)) -> PlanRepositoryInterface:
+    return wiring.plans(db)
 
 
 @router.get("/", response_model=PlansCollectionResponse)
 def list_plans(
-    plan_repo: PlanRepository = Depends(get_plan_repository),
+    plan_repo: PlanRepositoryInterface = Depends(get_plan_repository),
 ):
     """List all active plans. Public endpoint (no auth required)."""
     plans = ListPlansUseCase(plan_repo).execute()
@@ -40,7 +41,7 @@ def list_plans(
 @router.get("/{plan_id}", response_model=PlanReadResponse)
 def get_plan(
     plan_id: int,
-    plan_repo: PlanRepository = Depends(get_plan_repository),
+    plan_repo: PlanRepositoryInterface = Depends(get_plan_repository),
 ):
     """Get a single plan by ID. Public endpoint."""
     try:
@@ -53,7 +54,7 @@ def get_plan(
 @router.post("/", response_model=PlanReadResponse, status_code=201)
 def create_plan(
     plan_in: PlanCreateRequest,
-    plan_repo: PlanRepository = Depends(get_plan_repository),
+    plan_repo: PlanRepositoryInterface = Depends(get_plan_repository),
     current_user: UserEntity = Depends(get_current_superuser),
 ):
     """Create a new plan. Superuser only."""
