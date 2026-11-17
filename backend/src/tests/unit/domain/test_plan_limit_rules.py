@@ -7,12 +7,11 @@ from pathlib import Path
 import pytest
 
 from src.app.billing.entities import Plan
+from src.app.billing.limits import PlanLimits, limits_for_plan
 from src.app.domain import plan_limits
 from src.app.domain.plan_limits import (
-    PlanLimits,
     alert_limit_violation,
     frequency_limit_violation,
-    limits_for_plan,
     manual_run_violation,
     source_limit_violation,
 )

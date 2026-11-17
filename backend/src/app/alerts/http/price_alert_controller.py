@@ -28,12 +28,12 @@ from src.app.alerts.use_cases import (
     ListPriceAlertsUseCase,
     NotifyAlertOpportunitiesUseCase,
 )
+from src.app.billing.limits import PlanLimits
 from src.app.catalog import wiring as catalog_wiring
 from src.app.catalog.http.product_presenter import ProductPresenter
 from src.app.catalog.http.product_schema import ProductsCollectionResponse
 from src.app.catalog.ports import ProductRepositoryInterface
 from src.app.catalog.use_cases import SearchProductsByTermUseCase
-from src.app.domain.plan_limits import PlanLimits
 from src.app.infrastructure.database_config import get_db
 from src.app.infrastructure.services.email_service import get_email_service
 from src.app.interfaces.http.plan_limits import (
