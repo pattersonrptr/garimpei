@@ -13,16 +13,16 @@ from src.app.accounts.http.auth import get_current_active_user
 from src.app.alerts.persistence.repositories import (
     PriceAlertRepository,
 )
+from src.app.billing.limits import PlanLimits
 from src.app.billing.persistence.repositories import (
     PlanRepository,
     SubscriptionRepository,
 )
+from src.app.billing.use_cases import GetUserPlanLimitsUseCase
 from src.app.domain.plan_limits import (
-    PlanLimits,
     PlanLimitViolation,
     alert_limit_violation,
     frequency_limit_violation,
-    limits_for_plan,
     source_limit_violation,
 )
 from src.app.infrastructure.database_config import get_db
@@ -34,9 +34,9 @@ def get_user_plan_limits(
     current_user: UserEntity = Depends(get_current_active_user),
 ) -> PlanLimits:
     """FastAPI dependency that returns the current user's plan limits."""
-    subscription = SubscriptionRepository(db).get_by_user_id(current_user.id)
-    plan = PlanRepository(db).get_by_id(subscription.plan_id) if subscription else None
-    return limits_for_plan(plan)
+    return GetUserPlanLimitsUseCase(
+        PlanRepository(db), SubscriptionRepository(db)
+    ).execute(current_user.id)
 
 
 def to_jsonapi_error(violation: PlanLimitViolation | None) -> JsonApiError | None:

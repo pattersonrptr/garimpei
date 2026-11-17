@@ -13,8 +13,8 @@ from src.app.accounts.http.auth import (
 from src.app.alerts.persistence.repositories import (
     PriceAlertRepository,
 )
+from src.app.billing.limits import PlanLimits
 from src.app.domain.plan_limits import (
-    PlanLimits,
     manual_run_violation,
     source_limit_violation,
 )
