@@ -83,3 +83,51 @@ class TestMySubscriptionWithoutPlans:
         attributes = response.json()["data"]["attributes"]
         assert attributes["plan_name"] == "Free"
         assert attributes["plan_id"] == 0
+
+
+class TestPlans:
+    def test_the_plan_list_leaves_out_plans_no_longer_offered(self, client, test_db):
+        _seed_plans(test_db)
+        test_db.add(
+            PlanModel(id=4, name="legacy", display_name="Legacy", is_active=False)
+        )
+        test_db.commit()
+
+        response = client.get("/plans/")
+
+        names = [plan["attributes"]["name"] for plan in response.json()["data"]]
+        assert names == ["free", "pro", "business"]
+
+    def test_a_removed_plan_is_not_found_rather_than_a_neighbor(self, client, test_db):
+        _seed_plans(test_db)
+        test_db.query(PlanModel).filter(PlanModel.id == 2).delete()
+        test_db.commit()
+
+        response = client.get("/plans/2")
+
+        assert response.status_code == 404
+
+
+class TestCancelRecordsWhen:
+    def test_canceling_records_when_the_subscription_was_canceled(
+        self, client, test_db, sample_user, auth_headers
+    ):
+        _seed_plans(test_db)
+        subscribe(test_db, sample_user.id, 2)
+
+        response = client.post("/subscriptions/cancel", headers=auth_headers)
+
+        assert response.status_code == 200
+        assert response.json()["data"]["attributes"]["canceled_at"] is not None
+
+
+class TestMyLimits:
+    def test_a_pro_user_keeps_90_days_of_price_history(
+        self, client, test_db, sample_user, auth_headers
+    ):
+        _seed_plans(test_db)
+        subscribe(test_db, sample_user.id, 2)
+
+        response = client.get("/subscriptions/me/limits", headers=auth_headers)
+
+        assert response.json()["data"]["attributes"]["price_history_days"] == 90
