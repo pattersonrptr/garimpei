@@ -69,6 +69,35 @@ login/tokens and the logged-in user; plans and subscriptions go to a
 
 Other modules' http layers may depend on `accounts` (the logged-in user).
 
+## Billing module plan
+
+Approved by the author (Nov 17, 2026). `billing` holds plans, subscriptions
+and plan limits; the characterization tests (#196) pin its behavior. One PR
+per slice, behavior unchanged:
+
+1. **Entities**: `Plan` and `Subscription` become pure dataclasses in
+   `billing/entities.py`; the repositories map ORM rows field by field.
+2. **Persistence**: the ORM models, the repositories and their interfaces
+   move to `billing/persistence/` and `billing/ports.py`; the unused
+   `PlanRepository.update` and `SubscriptionRepository.get_by_id` are removed
+   (Remove Dead Code).
+3. **Use cases**: the logic written inside the plan and subscription
+   controllers (list, get and create plans; my subscription with the
+   synthesized Free; subscribe; cancel; my limits) moves to
+   `billing/use_cases.py`. They return plain data or a domain error; JSON:API
+   stays at the edge.
+4. **Plan limits**: billing answers one question, "what are user X's
+   limits?" (`PlanLimits`, `limits_for_plan` and a `GetUserPlanLimits` use
+   case). The rules that compare a request with a limit (active alerts,
+   minimum frequency, sources) move to `alerts`, which asks for the limits
+   through its own port (adapter over billing) and counts its own alerts, so
+   billing no longer imports alerts' `PriceAlertRepository`
+   (decided by the author, Nov 17, 2026). `interfaces/http/plan_limits.py`
+   goes away. `manual_run_violation` (saved searches' "run now") stays where
+   it is, reading the limits from billing, until saved searches get a module.
+5. **HTTP**: the plan and subscription schemas, presenters and controllers
+   move to `billing/http/`, built by `billing/wiring.py`.
+
 ## Queue
 
 Found while doing the slices above; each one is proposed to the author
