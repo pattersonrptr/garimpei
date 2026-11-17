@@ -9,7 +9,19 @@ from sqlalchemy.orm import Session
 from src.app.accounts.adapters.passwords import pwd_context
 from src.app.accounts.entities import User as UserEntity
 from src.app.accounts.http.auth import get_current_active_user
+from src.app.accounts.http.auth_presenter import AuthPresenter
+from src.app.accounts.http.auth_schema import (
+    PasswordChangeRequest,
+    TokenResponse,
+    TokenValidationRequest,
+    TokenValidationResponse,
+)
 from src.app.accounts.http.tokens import create_access_token, decode_access_token
+from src.app.accounts.http.user_presenter import UserPresenter
+from src.app.accounts.http.user_schema import (
+    UserCreateRequest,
+    UserReadResponse,
+)
 from src.app.accounts.persistence.repositories import UserRepository
 from src.app.accounts.use_cases import (
     CreateUserUseCase,
@@ -17,18 +29,6 @@ from src.app.accounts.use_cases import (
     GetUserByUsernameUseCase,
 )
 from src.app.infrastructure.database_config import get_db
-from src.app.interfaces.http.presenters.auth_presenter import AuthPresenter
-from src.app.interfaces.http.presenters.user_presenter import UserPresenter
-from src.app.interfaces.http.schemas.auth_schema import (
-    PasswordChangeRequest,
-    TokenResponse,
-    TokenValidationRequest,
-    TokenValidationResponse,
-)
-from src.app.interfaces.http.schemas.user_schema import (
-    UserCreateRequest,
-    UserReadResponse,
-)
 from src.common.jsonapi import JsonApiError, JsonApiErrorResponse
 from src.config import settings
 from src.config.logging_config import get_logger

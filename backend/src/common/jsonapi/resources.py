@@ -1,5 +1,5 @@
 import builtins
-from typing import Any, TypeVar
+from typing import Any, Self, TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -24,7 +24,7 @@ class ResourceObject(BaseModel):
         type_name: str,
         attributes_field: builtins.type[T] | None = None,
         exclude: list[str] | None = None,
-    ) -> "ResourceObject":
+    ) -> Self:
         """
         Builds a ResourceObject from an entity/model.
         - model: pydantic model or object with __dict__.
