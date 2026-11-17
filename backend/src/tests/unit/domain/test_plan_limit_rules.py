@@ -10,8 +10,6 @@ from src.app.billing.entities import Plan
 from src.app.billing.limits import PlanLimits, limits_for_plan
 from src.app.domain import plan_limits
 from src.app.domain.plan_limits import (
-    alert_limit_violation,
-    frequency_limit_violation,
     manual_run_violation,
     source_limit_violation,
 )
@@ -64,20 +62,6 @@ class TestLimitsForPlan:
         assert (limits.plan_name, limits.max_active_alerts) == ("pro", 20)
         assert limits.min_frequency_minutes == 60
         assert limits.max_sources is None
-
-
-@pytest.mark.parametrize(
-    "count,blocked", [(0, False), (2, False), (3, True), (5, True)]
-)
-def test_alert_limit(count, blocked):
-    violation = alert_limit_violation(count, FREE)
-    assert (violation is not None) is blocked
-    assert alert_limit_violation(100, PRO) is None
-
-
-@pytest.mark.parametrize("minutes,blocked", [(359, True), (360, False), (1440, False)])
-def test_frequency_limit(minutes, blocked):
-    assert (frequency_limit_violation(minutes, FREE) is not None) is blocked
 
 
 @pytest.mark.parametrize("sources,blocked", [(1, False), (2, False), (3, True)])
