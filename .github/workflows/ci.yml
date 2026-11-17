@@ -98,7 +98,8 @@ jobs:
             src/app/billing/entities.py \
             src/app/billing/ports.py \
             src/app/billing/persistence/models.py \
-            src/app/billing/persistence/repositories.py
+            src/app/billing/persistence/repositories.py \
+            src/app/billing/use_cases.py
 
       - name: Type check with mypy (whole backend, report only)
         run: poetry run mypy src/
