@@ -39,7 +39,7 @@ class PlanReadResponse(SingleResourceResponse):
 
 
 class PlansCollectionResponse(CollectionResponse):
-    data: list[PlanResource]
+    data: list[PlanResource]  # type: ignore[assignment]
 
 
 class PlanAttributesForCreation(BaseModel):

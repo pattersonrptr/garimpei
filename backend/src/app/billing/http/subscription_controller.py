@@ -2,10 +2,17 @@ from fastapi import APIRouter, Depends
 
 from src.app.accounts.entities import User as UserEntity
 from src.app.accounts.http.auth import get_current_active_user
+from src.app.billing import wiring
 from src.app.billing.http.limits import get_user_plan_limits
-from src.app.billing.persistence.repositories import (
-    PlanRepository,
-    SubscriptionRepository,
+from src.app.billing.http.subscription_presenter import (
+    SubscriptionPresenter,
+)
+from src.app.billing.http.subscription_schema import (
+    SubscriptionReadResponse,
+)
+from src.app.billing.ports import (
+    PlanRepositoryInterface,
+    SubscriptionRepositoryInterface,
 )
 from src.app.billing.use_cases import (
     AlreadyFreeError,
@@ -18,22 +25,16 @@ from src.app.billing.use_cases import (
     SubscribeUseCase,
 )
 from src.app.infrastructure.database_config import get_db
-from src.app.interfaces.http.presenters.subscription_presenter import (
-    SubscriptionPresenter,
-)
-from src.app.interfaces.http.schemas.subscription_schema import (
-    SubscriptionReadResponse,
-)
 
 router = APIRouter(tags=["subscriptions"], prefix="/subscriptions")
 
 
-def get_subscription_repository(db=Depends(get_db)) -> SubscriptionRepository:
-    return SubscriptionRepository(db)
+def get_subscription_repository(db=Depends(get_db)) -> SubscriptionRepositoryInterface:
+    return wiring.subscriptions(db)
 
 
-def get_plan_repository(db=Depends(get_db)) -> PlanRepository:
-    return PlanRepository(db)
+def get_plan_repository(db=Depends(get_db)) -> PlanRepositoryInterface:
+    return wiring.plans(db)
 
 
 def _present(mine: MySubscription) -> SubscriptionReadResponse:
@@ -45,8 +46,8 @@ def _present(mine: MySubscription) -> SubscriptionReadResponse:
 @router.get("/me", response_model=SubscriptionReadResponse)
 def get_my_subscription(
     current_user: UserEntity = Depends(get_current_active_user),
-    sub_repo: SubscriptionRepository = Depends(get_subscription_repository),
-    plan_repo: PlanRepository = Depends(get_plan_repository),
+    sub_repo: SubscriptionRepositoryInterface = Depends(get_subscription_repository),
+    plan_repo: PlanRepositoryInterface = Depends(get_plan_repository),
 ):
     """Get the current user's active subscription (or free plan info)."""
     mine = GetMySubscriptionUseCase(plan_repo, sub_repo).execute(
@@ -59,8 +60,8 @@ def get_my_subscription(
 def subscribe_to_plan(
     plan_id: int,
     current_user: UserEntity = Depends(get_current_active_user),
-    sub_repo: SubscriptionRepository = Depends(get_subscription_repository),
-    plan_repo: PlanRepository = Depends(get_plan_repository),
+    sub_repo: SubscriptionRepositoryInterface = Depends(get_subscription_repository),
+    plan_repo: PlanRepositoryInterface = Depends(get_plan_repository),
 ):
     """
     Subscribe the current user to a plan.
@@ -85,8 +86,8 @@ def subscribe_to_plan(
 @router.post("/cancel", response_model=SubscriptionReadResponse)
 def cancel_subscription(
     current_user: UserEntity = Depends(get_current_active_user),
-    sub_repo: SubscriptionRepository = Depends(get_subscription_repository),
-    plan_repo: PlanRepository = Depends(get_plan_repository),
+    sub_repo: SubscriptionRepositoryInterface = Depends(get_subscription_repository),
+    plan_repo: PlanRepositoryInterface = Depends(get_plan_repository),
 ):
     """Cancel the current user's subscription (reverts to free plan)."""
     try:

@@ -1,6 +1,6 @@
 from fastapi.responses import JSONResponse
 
-from src.app.interfaces.http.schemas.subscription_schema import (
+from src.app.billing.http.subscription_schema import (
     SubscriptionReadResponse,
     SubscriptionResource,
 )

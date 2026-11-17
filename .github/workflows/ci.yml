@@ -103,6 +103,8 @@ jobs:
             src/app/billing/limits.py \
             src/app/billing/wiring.py \
             src/app/billing/http/limits.py \
+            src/app/billing/http/plan_controller.py \
+            src/app/billing/http/subscription_controller.py \
             src/app/alerts/http/limits.py \
             src/app/alerts/persistence/plan_limits.py
 

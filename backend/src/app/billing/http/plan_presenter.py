@@ -1,7 +1,7 @@
 from fastapi.responses import JSONResponse
 
 from src.app.billing.entities import Plan as PlanEntity
-from src.app.interfaces.http.schemas.plan_schema import (
+from src.app.billing.http.plan_schema import (
     PlanReadResponse,
     PlanResource,
     PlansCollectionResponse,
