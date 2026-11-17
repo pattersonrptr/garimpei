@@ -40,6 +40,7 @@ characterization tests first, in their own PR, reviewed by the author.
 | Accounts slice 2: persistence | #190 | Move Class (ORM model, repository and its interface into the module) | `user_model.py` → `accounts/persistence/models.py`, the old `UserRepository` → `accounts/persistence/repositories.py`, `UserRepositoryInterface` → `accounts/ports.py` (moved with `git mv`, content unchanged), and every import updated (alerts' owners and wiring, the old controllers, `security/auth.py`, validator, use cases, the model registries, two scripts). The repository's `updated_at` goes through the same assignment loop as the other fields, which clears its mypy error. Test diff (imports in 10 test files) approved by the author; red was a `ModuleNotFoundError`. The three files joined the blocking mypy step |
 | Accounts slice 3: use cases take plain data | #191 | Move Function (into `accounts`) + Introduce Parameter Object (`NewUser`, `UserChanges`) | `user_use_cases.py` → `accounts/use_cases.py`; create and update take the plain dataclasses instead of the JSON:API request schemas, which translate with `to_new_user()` and `to_changes()` (decided by the author, Nov 16, 2026: JSON:API stays the HTTP contract, the core takes plain data). `user_validator.py` → `accounts/http/validators.py` (it builds JSON:API errors, so it stays http and takes the schemas). passlib's `pwd_context`, which the controllers and `create_superuser.py` took from the use cases module, → `accounts/adapters/passwords.py`. Test diff approved by the author: the use case tests build `NewUser`/`UserChanges` (no assertion changed) and the validator test's import. A mutation run over the translations found the e-mail on update uncovered over HTTP; a new e2e test (`test_a_staff_member_changes_a_users_email`, approved) kills it. Red was a `ModuleNotFoundError`. The three files joined the blocking mypy step |
 | Accounts slice 4: login tokens and the logged-in user | #192 | Move Function + Extract Function + Remove Dead Code | `security/auth.py` → `accounts/http/auth.py` (typed; the other modules' http layers import the logged-in user from there, as the plan allows), and `security/` is gone. Token creation leaves `auth_controller` for `accounts/http/tokens.py`: the claims built twice (login and refresh) become `create_access_token(user)`, and its never-used default expiry is removed; `decode_access_token` keeps `jose` in one place. No test changed: the characterization tests (#187, #188) cover login, refresh, expiry and the logged-in user over HTTP; two mutations (expiry +5 minutes, `sub` = e-mail) fail them. No red, as for any move with unchanged tests. `auth.py` and `tokens.py` joined the blocking mypy step |
+| Accounts slice 5a: schemas and presenters | (this PR) | Move Function | `user_schema`, `auth_schema`, `user_presenter` and `auth_presenter` leave `interfaces/http/` for `accounts/http/`, so `accounts/http/validators.py` no longer imports from the old layer. With the validator importing `user_schema` from inside `accounts`, the blocking mypy step began reporting two old type errors there: `ResourceObject.from_model` now returns `Self` (it builds `cls`; this also fixes the same error in catalog's and alerts' schemas, whole-backend mypy 254 → 242), and `UsersCollectionResponse.data` gets a narrow `type: ignore[assignment]` (a Pydantic field narrowed in a subclass). Test diff approved by the author (Nov 16, 2026): three imports, no assertion changed. Red was a `ModuleNotFoundError` |
 
 ## Accounts module plan
 
@@ -58,8 +59,11 @@ login/tokens and the logged-in user; plans and subscriptions go to a
 4. **Login and the logged-in user** #192: `security/auth.py` and token creation
    to `accounts/http/`; `create_access_token`'s unused default expiry is
    removed (Remove Dead Code).
-5. **Controllers**: auth and users, with presenters and schemas, to
-   `accounts/http/`, built by `accounts/wiring.py`.
+5. **Controllers**, in two PRs: (5a, this PR) the auth and user schemas and
+   presenters to `accounts/http/`; (5b) the auth and user controllers to
+   `accounts/http/`, built by `accounts/wiring.py`. `admin_controller` is not
+   accounts (it summarizes and cleans products, stores and alerts): it waits
+   for the shared-infra step.
 
 Other modules' http layers may depend on `accounts` (the logged-in user).
 
@@ -104,9 +108,8 @@ before it starts.
   `AlertOwnerReader` depends on accounts' whole `UserRepositoryInterface`;
   give it a narrow reader through `accounts/wiring.py`. `admin_controller`
   queries the accounts ORM model directly; move it behind an accounts use
-  case. `accounts/http/validators.py` imports the request schemas from
-  `interfaces/http/schemas/user_schema.py` until they move into
-  `accounts/http/` (architecture-reviewer, slice 3).
+  case when admin finds its home. Done in 5a: the validator's schema
+  imports (architecture-reviewer, slice 3).
 - Validator tests live in `tests/unit/domain/validators/` but the code is
   now http-layer.
 - Checks that need a repository (unique URL, product exists) may belong in
