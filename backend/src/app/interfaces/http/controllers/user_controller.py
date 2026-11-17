@@ -4,6 +4,14 @@ from fastapi.responses import JSONResponse
 from src.app.accounts.adapters.passwords import pwd_context
 from src.app.accounts.entities import User as UserEntity
 from src.app.accounts.http.auth import get_current_staff_user, get_current_superuser
+from src.app.accounts.http.user_presenter import UserPresenter
+from src.app.accounts.http.user_schema import (
+    UserCreateRequest,
+    UserReadResponse,
+    UserResource,
+    UsersCollectionResponse,
+    UserUpdateRequest,
+)
 from src.app.accounts.http.validators import UserValidator
 from src.app.accounts.persistence.repositories import UserRepository
 from src.app.accounts.use_cases import (
@@ -16,14 +24,6 @@ from src.app.accounts.use_cases import (
     UpdateUserUseCase,
 )
 from src.app.infrastructure.database_config import get_db
-from src.app.interfaces.http.presenters.user_presenter import UserPresenter
-from src.app.interfaces.http.schemas.user_schema import (
-    UserCreateRequest,
-    UserReadResponse,
-    UserResource,
-    UsersCollectionResponse,
-    UserUpdateRequest,
-)
 from src.common.jsonapi import JsonApiErrorResponse
 from src.config.logging_config import get_logger
 

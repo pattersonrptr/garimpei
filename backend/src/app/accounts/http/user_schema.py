@@ -111,4 +111,5 @@ class UserReadResponse(SingleResourceResponse):
 
 
 class UsersCollectionResponse(CollectionResponse):
-    data: list[UserResource]
+    # Narrows the base's list[ResourceObject]; Pydantic validates it.
+    data: list[UserResource]  # type: ignore[assignment]

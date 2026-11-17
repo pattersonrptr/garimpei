@@ -1,6 +1,6 @@
 from fastapi.responses import JSONResponse
 
-from src.app.interfaces.http.schemas.auth_schema import (
+from src.app.accounts.http.auth_schema import (
     TokenResource,
     TokenResponse,
     TokenValidationResource,

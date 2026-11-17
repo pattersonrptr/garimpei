@@ -1,8 +1,8 @@
-from src.app.accounts.ports import UserRepositoryInterface
-from src.app.interfaces.http.schemas.user_schema import (
+from src.app.accounts.http.user_schema import (
     UserCreateRequest,
     UserUpdateRequest,
 )
+from src.app.accounts.ports import UserRepositoryInterface
 from src.common.jsonapi import JsonApiError
 
 

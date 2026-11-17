@@ -7,7 +7,7 @@ Following Given/When/Then pattern for clarity.
 
 from fastapi.responses import JSONResponse
 
-from src.app.interfaces.http.presenters.auth_presenter import AuthPresenter
+from src.app.accounts.http.auth_presenter import AuthPresenter
 
 # ============================================================================
 # AuthPresenter.present_token Tests
