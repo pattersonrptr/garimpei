@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from src.app.accounts.entities import User as UserEntity
 from src.app.accounts.http.auth import get_current_active_user
-from src.app.entities.subscription import Subscription as SubscriptionEntity
+from src.app.billing.entities import Subscription as SubscriptionEntity
 from src.app.infrastructure.database_config import get_db
 from src.app.infrastructure.repositories.plan_repository import PlanRepository
 from src.app.infrastructure.repositories.subscription_repository import (

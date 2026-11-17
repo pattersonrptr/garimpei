@@ -1,8 +1,9 @@
+from dataclasses import asdict, fields
 from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session, joinedload
 
-from src.app.entities.subscription import Subscription as SubscriptionEntity
+from src.app.billing.entities import Subscription as SubscriptionEntity
 from src.app.infrastructure.database.models.subscription_model import (
     Subscription as SubscriptionModel,
 )
@@ -11,16 +12,28 @@ from src.app.interfaces.repositories.subscription_repository import (
 )
 
 
+def _to_entity(row: SubscriptionModel) -> SubscriptionEntity:
+    return SubscriptionEntity(
+        **{f.name: getattr(row, f.name) for f in fields(SubscriptionEntity)}
+    )
+
+
+def _to_columns(subscription: SubscriptionEntity) -> dict:
+    columns = asdict(subscription)
+    del columns["id"]
+    return columns
+
+
 class SubscriptionRepository(SubscriptionRepositoryInterface):
     def __init__(self, db: Session):
         self.db = db
 
     def create(self, subscription: SubscriptionEntity) -> SubscriptionEntity:
-        db_sub = SubscriptionModel(**subscription.model_dump(exclude={"id"}))
+        db_sub = SubscriptionModel(**_to_columns(subscription))
         self.db.add(db_sub)
         self.db.commit()
         self.db.refresh(db_sub)
-        return SubscriptionEntity.model_validate(db_sub)
+        return _to_entity(db_sub)
 
     def get_by_id(self, subscription_id: int) -> SubscriptionEntity | None:
         sub = (
@@ -30,7 +43,7 @@ class SubscriptionRepository(SubscriptionRepositoryInterface):
             .first()
         )
         if sub:
-            return SubscriptionEntity.model_validate(sub)
+            return _to_entity(sub)
         return None
 
     def get_by_user_id(self, user_id: int) -> SubscriptionEntity | None:
@@ -44,7 +57,7 @@ class SubscriptionRepository(SubscriptionRepositoryInterface):
             .first()
         )
         if sub:
-            return SubscriptionEntity.model_validate(sub)
+            return _to_entity(sub)
         return None
 
     def update(
@@ -57,11 +70,9 @@ class SubscriptionRepository(SubscriptionRepositoryInterface):
         )
         if not db_sub:
             return None
-        for key, value in subscription.model_dump(
-            exclude_unset=True, exclude={"id"}
-        ).items():
+        for key, value in _to_columns(subscription).items():
             setattr(db_sub, key, value)
         db_sub.updated_at = datetime.now(UTC)
         self.db.commit()
         self.db.refresh(db_sub)
-        return SubscriptionEntity.model_validate(db_sub)
+        return _to_entity(db_sub)

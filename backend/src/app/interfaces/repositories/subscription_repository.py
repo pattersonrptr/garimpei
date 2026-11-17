@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from src.app.entities.subscription import Subscription as SubscriptionEntity
+from src.app.billing.entities import Subscription as SubscriptionEntity
 
 
 class SubscriptionRepositoryInterface(ABC):
