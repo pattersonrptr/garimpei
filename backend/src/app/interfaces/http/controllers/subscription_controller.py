@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 
 from src.app.accounts.entities import User as UserEntity
 from src.app.accounts.http.auth import get_current_active_user
+from src.app.billing.http.limits import get_user_plan_limits
 from src.app.billing.persistence.repositories import (
     PlanRepository,
     SubscriptionRepository,
@@ -17,7 +18,6 @@ from src.app.billing.use_cases import (
     SubscribeUseCase,
 )
 from src.app.infrastructure.database_config import get_db
-from src.app.interfaces.http.plan_limits import get_user_plan_limits
 from src.app.interfaces.http.presenters.subscription_presenter import (
     SubscriptionPresenter,
 )

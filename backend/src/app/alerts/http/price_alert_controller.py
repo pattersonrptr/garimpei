@@ -11,6 +11,7 @@ from src.app.accounts.http.auth import (
 )
 from src.app.alerts import wiring
 from src.app.alerts.entities import PriceAlert as PriceAlertEntity
+from src.app.alerts.http.limits import limit_error
 from src.app.alerts.http.price_alert_presenter import (
     PriceAlertPresenter,
 )
@@ -28,7 +29,6 @@ from src.app.alerts.use_cases import (
     ListPriceAlertsUseCase,
     NotifyAlertOpportunitiesUseCase,
 )
-from src.app.billing.limits import PlanLimits
 from src.app.catalog import wiring as catalog_wiring
 from src.app.catalog.http.product_presenter import ProductPresenter
 from src.app.catalog.http.product_schema import ProductsCollectionResponse
@@ -36,12 +36,6 @@ from src.app.catalog.ports import ProductRepositoryInterface
 from src.app.catalog.use_cases import SearchProductsByTermUseCase
 from src.app.infrastructure.database_config import get_db
 from src.app.infrastructure.services.email_service import get_email_service
-from src.app.interfaces.http.plan_limits import (
-    check_alert_limit,
-    check_frequency_limit,
-    check_source_limit,
-    get_user_plan_limits,
-)
 from src.app.interfaces.services.email_service import EmailServiceInterface
 from src.common.jsonapi import JsonApiError, JsonApiErrorResponse
 from src.config.logging_config import get_logger
@@ -81,7 +75,6 @@ def create_price_alert(
     price_alert_in: PriceAlertCreateRequest,
     price_alert_validator: PriceAlertValidator = Depends(get_price_alert_validator),
     current_user: UserEntity = Depends(get_current_active_user),
-    plan_limits: PlanLimits = Depends(get_user_plan_limits),
     opportunities: NotifyAlertOpportunitiesUseCase = Depends(
         get_alert_opportunities_use_case
     ),
@@ -120,21 +113,14 @@ def create_price_alert(
 
     attrs = price_alert_in.data.attributes
 
-    # --- Plan limits enforcement ---
-    alert_limit_err = check_alert_limit(db, current_user.id, plan_limits)
-    if alert_limit_err:
-        return PriceAlertPresenter.handle_validation_errors([alert_limit_err])
-
     # A book alert is checked whenever an offer for the book comes in, and
     # books are collected once a day: its frequency is always a day.
     frequency_minutes = BOOK_ALERT_FREQUENCY if attrs.isbn else attrs.frequency_minutes
-    freq_err = check_frequency_limit(frequency_minutes, plan_limits)
-    if freq_err:
-        return PriceAlertPresenter.handle_validation_errors([freq_err])
-
-    source_err = check_source_limit(len(attrs.source_website_ids), plan_limits)
-    if source_err:
-        return PriceAlertPresenter.handle_validation_errors([source_err])
+    violation = wiring.check_alert_limits(db).for_new_alert(
+        current_user.id, frequency_minutes, len(attrs.source_website_ids)
+    )
+    if violation:
+        return PriceAlertPresenter.handle_validation_errors([limit_error(violation)])
 
     book = wiring.book_finder(db).find_by_isbn(attrs.isbn) if attrs.isbn else None
     price_alert_entity = PriceAlertEntity(
@@ -374,7 +360,6 @@ def update_price_alert(
     price_alert_in: PriceAlertUpdateRequest,
     price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
     price_alert_validator: PriceAlertValidator = Depends(get_price_alert_validator),
-    plan_limits: PlanLimits = Depends(get_user_plan_limits),
     opportunities: NotifyAlertOpportunitiesUseCase = Depends(
         get_alert_opportunities_use_case
     ),
@@ -452,21 +437,11 @@ def update_price_alert(
     )
 
     if not is_staff_or_superuser(current_user):
-        limit_errors = [
-            check_alert_limit(db, existing.user_id, plan_limits)
-            if updated_entity.is_active and not existing.is_active
-            else None,
-            check_frequency_limit(updated_entity.frequency_minutes, plan_limits)
-            if updated_entity.frequency_minutes != existing.frequency_minutes
-            else None,
-            check_source_limit(len(updated_entity.source_website_ids), plan_limits)
-            if set(updated_entity.source_website_ids)
-            != set(existing.source_website_ids)
-            else None,
-        ]
-        limit_error = next((e for e in limit_errors if e), None)
-        if limit_error:
-            return PriceAlertPresenter.handle_validation_errors([limit_error])
+        violation = wiring.check_alert_limits(db).for_changes(existing, updated_entity)
+        if violation:
+            return PriceAlertPresenter.handle_validation_errors(
+                [limit_error(violation)]
+            )
 
     updated = wiring.update_price_alert(db).execute(price_alert_id, updated_entity)
     opportunities.execute(updated)

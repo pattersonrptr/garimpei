@@ -100,7 +100,11 @@ jobs:
             src/app/billing/persistence/models.py \
             src/app/billing/persistence/repositories.py \
             src/app/billing/use_cases.py \
-            src/app/billing/limits.py
+            src/app/billing/limits.py \
+            src/app/billing/wiring.py \
+            src/app/billing/http/limits.py \
+            src/app/alerts/http/limits.py \
+            src/app/alerts/persistence/plan_limits.py
 
       - name: Type check with mypy (whole backend, report only)
         run: poetry run mypy src/

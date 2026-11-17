@@ -180,3 +180,25 @@ class Listing:
     price: float | None
     condition: str
     is_available: bool
+
+
+@dataclass(frozen=True, kw_only=True)
+class AlertLimits:
+    """What the user's plan allows for alerts (None = unlimited)."""
+
+    plan_name: str
+    max_active_alerts: int | None
+    min_frequency_minutes: int
+    max_sources: int | None
+
+
+@dataclass(frozen=True, kw_only=True)
+class LimitViolation:
+    """Why an alert does not fit the user's plan (mapped to an API error)."""
+
+    title: str
+    detail: str
+    pointer: str
+    # {"limit": "<name>", "value": <number>, "plan": "<plan name>"}, so
+    # clients can explain it in the user's language.
+    meta: dict
