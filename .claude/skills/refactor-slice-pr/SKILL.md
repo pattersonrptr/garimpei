@@ -40,6 +40,18 @@ one. When the red can only be a `TypeError`/`ValueError` (a use case moving
 to another port), say so in the PR. Then run the module's full checks from
 `AGENTS.md` (*Verify*), including the blocking mypy paths in `ci.yml`.
 
+For the whole-backend mypy count in the PR, compare with `main` instead of
+counting by hand (mypy's cache can report stale errors):
+
+```bash
+bash .claude/skills/refactor-slice-pr/slice.sh mypy-diff
+```
+
+It runs mypy without the cache here and on `origin/main` (in a temporary
+worktree, about a minute) and lists the errors that are new and the ones
+that are gone. A moved file shows up on both lists; anything else new is a
+regression to fix.
+
 ## 4. Review, doc, PR
 
 - Run the `architecture-reviewer` subagent on `git diff main...HEAD`; fix

@@ -6,9 +6,13 @@
 #   bash .claude/skills/refactor-slice-pr/slice.sh green <pytest args>
 #   bash .claude/skills/refactor-slice-pr/slice.sh ci    [pr]
 #   bash .claude/skills/refactor-slice-pr/slice.sh merge <pr>
+#   bash .claude/skills/refactor-slice-pr/slice.sh mypy-diff [base]
 # pytest args are paths and options relative to backend/ (e.g.
 # "src/tests/unit/use_cases/test_x.py -k Foo"). red/green write a short
-# summary to $OUT/red.txt or $OUT/green.txt and print it.
+# summary to $OUT/red.txt or $OUT/green.txt and print it. mypy-diff runs
+# mypy on the whole backend here and on <base> (default origin/main, in a
+# temporary worktree), without the cache, and prints the errors that are new
+# and the ones that are gone, by file (line numbers ignored).
 set -uo pipefail
 
 ROOT=$(git rev-parse --show-toplevel)
@@ -55,6 +59,50 @@ run_tests() {
     echo "NOTE: no AssertionError; say in the PR why the red is not an assertion." >&2
   fi
   echo "saved: $OUT/$kind.txt"
+}
+
+launcher() {
+  if [ -n "${POETRY:-}" ]; then echo "$POETRY"
+  elif command -v poetry >/dev/null 2>&1; then echo poetry
+  elif command -v uvx >/dev/null 2>&1; then echo "uvx poetry@2"
+  else echo "Neither poetry nor uvx found; set POETRY." >&2; return 2
+  fi
+}
+
+# One line per mypy error: file (any separator) and message, no line numbers.
+MYPY_NORMALIZE='
+import re, sys
+for line in sys.stdin:
+    if ": error:" not in line:
+        continue
+    path, rest = line.rstrip().split(":", 1)
+    rest = re.sub(r"^\d+:\d+:\s*", "", rest.lstrip())
+    rest = re.sub(r"^\d+:\s*", "", rest)
+    print(path.replace("\\", "/") + ": " + rest)
+'
+
+mypy_errors() {
+  # $1: backend folder; $2: Python of the backend virtualenv.
+  (cd "$1" && "$2" -m mypy src --no-incremental --no-pretty 2>&1) |
+    "$2" -c "$MYPY_NORMALIZE" | sort
+}
+
+mypy_diff() {
+  local base=${1:-origin/main} run py wt here before
+  run=$(launcher) || return 2
+  git -C "$ROOT" fetch -q origin 2>/dev/null || true
+  py=$(cd "$ROOT/backend" && $run run python -c 'import sys; print(sys.executable)') || return 2
+  wt=$(mktemp -d)
+  git -C "$ROOT" worktree add -q --detach "$wt" "$base" || { rm -rf "$wt"; return 2; }
+  here=$(mypy_errors "$ROOT/backend" "$py")
+  before=$(mypy_errors "$wt/backend" "$py")
+  git -C "$ROOT" worktree remove --force "$wt"
+  echo "mypy, whole backend: $(grep -c . <<<"$before") errors on $base, $(grep -c . <<<"$here") here"
+  echo "New here:"
+  comm -13 <(echo "$before") <(echo "$here") | sed 's/^/  + /'
+  echo "Gone here:"
+  comm -23 <(echo "$before") <(echo "$here") | sed 's/^/  - /'
+  echo "(A moved file shows its errors as gone at the old path and new at the new one.)"
 }
 
 # The phase docs say "(this PR)" until the number is known; on the PR's own
@@ -143,8 +191,11 @@ case "${1:-}" in
     git -C "$ROOT" log --oneline -1
     restart_api
     ;;
+  mypy-diff)
+    mypy_diff "${2:-}"
+    ;;
   *)
-    sed -n '2,11p' "$0"
+    sed -n '2,16p' "$0"
     exit 2
     ;;
 esac
