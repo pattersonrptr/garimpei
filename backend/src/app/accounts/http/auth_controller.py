@@ -6,6 +6,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from jose import JWTError
 from sqlalchemy.orm import Session
 
+from src.app.accounts import wiring
 from src.app.accounts.adapters.passwords import pwd_context
 from src.app.accounts.entities import User as UserEntity
 from src.app.accounts.http.auth import get_current_active_user
@@ -22,7 +23,7 @@ from src.app.accounts.http.user_schema import (
     UserCreateRequest,
     UserReadResponse,
 )
-from src.app.accounts.persistence.repositories import UserRepository
+from src.app.accounts.ports import UserRepositoryInterface
 from src.app.accounts.use_cases import (
     CreateUserUseCase,
     GetUserByEmailUseCase,
@@ -37,8 +38,8 @@ auth_router = APIRouter(tags=["auth"], prefix="/auth")
 logger = get_logger(__name__)
 
 
-def get_user_repository(db: Session = Depends(get_db)) -> UserRepository:
-    return UserRepository(db)
+def get_user_repository(db: Session = Depends(get_db)) -> UserRepositoryInterface:
+    return wiring.users(db)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -48,7 +49,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 @auth_router.post("/login", response_model=TokenResponse)
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    user_repo: UserRepository = Depends(get_user_repository),
+    user_repo: UserRepositoryInterface = Depends(get_user_repository),
 ):
     """
     Authenticate user and return JWT token in JSON:API format.
@@ -173,7 +174,7 @@ async def refresh_token(current_user: UserEntity = Depends(get_current_active_us
 @auth_router.post("/register", response_model=UserReadResponse, status_code=201)
 async def register(
     user_in: UserCreateRequest,
-    user_repo: UserRepository = Depends(get_user_repository),
+    user_repo: UserRepositoryInterface = Depends(get_user_repository),
 ):
     """
     Public user registration endpoint.
@@ -257,7 +258,7 @@ async def me(current_user: UserEntity = Depends(get_current_active_user)):
 async def change_password(
     password_in: PasswordChangeRequest,
     current_user: UserEntity = Depends(get_current_active_user),
-    user_repo: UserRepository = Depends(get_user_repository),
+    user_repo: UserRepositoryInterface = Depends(get_user_repository),
 ):
     """
     Change the logged-in user's password.

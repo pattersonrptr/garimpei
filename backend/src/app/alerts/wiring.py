@@ -7,7 +7,7 @@ alerts' adapters (listings, stores, owners, mailer, keyword searches).
 
 from sqlalchemy.orm import Session
 
-from src.app.accounts.persistence.repositories import UserRepository
+from src.app.accounts import wiring as accounts_wiring
 from src.app.alerts.http.validators import PriceAlertValidator
 from src.app.alerts.persistence.book_finder import CatalogBookFinder
 from src.app.alerts.persistence.keyword_searches import SearchConfigKeywordSearches
@@ -46,7 +46,7 @@ def _stores(db: Session) -> SourceWebsiteStores:
 
 
 def _owners(db: Session) -> UserAccountOwners:
-    return UserAccountOwners(UserRepository(db))
+    return UserAccountOwners(accounts_wiring.user_by_id(db))
 
 
 def _searches(db: Session) -> SearchConfigKeywordSearches:

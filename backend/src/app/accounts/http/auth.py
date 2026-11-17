@@ -3,9 +3,9 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError
 from sqlalchemy.orm import Session
 
+from src.app.accounts import wiring
 from src.app.accounts.entities import User
 from src.app.accounts.http.tokens import decode_access_token
-from src.app.accounts.persistence.repositories import UserRepository
 from src.app.infrastructure.database_config import get_db
 
 reusable_oauth2 = HTTPBearer()
@@ -26,7 +26,7 @@ async def get_current_user(
         raise HTTPException(
             status_code=401, detail="Could not validate credentials"
         ) from err
-    user_repo = UserRepository(db)
+    user_repo = wiring.users(db)
     user = user_repo.get_by_username(username=username)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")

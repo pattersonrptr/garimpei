@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
+from src.app.accounts import wiring
 from src.app.accounts.adapters.passwords import pwd_context
 from src.app.accounts.entities import User as UserEntity
 from src.app.accounts.http.auth import get_current_staff_user, get_current_superuser
@@ -13,7 +14,7 @@ from src.app.accounts.http.user_schema import (
     UserUpdateRequest,
 )
 from src.app.accounts.http.validators import UserValidator
-from src.app.accounts.persistence.repositories import UserRepository
+from src.app.accounts.ports import UserRepositoryInterface
 from src.app.accounts.use_cases import (
     CreateUserUseCase,
     DeleteUserUseCase,
@@ -32,12 +33,8 @@ router = APIRouter(tags=["users"], prefix="/users")
 logger = get_logger(__name__)
 
 
-def get_user_repository(db=Depends(get_db)) -> UserRepository:
-    """
-    TODO: Move to shared module (e.g., src/app/infrastructure/dependencies.py)
-    for reuse across multiple routers (auth, register, etc.).
-    """
-    return UserRepository(db)
+def get_user_repository(db=Depends(get_db)) -> UserRepositoryInterface:
+    return wiring.users(db)
 
 
 def hash_password(password: str) -> str:
@@ -47,7 +44,7 @@ def hash_password(password: str) -> str:
 @router.post("/", response_model=UserReadResponse, status_code=201)
 def create_user(
     user_in: UserCreateRequest,
-    user_repo: UserRepository = Depends(get_user_repository),
+    user_repo: UserRepositoryInterface = Depends(get_user_repository),
     current_user: UserEntity = Depends(get_current_superuser),
 ):
     """
@@ -89,7 +86,7 @@ def create_user(
 
 @router.get("/", response_model=UsersCollectionResponse)
 def read_users(
-    user_repo: UserRepository = Depends(get_user_repository),
+    user_repo: UserRepositoryInterface = Depends(get_user_repository),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
     """
@@ -104,7 +101,7 @@ def read_users(
 @router.get("/username/{username}", response_model=UserReadResponse)
 def read_user_by_username(
     username: str,
-    user_repo: UserRepository = Depends(get_user_repository),
+    user_repo: UserRepositoryInterface = Depends(get_user_repository),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
     """
@@ -133,7 +130,7 @@ def read_user_by_username(
 @router.get("/email/{email}", response_model=UserReadResponse)
 def read_user_by_email(
     email: str,
-    user_repo: UserRepository = Depends(get_user_repository),
+    user_repo: UserRepositoryInterface = Depends(get_user_repository),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
     """
@@ -162,7 +159,7 @@ def read_user_by_email(
 @router.get("/{user_id}", response_model=UserReadResponse)
 def read_user(
     user_id: int,
-    user_repo: UserRepository = Depends(get_user_repository),
+    user_repo: UserRepositoryInterface = Depends(get_user_repository),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
     """
@@ -185,7 +182,7 @@ def read_user(
 def update_user(
     user_id: int,
     user_in: UserUpdateRequest,
-    user_repo: UserRepository = Depends(get_user_repository),
+    user_repo: UserRepositoryInterface = Depends(get_user_repository),
     current_user: UserEntity = Depends(get_current_superuser),
 ):
     """
@@ -242,7 +239,7 @@ def update_user(
 @router.delete("/{user_id}", status_code=204)
 def delete_user(
     user_id: int,
-    user_repo: UserRepository = Depends(get_user_repository),
+    user_repo: UserRepositoryInterface = Depends(get_user_repository),
     current_user: UserEntity = Depends(get_current_superuser),
 ):
     """
