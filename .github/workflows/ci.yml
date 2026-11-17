@@ -95,7 +95,10 @@ jobs:
             src/app/accounts/http/user_controller.py \
             src/app/accounts/wiring.py \
             src/app/accounts/adapters/passwords.py \
-            src/app/billing/entities.py
+            src/app/billing/entities.py \
+            src/app/billing/ports.py \
+            src/app/billing/persistence/models.py \
+            src/app/billing/persistence/repositories.py
 
       - name: Type check with mypy (whole backend, report only)
         run: poetry run mypy src/

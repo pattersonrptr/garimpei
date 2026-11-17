@@ -31,14 +31,14 @@ from src.app.alerts.persistence.models import (
 from src.app.alerts.persistence.models import (  # noqa: F401
     price_alert_source_website,
 )
+from src.app.billing.persistence.models import (  # noqa: F401
+    Plan as PlanModel,
+)
 from src.app.catalog.persistence.models import (
     PriceHistory as PriceHistoryModel,  # noqa: F401
 )
 from src.app.catalog.persistence.models import (
     Product as ProductModel,  # noqa: F401
-)
-from src.app.infrastructure.database.models.plan_model import (
-    Plan as PlanModel,  # noqa: F401
 )
 from src.app.infrastructure.database.models.search_config_model import (  # noqa: F401
     SearchConfig as SearchConfigModel,
@@ -51,9 +51,6 @@ from src.app.infrastructure.database.models.search_execution_log_model import ( 
 )
 from src.app.infrastructure.database.models.source_website_model import (  # noqa: F401
     SourceWebsite as SourceWebsiteModel,
-)
-from src.app.infrastructure.database.models.subscription_model import (
-    Subscription as SubscriptionModel,  # noqa: F401
 )
 
 # Then import database config and app
