@@ -7,12 +7,15 @@
 #   bash .claude/skills/refactor-slice-pr/slice.sh ci    [pr]
 #   bash .claude/skills/refactor-slice-pr/slice.sh merge <pr>
 #   bash .claude/skills/refactor-slice-pr/slice.sh mypy-diff [base]
+#   bash .claude/skills/refactor-slice-pr/slice.sh mutate <spec.json> [--only M1,M2] -- <pytest args>
 # pytest args are paths and options relative to backend/ (e.g.
 # "src/tests/unit/use_cases/test_x.py -k Foo"). red/green write a short
 # summary to $OUT/red.txt or $OUT/green.txt and print it. mypy-diff runs
 # mypy on the whole backend here and on <base> (default origin/main, in a
 # temporary worktree), without the cache, and prints the errors that are new
-# and the ones that are gone, by file (line numbers ignored).
+# and the ones that are gone, by file (line numbers ignored). mutate applies
+# each hand-written mutation of the spec (see mutate.py), runs the tests,
+# restores the file and writes $OUT/mutations.md (KILLED/SURVIVED table).
 set -uo pipefail
 
 ROOT=$(git rev-parse --show-toplevel)
@@ -194,8 +197,17 @@ case "${1:-}" in
   mypy-diff)
     mypy_diff "${2:-}"
     ;;
+  mutate)
+    shift
+    [ $# -gt 0 ] || { echo "spec.json required" >&2; exit 2; }
+    spec=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
+    shift
+    run=$(launcher) || exit 2
+    py=$(cd "$ROOT/backend" && $run run python -c 'import sys; print(sys.executable)') || exit 2
+    "$py" "$(dirname "$0")/mutate.py" "$spec" "$OUT" "$run" "$@"
+    ;;
   *)
-    sed -n '2,16p' "$0"
+    sed -n '2,20p' "$0"
     exit 2
     ;;
 esac
