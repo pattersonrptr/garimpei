@@ -3,9 +3,6 @@ from fastapi import APIRouter, Depends, Query, status
 from src.app.accounts.entities import User as UserEntity
 from src.app.accounts.http.auth import get_current_staff_user
 from src.app.infrastructure.database_config import get_db
-from src.app.infrastructure.repositories.search_execution_log_repository import (
-    SearchExecutionLogRepository,
-)
 from src.app.interfaces.http.presenters.search_execution_log_presenter import (
     SearchExecutionLogPresenter,
 )
@@ -16,6 +13,7 @@ from src.app.interfaces.http.schemas.search_execution_log_schema import (
     SearchExecutionLogUpdateRequest,
 )
 from src.app.searches.entities import SearchRun
+from src.app.searches.persistence.repositories import SearchRunRepository
 from src.app.use_cases.search_execution_log_use_cases import (
     CreateSearchExecutionLogUseCase,
     GetSearchExecutionLogByIdUseCase,
@@ -32,9 +30,9 @@ logger = get_logger(__name__)
 
 def get_search_execution_log_repository(
     db=Depends(get_db),
-) -> SearchExecutionLogRepository:
-    """Dependency injection for SearchExecutionLogRepository."""
-    return SearchExecutionLogRepository(db)
+) -> SearchRunRepository:
+    """Dependency injection for SearchRunRepository."""
+    return SearchRunRepository(db)
 
 
 @router.get("/", response_model=SearchExecutionLogsCollectionResponse)
@@ -43,7 +41,7 @@ def list_search_execution_logs(
     offset: int = Query(default=0, ge=0),
     sort_by: str | None = Query(default=None),
     sort_order: str | None = Query(default="desc", pattern="^(asc|desc)$"),
-    search_execution_log_repo: SearchExecutionLogRepository = Depends(
+    search_execution_log_repo: SearchRunRepository = Depends(
         get_search_execution_log_repository
     ),
     current_user: UserEntity = Depends(get_current_staff_user),
@@ -73,7 +71,7 @@ def list_search_execution_logs(
 )
 def get_search_execution_logs_by_search_config(
     search_config_id: int,
-    search_execution_log_repo: SearchExecutionLogRepository = Depends(
+    search_execution_log_repo: SearchRunRepository = Depends(
         get_search_execution_log_repository
     ),
     current_user: UserEntity = Depends(get_current_staff_user),
@@ -102,7 +100,7 @@ def get_search_execution_logs_by_search_config(
 @router.get("/{search_execution_log_id}", response_model=SearchExecutionLogReadResponse)
 def get_search_execution_log(
     search_execution_log_id: int,
-    search_execution_log_repo: SearchExecutionLogRepository = Depends(
+    search_execution_log_repo: SearchRunRepository = Depends(
         get_search_execution_log_repository
     ),
     current_user: UserEntity = Depends(get_current_staff_user),
@@ -141,7 +139,7 @@ def get_search_execution_log(
 )
 def create_search_execution_log(
     payload: SearchExecutionLogCreateRequest,
-    search_execution_log_repo: SearchExecutionLogRepository = Depends(
+    search_execution_log_repo: SearchRunRepository = Depends(
         get_search_execution_log_repository
     ),
     current_user: UserEntity = Depends(get_current_staff_user),
@@ -181,7 +179,7 @@ def create_search_execution_log(
 def update_search_execution_log(
     search_execution_log_id: int,
     payload: SearchExecutionLogUpdateRequest,
-    search_execution_log_repo: SearchExecutionLogRepository = Depends(
+    search_execution_log_repo: SearchRunRepository = Depends(
         get_search_execution_log_repository
     ),
     current_user: UserEntity = Depends(get_current_staff_user),

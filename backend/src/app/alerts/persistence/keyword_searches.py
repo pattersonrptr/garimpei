@@ -2,10 +2,8 @@
 
 from src.app.alerts.entities import KeywordSearch
 from src.app.alerts.ports import KeywordSearches
-from src.app.interfaces.repositories.search_config_repository import (
-    SearchConfigRepositoryInterface,
-)
 from src.app.searches.entities import SavedSearch
+from src.app.searches.ports import SavedSearchRepositoryInterface
 
 
 def _to_keyword_search(config: SavedSearch) -> KeywordSearch:
@@ -20,7 +18,7 @@ def _to_keyword_search(config: SavedSearch) -> KeywordSearch:
 
 
 class SearchConfigKeywordSearches(KeywordSearches):
-    def __init__(self, search_configs: SearchConfigRepositoryInterface):
+    def __init__(self, search_configs: SavedSearchRepositoryInterface):
         self.search_configs = search_configs
 
     def get_by_search_term_and_user_id(

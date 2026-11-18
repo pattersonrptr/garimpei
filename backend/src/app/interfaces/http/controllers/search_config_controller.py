@@ -23,12 +23,6 @@ from src.app.domain.plan_limits import (
 from src.app.domain.validators.search_config_validator import SearchConfigValidator
 from src.app.infrastructure.celery_client import dispatch_scraper_search
 from src.app.infrastructure.database_config import get_db
-from src.app.infrastructure.repositories.search_config_repository import (
-    SearchConfigRepository,
-)
-from src.app.infrastructure.repositories.search_execution_log_repository import (
-    SearchExecutionLogRepository,
-)
 from src.app.interfaces.http.presenters.search_config_presenter import (
     SearchConfigPresenter,
 )
@@ -39,6 +33,10 @@ from src.app.interfaces.http.schemas.search_config_schema import (
     SearchConfigUpdateRequest,
 )
 from src.app.searches.entities import SavedSearch
+from src.app.searches.persistence.repositories import (
+    SavedSearchRepository,
+    SearchRunRepository,
+)
 from src.app.stores.persistence.repositories import StoreRepository
 from src.app.use_cases.search_config_use_cases import (
     CreateSearchConfigUseCase,
@@ -70,16 +68,16 @@ def _plan_limit_error(violation: PlanLimitViolation) -> JsonApiError:
     )
 
 
-def get_search_config_repository(db=Depends(get_db)) -> SearchConfigRepository:
-    """Dependency injection for SearchConfigRepository."""
-    return SearchConfigRepository(db)
+def get_search_config_repository(db=Depends(get_db)) -> SavedSearchRepository:
+    """Dependency injection for SavedSearchRepository."""
+    return SavedSearchRepository(db)
 
 
 def get_search_execution_log_repository(
     db=Depends(get_db),
-) -> SearchExecutionLogRepository:
-    """Dependency injection for SearchExecutionLogRepository."""
-    return SearchExecutionLogRepository(db)
+) -> SearchRunRepository:
+    """Dependency injection for SearchRunRepository."""
+    return SearchRunRepository(db)
 
 
 def get_price_alert_repository(db=Depends(get_db)) -> PriceAlertRepository:
@@ -92,7 +90,7 @@ def get_source_website_repository(db=Depends(get_db)) -> StoreRepository:
 
 
 def get_search_config_validator(
-    search_config_repo: SearchConfigRepository = Depends(get_search_config_repository),
+    search_config_repo: SavedSearchRepository = Depends(get_search_config_repository),
     source_website_repo: StoreRepository = Depends(get_source_website_repository),
 ) -> SearchConfigValidator:
     """Dependency injection for SearchConfigValidator."""
@@ -102,7 +100,7 @@ def get_search_config_validator(
 @router.post("/", response_model=SearchConfigReadResponse, status_code=201)
 def create_search_config(
     search_config_in: SearchConfigCreateRequest,
-    search_config_repo: SearchConfigRepository = Depends(get_search_config_repository),
+    search_config_repo: SavedSearchRepository = Depends(get_search_config_repository),
     search_config_validator: SearchConfigValidator = Depends(
         get_search_config_validator
     ),
@@ -169,7 +167,7 @@ def list_search_configs(
     sort_by: str | None = Query(default=None),
     sort_order: str | None = Query(default="desc", pattern="^(asc|desc)$"),
     search_term: str | None = Query(default=None, max_length=255),
-    search_config_repo: SearchConfigRepository = Depends(get_search_config_repository),
+    search_config_repo: SavedSearchRepository = Depends(get_search_config_repository),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
@@ -201,7 +199,7 @@ def list_search_configs(
 @router.get("/user/{user_id}", response_model=SearchConfigsCollectionResponse)
 def get_search_configs_by_user(
     user_id: int,
-    search_config_repo: SearchConfigRepository = Depends(get_search_config_repository),
+    search_config_repo: SavedSearchRepository = Depends(get_search_config_repository),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
@@ -236,7 +234,7 @@ def get_search_configs_by_user(
 @router.get("/{search_config_id}", response_model=SearchConfigReadResponse)
 def get_search_config(
     search_config_id: int,
-    search_config_repo: SearchConfigRepository = Depends(get_search_config_repository),
+    search_config_repo: SavedSearchRepository = Depends(get_search_config_repository),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
@@ -273,7 +271,7 @@ def get_search_config(
 def update_search_config(
     search_config_id: int,
     search_config_in: SearchConfigUpdateRequest,
-    search_config_repo: SearchConfigRepository = Depends(get_search_config_repository),
+    search_config_repo: SavedSearchRepository = Depends(get_search_config_repository),
     search_config_validator: SearchConfigValidator = Depends(
         get_search_config_validator
     ),
@@ -361,7 +359,7 @@ def update_search_config(
 @router.delete("/{search_config_id}", status_code=204)
 def delete_search_config(
     search_config_id: int,
-    search_config_repo: SearchConfigRepository = Depends(get_search_config_repository),
+    search_config_repo: SavedSearchRepository = Depends(get_search_config_repository),
     price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
@@ -440,10 +438,8 @@ def delete_search_config(
 @router.post("/{search_config_id}/trigger", status_code=202)
 def trigger_search_config(
     search_config_id: int,
-    search_config_repo: SearchConfigRepository = Depends(get_search_config_repository),
-    log_repo: SearchExecutionLogRepository = Depends(
-        get_search_execution_log_repository
-    ),
+    search_config_repo: SavedSearchRepository = Depends(get_search_config_repository),
+    log_repo: SearchRunRepository = Depends(get_search_execution_log_repository),
     price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
     plan_limits: PlanLimits = Depends(get_user_plan_limits),
     current_user: UserEntity = Depends(get_current_active_user),
@@ -565,10 +561,8 @@ def trigger_search_config(
 @router.get("/{search_config_id}/execution-status")
 def get_execution_status(
     search_config_id: int,
-    search_config_repo: SearchConfigRepository = Depends(get_search_config_repository),
-    log_repo: SearchExecutionLogRepository = Depends(
-        get_search_execution_log_repository
-    ),
+    search_config_repo: SavedSearchRepository = Depends(get_search_config_repository),
+    log_repo: SearchRunRepository = Depends(get_search_execution_log_repository),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """

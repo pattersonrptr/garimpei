@@ -22,10 +22,8 @@ from src.app.catalog.persistence.models import (
 from src.app.catalog.persistence.models import (
     Product as ProductModel,
 )
-from src.app.infrastructure.database.models.search_execution_log_model import (
-    SearchExecutionLog as SearchExecutionLogModel,
-)
 from src.app.interfaces.services.email_service import EmailResult
+from src.app.searches.persistence.models import SearchRun as SearchRunModel
 from src.app.stores.persistence.models import Store as StoreModel
 from src.main import app
 
@@ -465,7 +463,7 @@ class TestDeleteSearch:
             headers=superuser_auth_headers,
         )
         assert response.status_code == 204
-        assert test_db.query(SearchExecutionLogModel).count() == 0
+        assert test_db.query(SearchRunModel).count() == 0
 
     def test_search_of_a_deleted_alert_can_be_deleted(
         self,
@@ -583,7 +581,7 @@ class TestSearchRunProgress:
         self, client, auth_headers, sample_search_config, test_db
     ):
         test_db.add(
-            SearchExecutionLogModel(
+            SearchRunModel(
                 search_config_id=sample_search_config.id,
                 status="running",
                 started_at=datetime.now(UTC) - timedelta(hours=2),

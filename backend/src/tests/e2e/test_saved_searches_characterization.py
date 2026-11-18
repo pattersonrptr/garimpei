@@ -9,12 +9,8 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
 from src.app.alerts.persistence.models import PriceAlert as PriceAlertModel
-from src.app.infrastructure.database.models.search_config_model import (
-    SearchConfig as SearchConfigModel,
-)
-from src.app.infrastructure.database.models.search_execution_log_model import (
-    SearchExecutionLog as SearchExecutionLogModel,
-)
+from src.app.searches.persistence.models import SavedSearch as SavedSearchModel
+from src.app.searches.persistence.models import SearchRun as SearchRunModel
 from src.app.stores.persistence.models import Store as StoreModel
 
 DISPATCH = (
@@ -24,7 +20,7 @@ DISPATCH = (
 
 
 def add_config(test_db, user, search_term="dom casmurro", stores=(), **fields):
-    config = SearchConfigModel(
+    config = SavedSearchModel(
         search_term=search_term,
         is_active=fields.pop("is_active", True),
         frequency_days=fields.pop("frequency_days", 1),
@@ -60,7 +56,7 @@ def add_alert(test_db, user, config):
 
 
 def add_run(test_db, config, started_minutes_ago, **fields):
-    log = SearchExecutionLogModel(
+    log = SearchRunModel(
         search_config_id=config.id,
         status=fields.pop("status", "success"),
         started_at=datetime.now(UTC) - timedelta(minutes=started_minutes_ago),

@@ -2,10 +2,10 @@
 E2E Tests for SearchConfig Controller
 
 Tests the complete search config flow:
-    HTTP Request → SearchConfigController → SearchConfigUseCases → SearchConfigRepository → Database
+    HTTP Request → SearchConfigController → SearchConfigUseCases → SavedSearchRepository → Database
 """
 
-from src.app.infrastructure.database.models.search_config_source_website_model import (  # noqa: F401
+from src.app.searches.persistence.models import (  # noqa: F401
     search_config_source_website,
 )
 

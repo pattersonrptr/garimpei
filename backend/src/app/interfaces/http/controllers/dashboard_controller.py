@@ -14,11 +14,9 @@ from src.app.catalog.persistence.models import (
     PriceHistory,
     Product,
 )
-from src.app.infrastructure.database.models.search_execution_log_model import (
-    SearchExecutionLog,
-)
 from src.app.infrastructure.database.text_match import title_contains
 from src.app.infrastructure.database_config import get_db
+from src.app.searches.persistence.models import SearchRun
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -141,11 +139,11 @@ def get_dashboard_summary(
     if unique_config_ids:
         latest_subq = (
             db.query(
-                SearchExecutionLog.search_config_id,
-                func.max(SearchExecutionLog.started_at).label("last_started"),
+                SearchRun.search_config_id,
+                func.max(SearchRun.started_at).label("last_started"),
             )
-            .filter(SearchExecutionLog.search_config_id.in_(unique_config_ids))
-            .group_by(SearchExecutionLog.search_config_id)
+            .filter(SearchRun.search_config_id.in_(unique_config_ids))
+            .group_by(SearchRun.search_config_id)
             .all()
         )
         last_executions = {row[0]: row[1] for row in latest_subq}

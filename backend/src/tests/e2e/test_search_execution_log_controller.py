@@ -63,12 +63,10 @@ class TestListSearchExecutionLogs:
         When: GET /search-execution-logs/?limit=2&offset=2
         Then: Returns 2 items, total=5
         """
-        from src.app.infrastructure.database.models.search_execution_log_model import (
-            SearchExecutionLog as SearchExecutionLogModel,
-        )
+        from src.app.searches.persistence.models import SearchRun as SearchRunModel
 
         for _ in range(5):
-            log = SearchExecutionLogModel(
+            log = SearchRunModel(
                 search_config_id=sample_search_config.id, status="pending"
             )
             test_db.add(log)

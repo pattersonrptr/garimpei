@@ -35,10 +35,8 @@ from src.app.alerts.use_cases import (
 from src.app.billing import wiring as billing_wiring
 from src.app.catalog.entities import AlertEvaluation
 from src.app.catalog.ports import PriceAlertChecks
-from src.app.infrastructure.repositories.search_config_repository import (
-    SearchConfigRepository,
-)
 from src.app.interfaces.services.email_service import EmailServiceInterface
+from src.app.searches.persistence.repositories import SavedSearchRepository
 from src.app.stores import wiring as stores_wiring
 
 
@@ -51,7 +49,7 @@ def _owners(db: Session) -> UserAccountOwners:
 
 
 def _searches(db: Session) -> SearchConfigKeywordSearches:
-    return SearchConfigKeywordSearches(SearchConfigRepository(db))
+    return SearchConfigKeywordSearches(SavedSearchRepository(db))
 
 
 def book_finder(db: Session) -> BookFinder:

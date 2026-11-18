@@ -1,8 +1,6 @@
-from src.app.interfaces.repositories.search_config_repository import (
-    SearchConfigRepositoryInterface,
-)
-from src.app.interfaces.repositories.search_execution_log_repository import (
-    SearchExecutionLogRepositoryInterface,
+from src.app.searches.ports import (
+    SavedSearchRepositoryInterface,
+    SearchRunRepositoryInterface,
 )
 from src.common.jsonapi import JsonApiError
 
@@ -14,8 +12,8 @@ class SearchExecutionLogValidator:
 
     def __init__(
         self,
-        search_execution_log_repo: SearchExecutionLogRepositoryInterface,
-        search_config_repo: SearchConfigRepositoryInterface,
+        search_execution_log_repo: SearchRunRepositoryInterface,
+        search_config_repo: SavedSearchRepositoryInterface,
     ):
         self.search_execution_log_repo = search_execution_log_repo
         self.search_config_repo = search_config_repo

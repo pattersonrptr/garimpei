@@ -23,12 +23,8 @@ from src.app.catalog.persistence.models import (
 from src.app.catalog.persistence.models import (
     Product as ProductModel,
 )
-from src.app.infrastructure.database.models.search_config_model import (
-    SearchConfig as SearchConfigModel,
-)
-from src.app.infrastructure.database.models.search_execution_log_model import (
-    SearchExecutionLog as SearchExecutionLogModel,
-)
+from src.app.searches.persistence.models import SavedSearch as SavedSearchModel
+from src.app.searches.persistence.models import SearchRun as SearchRunModel
 
 # ============================================================================
 # JSON:API payload helpers
@@ -70,7 +66,7 @@ class TestPriceAlertSoftDelete:
         When: DELETE /price-alerts/{id}
         Then: The alert is soft-deleted (deleted_at set, is_active=False), not removed from DB
         """
-        config = SearchConfigModel(
+        config = SavedSearchModel(
             search_term="laptop",
             is_active=True,
             frequency_days=1,
@@ -187,7 +183,7 @@ class TestDashboardSummary:
         Then: Returns aggregated dashboard data
         """
         # Create search config
-        config = SearchConfigModel(
+        config = SavedSearchModel(
             search_term="phone",
             is_active=True,
             frequency_days=1,
@@ -235,7 +231,7 @@ class TestDashboardSummary:
         test_db.commit()
 
         # Create execution log
-        log = SearchExecutionLogModel(
+        log = SearchRunModel(
             search_config_id=config.id,
             status="success",
             results_count=1,
@@ -320,7 +316,7 @@ class TestOpportunitiesEndpoint:
         When: GET /price-alerts/{id}/opportunities
         Then: Only returns products at or below max_price
         """
-        config = SearchConfigModel(
+        config = SavedSearchModel(
             search_term="headphones",
             is_active=True,
             frequency_days=1,
@@ -410,7 +406,7 @@ class TestOpportunitiesEndpoint:
         When: GET /price-alerts/{id}/opportunities?limit=1&offset=0
         Then: Returns paginated results
         """
-        config = SearchConfigModel(
+        config = SavedSearchModel(
             search_term="earbuds",
             is_active=True,
             frequency_days=1,
