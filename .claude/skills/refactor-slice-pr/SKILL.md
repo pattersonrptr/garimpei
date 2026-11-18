@@ -14,7 +14,27 @@ you write the tests, the code and the PR text.
   item with a recommendation; start only after the author says yes.
 - Name the smell and the refactoring in Fowler's vocabulary.
 - Untested code: characterization tests first, **in their own PR**
-  (they pass on today's code; prove them with one mutation that fails).
+  (they pass on today's code; prove them with mutations that fail).
+
+### Mutation run (characterization)
+
+Write the mutations as a JSON spec in the scratchpad (not committed):
+a list of `{"id", "name", "file", "old", "new"}`, `file` relative to
+`backend/`, `old` exact text found once. Then:
+
+```bash
+bash .claude/skills/refactor-slice-pr/slice.sh mutate spec.json -- <pytest args>
+bash .claude/skills/refactor-slice-pr/slice.sh mutate spec.json --only M3,M7 -- <new test file>
+```
+
+It runs the tests once unmutated (they must pass), then applies each
+mutation, runs the tests with `-x`, restores the file from a copy (never
+`git checkout`) and prints KILLED / SURVIVED / SKIPPED. The table for the
+PR body lands in `$OUT/mutations.md`. First run against the existing
+suite to find the survivors; after writing the tests, rerun the
+survivors with `--only` against the new file. Survivors you keep are a
+question to the author (accept, or one more test). Runs take a minute or
+more per mutation: start them in the background.
 
 ## 2. Tests first, then stop
 
