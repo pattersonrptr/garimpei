@@ -158,7 +158,7 @@ class SearchProductsByTermUseCase:
     ) -> tuple[list[ProductEntity], int]:
         return self.product_repo.search_by_term_and_sources(
             search_term=search_term,
-            source_website_ids=store_ids,
+            store_ids=store_ids,
             max_price=max_price,
             limit=limit,
             offset=offset,
@@ -367,8 +367,8 @@ class ListCollectionQueueUseCase:
     def __init__(self, products: CollectionQueueRepositoryInterface):
         self.products = products
 
-    def execute(self, source_website_id: int) -> list[QueuedProduct]:
-        return self.products.list_by_staleness(IdentifierKind.ISBN13, source_website_id)
+    def execute(self, store_id: int) -> list[QueuedProduct]:
+        return self.products.list_by_staleness(IdentifierKind.ISBN13, store_id)
 
 
 class InvalidOfferError(ValueError):

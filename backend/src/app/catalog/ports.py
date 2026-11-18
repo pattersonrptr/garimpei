@@ -125,21 +125,21 @@ class ProductRepositoryInterface(ABC):
     def search_by_term_and_sources(
         self,
         search_term: str,
-        source_website_ids: list[int],
+        store_ids: list[int],
         max_price: float | None = None,
         limit: int = 50,
         offset: int = 0,
     ) -> tuple[list["ProductEntity"], int]:
         """
         Search products whose title matches a search term (case-insensitive)
-        and belong to one of the given source websites.
+        and belong to one of the given stores.
 
         Optionally filters by max_price (latest price from price_history).
         Results are sorted by latest price ascending.
 
         Args:
             search_term: Keyword to match against product title
-            source_website_ids: List of source website IDs to filter by
+            store_ids: ids of the stores to search
             max_price: Optional maximum price filter
             limit: Maximum number of results
             offset: Number of results to skip
@@ -236,7 +236,7 @@ class CollectionQueueRepositoryInterface(ABC):
 
     @abstractmethod
     def list_by_staleness(
-        self, kind: IdentifierKind, source_website_id: int
+        self, kind: IdentifierKind, store_id: int
     ) -> list[QueuedProduct]:
         """Every product with an identifier of this kind, the ones whose latest
         price point at this store is oldest first; products the store never
@@ -309,4 +309,21 @@ class PriceAlertChecks(ABC):
     @abstractmethod
     def check_product(self, product_id: int) -> AlertEvaluation:
         """Check every active alert against one product (staff endpoint)."""
+        raise NotImplementedError
+
+
+class StoreDirectory(ABC):
+    """What catalog asks about the stores offers come from.
+
+    Catalog owns this port; an adapter over the stores module implements it.
+    """
+
+    @abstractmethod
+    def exists(self, store_id: int) -> bool:
+        """Whether a store has this id."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def id_named(self, name: str) -> int | None:
+        """The id of the store with this name; None when there is none."""
         raise NotImplementedError

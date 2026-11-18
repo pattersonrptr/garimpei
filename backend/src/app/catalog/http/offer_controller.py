@@ -19,6 +19,7 @@ from src.app.catalog.ports import (
     BookMetadataGateway,
     BookMetadataUnavailableError,
     PriceAlertChecks,
+    StoreDirectory,
 )
 from src.app.catalog.use_cases import (
     BookNotFoundError,
@@ -28,7 +29,6 @@ from src.app.catalog.use_cases import (
     OfferInput,
 )
 from src.app.infrastructure.database_config import get_db
-from src.app.stores.persistence.repositories import StoreRepository
 from src.common.jsonapi import JsonApiError, JsonApiErrorResponse
 from src.config.logging_config import get_logger
 
@@ -49,8 +49,8 @@ def get_ingest_offer_use_case(
     return wiring.ingest_offer(db, metadata)
 
 
-def get_source_website_repository(db=Depends(get_db)) -> StoreRepository:
-    return StoreRepository(db)
+def get_store_directory(db=Depends(get_db)) -> StoreDirectory:
+    return wiring.stores(db)
 
 
 def get_collection_queue_use_case(db=Depends(get_db)) -> ListCollectionQueueUseCase:
@@ -79,7 +79,7 @@ def _error(status: int, code: str, title: str, detail: str, pointer: str):
 def ingest_offer(
     offer_in: OfferIngestRequest,
     use_case: IngestOfferUseCase = Depends(get_ingest_offer_use_case),
-    source_websites: StoreRepository = Depends(get_source_website_repository),
+    stores: StoreDirectory = Depends(get_store_directory),
     # Book alerts are checked right after an offer for the book comes in.
     alerts: PriceAlertChecks = Depends(get_price_alert_checks),
     current_user: UserEntity = Depends(get_current_staff_user),
@@ -99,7 +99,7 @@ def ingest_offer(
     """
     attrs = offer_in.data.attributes
 
-    if not source_websites.get_by_id(attrs.source_website_id):
+    if not stores.exists(attrs.source_website_id):
         return _error(
             422,
             "UNKNOWN_SOURCE_WEBSITE",
@@ -171,7 +171,7 @@ def ingest_offer(
 def collection_queue(
     store: str = Query(description="The store's slug, e.g. estante_virtual"),
     use_case: ListCollectionQueueUseCase = Depends(get_collection_queue_use_case),
-    source_websites: StoreRepository = Depends(get_source_website_repository),
+    stores: StoreDirectory = Depends(get_store_directory),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
     """
@@ -183,8 +183,8 @@ def collection_queue(
         - 200: collection of collection-queue-items (isbn, last_checked_at)
         - 404: unknown store
     """
-    source_website = source_websites.get_by_name(store)
-    if not source_website:
+    store_id = stores.id_named(store)
+    if store_id is None:
         return _error(
             404,
             "UNKNOWN_SOURCE_WEBSITE",
@@ -193,7 +193,7 @@ def collection_queue(
             "/store",
         )
 
-    queue = use_case.execute(source_website.id)
+    queue = use_case.execute(store_id)
     data = [
         {
             "type": "collection-queue-items",

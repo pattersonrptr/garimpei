@@ -22,7 +22,7 @@ class CatalogListings(Listings):
     ) -> Listing | None:
         products, _ = self.products.search_by_term_and_sources(
             search_term=search_term,
-            source_website_ids=store_ids,
+            store_ids=store_ids,
             max_price=max_price,
             limit=1,
             offset=0,

@@ -19,7 +19,7 @@ from src.app.alerts.persistence.repositories import (
     NotificationLogRepository,
     PriceAlertRepository,
 )
-from src.app.alerts.persistence.stores import SourceWebsiteStores
+from src.app.alerts.persistence.stores import StoreReaderOverStores
 from src.app.alerts.ports import BookFinder
 from src.app.alerts.use_cases import (
     CheckAlertLimitsUseCase,
@@ -39,11 +39,11 @@ from src.app.infrastructure.repositories.search_config_repository import (
     SearchConfigRepository,
 )
 from src.app.interfaces.services.email_service import EmailServiceInterface
-from src.app.stores.persistence.repositories import StoreRepository
+from src.app.stores import wiring as stores_wiring
 
 
-def _stores(db: Session) -> SourceWebsiteStores:
-    return SourceWebsiteStores(StoreRepository(db))
+def _stores(db: Session) -> StoreReaderOverStores:
+    return StoreReaderOverStores(stores_wiring.store_by_id(db))
 
 
 def _owners(db: Session) -> UserAccountOwners:
