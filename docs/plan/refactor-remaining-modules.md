@@ -52,6 +52,7 @@ characterization tests first, in their own PR, reviewed by the author.
 | Characterization tests for stores | #206 | — | Before source websites (stores) move into their own module. 11 e2e tests in `test_stores_characterization.py`: a regular user gets 403 on create, update and delete; a partial update keeps the fields left out (name, `base_url`, `is_active`) and moves `updated_at` forward; the list shows the newest store first, `sort_by` without `sort_order` sorts descending, an unknown `sort_by` falls back to newest first; deleting a store an alert or a saved search uses answers 204 and drops the link. 19 mutations: the existing suite killed 7, these tests 10 more; survivors accepted by the author (Nov 18, 2026): M11 (`updated_at` not set by the repository, equivalent because the model's `onupdate` sets it) and M19 (the 404 pointer of get-by-name). Approved by the author (Nov 18, 2026) |
 | Stores slice 1: `Store` is a pure dataclass | #209 | Primitive Obsession on a framework type → Move Class (to `stores/entities.py`) + Replace Pydantic model with dataclass + Rename Class | `SourceWebsite` (Pydantic, `src/app/entities/`) becomes the `@dataclass(kw_only=True)` `Store` in the new `stores/entities.py`, same fields and defaults (the dates still default to now); the name `Store` inside the module was decided by the author (Nov 18, 2026), the HTTP contract and the table keep `source_website`. The repository creates with `asdict`, reads with `fields` and updates the fields it wrote before (`name`, `base_url`, `is_active`). The old file is removed and the imports repointed; the tests only changed the import and the class name. `stores/entities.py` joins the blocking mypy step |
 | Stores slice 2: persistence | #210 | Move Class + Rename Class | The ORM model → `stores/persistence/models.py` as `Store` (table `source_websites` unchanged), the repository → `stores/persistence/repositories.py` as `StoreRepository`, its interface → `stores/ports.py` as `StoreRepositoryInterface`. The relationship strings in catalog, alerts and saved searches say `"Store"`; the package exports, the admin dashboard, the fixture scripts and the other modules' imports follow the new path. API error texts that say `SourceWebsite` are contract and stay. Tests: import and name only, plus `test_source_website_repository.py` → `test_store_repository.py`; one test the approved diff missed (`test_product_repository.py`, an import through the package) got the same change, approved by the author (Nov 18, 2026). The three files join the blocking mypy step (the old `updated_at` assignment error fixed) |
+| Stores slice 3: use cases | #211 | Extract Function + Move Function + Introduce Parameter Object (`StoreChanges`) | `use_cases/source_website_use_cases.py` → `stores/use_cases.py`: create, get by id, get by name, list, update, delete. A missing store is a `StoreNotFoundError` instead of `None`/`False`; the partial-update merge leaves the controller for `UpdateStoreUseCase` (`StoreChanges`, None keeps the current value). The controller maps the error to the same 404s and still checks the store exists before validating an update body (today a missing store answers 404 even with an invalid body). Tests: 9 unit tests with an in-memory fake (`tests/unit/stores/test_use_cases.py`) replace the 13 mock-based pass-through tests, approved by the author (Nov 18, 2026); create and list stay covered by e2e. `stores/use_cases.py` joins the blocking mypy step |
 
 ## Accounts module plan
 
@@ -124,7 +125,7 @@ admin use it. One PR per slice, behavior unchanged:
 2. **Persistence** #210: the ORM model, the repository and its interface move to
    `stores/persistence/` and `stores/ports.py` (Move Class); the other
    modules' imports of the ORM model follow the new path.
-3. **Use cases**: the six pass-through use cases move to
+3. **Use cases** #211: the six pass-through use cases move to
    `stores/use_cases.py`; the partial-update merge and the "exists, or 404"
    checks leave the controller for the use cases, which return plain data or
    a domain error (Extract Function + Move Function).
@@ -190,6 +191,11 @@ before it starts.
   with tests first: a deleted user's token answers 404 and a deactivated
   user 400 (401 and 403 would fit better); an admin cannot delete a user who
   owns an alert (the API answers 500).
+- Stores: an update of a missing store answers 404 before the body is
+  validated, so the controller looks the store up twice (once before the
+  validator, once in `UpdateStoreUseCase`). Validating first would drop one
+  lookup but answer 400/422 for a missing store with a bad body: a question
+  for the author (found in slice 3, Nov 18, 2026).
 - Stores: deleting a store that has offers answers 500 (the ORM sets
   `products.source_website_id`, which is `NOT NULL`, to null). A fix with
   tests first, after the author decides the rule (found Nov 18, 2026).

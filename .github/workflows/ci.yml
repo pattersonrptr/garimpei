@@ -100,6 +100,7 @@ jobs:
             src/app/stores/ports.py \
             src/app/stores/persistence/models.py \
             src/app/stores/persistence/repositories.py \
+            src/app/stores/use_cases.py \
             src/app/billing/ports.py \
             src/app/billing/persistence/models.py \
             src/app/billing/persistence/repositories.py \

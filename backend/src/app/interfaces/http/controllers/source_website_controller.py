@@ -15,13 +15,15 @@ from src.app.interfaces.http.schemas.source_website_schema import (
 )
 from src.app.stores.entities import Store
 from src.app.stores.persistence.repositories import StoreRepository
-from src.app.use_cases.source_website_use_cases import (
-    CreateSourceWebsiteUseCase,
-    DeleteSourceWebsiteUseCase,
-    GetSourceWebsiteByIdUseCase,
-    GetSourceWebsiteByNameUseCase,
-    ListSourceWebsitesUseCase,
-    UpdateSourceWebsiteUseCase,
+from src.app.stores.use_cases import (
+    CreateStoreUseCase,
+    DeleteStoreUseCase,
+    GetStoreByNameUseCase,
+    GetStoreUseCase,
+    ListStoresUseCase,
+    StoreChanges,
+    StoreNotFoundError,
+    UpdateStoreUseCase,
 )
 from src.config.logging_config import get_logger
 
@@ -40,6 +42,10 @@ def get_source_website_validator(
 ) -> SourceWebsiteValidator:
     """Dependency injection for SourceWebsiteValidator."""
     return SourceWebsiteValidator(source_website_repo)
+
+
+def _not_found_by_id(store_id: int):
+    return SourceWebsitePresenter.handle_not_found(f"id {store_id}", "/data/id")
 
 
 @router.post("/", response_model=SourceWebsiteReadResponse, status_code=201)
@@ -80,14 +86,9 @@ def create_source_website(
         return SourceWebsitePresenter.handle_validation_errors(validation_errors)
 
     attrs = source_website_in.data.attributes
-    source_website_entity = Store(
-        name=attrs.name,
-        base_url=attrs.base_url,
-        is_active=attrs.is_active,
+    created = CreateStoreUseCase(source_website_repo).execute(
+        Store(name=attrs.name, base_url=attrs.base_url, is_active=attrs.is_active)
     )
-
-    use_case = CreateSourceWebsiteUseCase(source_website_repo)
-    created = use_case.execute(source_website_entity)
 
     logger.info(
         f"Source website created successfully: {created.name} (ID: {created.id})",
@@ -110,25 +111,23 @@ def list_source_websites(
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
-    List all source websites with pagination and sorting. Requires staff or superuser access.
+    List all source websites with pagination and sorting.
 
     Returns:
         - 200: Collection of source websites with pagination meta
-        - 403: Permission denied
     """
     logger.debug(
         f"Listing source websites: limit={limit}, offset={offset}",
         extra={"action": "list_source_websites", "user_id": current_user.id},
     )
 
-    use_case = ListSourceWebsitesUseCase(source_website_repo)
-    source_websites, total = use_case.execute(
+    stores, total = ListStoresUseCase(source_website_repo).execute(
         limit=limit,
         offset=offset,
         sort_by=sort_by,
         sort_order=sort_order,
     )
-    return SourceWebsitePresenter.handle_collection_success(source_websites, total)
+    return SourceWebsitePresenter.handle_collection_success(stores, total)
 
 
 @router.get("/name/{name}", response_model=SourceWebsiteReadResponse)
@@ -138,11 +137,10 @@ def get_source_website_by_name(
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
-    Get a source website by its name. Requires staff or superuser access.
+    Get a source website by its name.
 
     Returns:
         - 200: Source website found
-        - 403: Permission denied
         - 404: Source website not found
     """
     logger.debug(
@@ -150,13 +148,11 @@ def get_source_website_by_name(
         extra={"action": "get_source_website_by_name", "user_id": current_user.id},
     )
 
-    use_case = GetSourceWebsiteByNameUseCase(source_website_repo)
-    source_website = use_case.execute(name)
-
-    if not source_website:
+    try:
+        store = GetStoreByNameUseCase(source_website_repo).execute(name)
+    except StoreNotFoundError:
         return SourceWebsitePresenter.handle_not_found(f"name '{name}'", "/name")
-
-    return SourceWebsitePresenter.handle_success(source_website)
+    return SourceWebsitePresenter.handle_success(store)
 
 
 @router.get("/{source_website_id}", response_model=SourceWebsiteReadResponse)
@@ -166,11 +162,10 @@ def get_source_website(
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
-    Get a single source website by ID. Requires staff or superuser access.
+    Get a single source website by ID.
 
     Returns:
         - 200: Source website found
-        - 403: Permission denied
         - 404: Source website not found
     """
     logger.debug(
@@ -182,15 +177,11 @@ def get_source_website(
         },
     )
 
-    use_case = GetSourceWebsiteByIdUseCase(source_website_repo)
-    source_website = use_case.execute(source_website_id)
-
-    if not source_website:
-        return SourceWebsitePresenter.handle_not_found(
-            f"id {source_website_id}", "/data/id"
-        )
-
-    return SourceWebsitePresenter.handle_success(source_website)
+    try:
+        store = GetStoreUseCase(source_website_repo).execute(source_website_id)
+    except StoreNotFoundError:
+        return _not_found_by_id(source_website_id)
+    return SourceWebsitePresenter.handle_success(store)
 
 
 @router.put("/{source_website_id}", response_model=SourceWebsiteReadResponse)
@@ -223,16 +214,12 @@ def update_source_website(
         },
     )
 
-    # Check if source website exists
-    get_uc = GetSourceWebsiteByIdUseCase(source_website_repo)
-    existing = get_uc.execute(source_website_id)
+    # A missing store answers 404 before the body is validated.
+    try:
+        GetStoreUseCase(source_website_repo).execute(source_website_id)
+    except StoreNotFoundError:
+        return _not_found_by_id(source_website_id)
 
-    if not existing:
-        return SourceWebsitePresenter.handle_not_found(
-            f"id {source_website_id}", "/data/id"
-        )
-
-    # Validate
     validation_errors = source_website_validator.validate_update_request(
         source_website_id, source_website_in
     )
@@ -247,17 +234,15 @@ def update_source_website(
         return SourceWebsitePresenter.handle_validation_errors(validation_errors)
 
     attrs = source_website_in.data.attributes
-    source_website_entity = Store(
-        id=source_website_id,
-        name=attrs.name if attrs.name is not None else existing.name,
-        base_url=attrs.base_url if attrs.base_url is not None else existing.base_url,
-        is_active=attrs.is_active
-        if attrs.is_active is not None
-        else existing.is_active,
+    changes = StoreChanges(
+        name=attrs.name, base_url=attrs.base_url, is_active=attrs.is_active
     )
-
-    update_uc = UpdateSourceWebsiteUseCase(source_website_repo)
-    updated = update_uc.execute(source_website_id, source_website_entity)
+    try:
+        updated = UpdateStoreUseCase(source_website_repo).execute(
+            source_website_id, changes
+        )
+    except StoreNotFoundError:
+        return _not_found_by_id(source_website_id)
 
     logger.info(
         f"Source website updated successfully: {updated.name} (ID: {source_website_id})",
@@ -293,24 +278,13 @@ def delete_source_website(
         },
     )
 
-    get_uc = GetSourceWebsiteByIdUseCase(source_website_repo)
-    source_website = get_uc.execute(source_website_id)
-
-    if not source_website:
-        return SourceWebsitePresenter.handle_not_found(
-            f"id {source_website_id}", "/data/id"
-        )
-
-    delete_uc = DeleteSourceWebsiteUseCase(source_website_repo)
-    deleted = delete_uc.execute(source_website_id)
-
-    if not deleted:
-        return SourceWebsitePresenter.handle_not_found(
-            f"id {source_website_id}", "/data/id"
-        )
+    try:
+        DeleteStoreUseCase(source_website_repo).execute(source_website_id)
+    except StoreNotFoundError:
+        return _not_found_by_id(source_website_id)
 
     logger.warning(
-        f"Source website deleted: {source_website.name} (ID: {source_website_id})",
+        f"Source website deleted (ID: {source_website_id})",
         extra={
             "action": "source_website_deleted",
             "source_website_id": source_website_id,
