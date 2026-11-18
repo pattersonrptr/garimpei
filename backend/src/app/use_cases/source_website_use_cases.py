@@ -1,7 +1,7 @@
-from src.app.entities.source_website import SourceWebsite as SourceWebsiteEntity
 from src.app.interfaces.repositories.source_website_repository import (
     SourceWebsiteRepositoryInterface,
 )
+from src.app.stores.entities import Store
 
 
 class CreateSourceWebsiteUseCase:
@@ -10,7 +10,7 @@ class CreateSourceWebsiteUseCase:
     def __init__(self, source_website_repo: SourceWebsiteRepositoryInterface):
         self.source_website_repo = source_website_repo
 
-    def execute(self, source_website: SourceWebsiteEntity) -> SourceWebsiteEntity:
+    def execute(self, source_website: Store) -> Store:
         return self.source_website_repo.create(source_website)
 
 
@@ -20,7 +20,7 @@ class GetSourceWebsiteByIdUseCase:
     def __init__(self, source_website_repo: SourceWebsiteRepositoryInterface):
         self.source_website_repo = source_website_repo
 
-    def execute(self, source_website_id: int) -> SourceWebsiteEntity | None:
+    def execute(self, source_website_id: int) -> Store | None:
         return self.source_website_repo.get_by_id(source_website_id)
 
 
@@ -30,7 +30,7 @@ class GetSourceWebsiteByNameUseCase:
     def __init__(self, source_website_repo: SourceWebsiteRepositoryInterface):
         self.source_website_repo = source_website_repo
 
-    def execute(self, name: str) -> SourceWebsiteEntity | None:
+    def execute(self, name: str) -> Store | None:
         return self.source_website_repo.get_by_name(name)
 
 
@@ -46,7 +46,7 @@ class ListSourceWebsitesUseCase:
         offset: int = 0,
         sort_by: str | None = None,
         sort_order: str | None = None,
-    ) -> tuple[list[SourceWebsiteEntity], int]:
+    ) -> tuple[list[Store], int]:
         return self.source_website_repo.get_all(
             limit=limit,
             offset=offset,
@@ -61,9 +61,7 @@ class UpdateSourceWebsiteUseCase:
     def __init__(self, source_website_repo: SourceWebsiteRepositoryInterface):
         self.source_website_repo = source_website_repo
 
-    def execute(
-        self, source_website_id: int, source_website: SourceWebsiteEntity
-    ) -> SourceWebsiteEntity | None:
+    def execute(self, source_website_id: int, source_website: Store) -> Store | None:
         return self.source_website_repo.update(source_website_id, source_website)
 
 
