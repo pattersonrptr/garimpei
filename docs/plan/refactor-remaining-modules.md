@@ -58,6 +58,7 @@ characterization tests first, in their own PR, reviewed by the author.
 | Store test fixtures renamed | #214 | Rename Variable | Proposed after the stores module and agreed by the author (Nov 18, 2026) as its own PR: the test fixtures `sample_source_website`, `sample_source_website_entity` and `sample_source_website_collection` become `sample_store`, `sample_store_entity` and `sample_store_collection` in 19 test files. Names only; no assertion changed |
 | Characterization tests for saved searches | #215 | — | Before search configs and their runs move into their own module (chosen by the author, Nov 18, 2026). A mutation run (28 mutations over the search-config and execution-log controllers, use cases, repositories, validator, `manual_run_violation` and the stale-run rule) left 12 survivors; 8 e2e tests in `test_saved_searches_characterization.py` kill all 12: the list shows the newest config first; a regular user gets 403 listing another user's configs; a partial update keeps the fields left out (term, `is_active`, frequency, metadata, stores); "Run Now" on an own config with no alert answers 404, and with more stores than the plan allows 403 `PLAN_LIMIT_REACHED` (`max_sources`); `execution-status` says `idle` before any run and shows a failed run's `error_message`; a config's runs list the latest first |
 | Saved searches module plan | #216 | — | Six slices, approved by the author (Nov 18, 2026): see *Saved searches module plan* below |
+| Saved searches slice 1: `SavedSearch` and `SearchRun` are pure dataclasses | (this PR) | Primitive Obsession on a framework type → Move Class (to `searches/entities.py`) + Replace Pydantic model with dataclass + Rename Class + Move Function | `SearchConfig` and `SearchExecutionLog` (Pydantic, `src/app/entities/`) become the `@dataclass(kw_only=True)` `SavedSearch` and `SearchRun` in the new `searches/entities.py`, same fields and defaults; the run statuses and `is_stale_run` move there from `domain/search_runs.py`. `SearchRun` still refuses an unknown status (in `__post_init__`), so `POST /search-execution-logs/` with a bad status keeps answering 500 (checked before and after). The repositories already mapped fields one by one. The old files are removed and the imports repointed; the tests only changed the import and the class names. `searches/entities.py` joins the blocking mypy step |
 
 ## Accounts module plan
 
@@ -157,7 +158,7 @@ JSON:API types, the `search_configs`, `search_config_source_website` and
 `search_execution_logs` tables), since the scrapers, the admin and the site
 use it. One PR per slice, behavior unchanged:
 
-1. **Entities**: `SearchConfig` and `SearchExecutionLog` (Pydantic models)
+1. **Entities** (this PR): `SearchConfig` and `SearchExecutionLog` (Pydantic models)
    become the pure dataclasses `SavedSearch` and `SearchRun` in
    `searches/entities.py`, with the run statuses and `is_stale_run` from
    `domain/search_runs.py`; the repositories map fields one by one (Replace
@@ -254,5 +255,8 @@ before it starts.
   config answers 404 on GET but 403 on `/search-configs/user/{id}`; the
   trigger and `execution-status` bodies and that 403 are not JSON:API errors
   or resources. Pinned as they are; questions for the author.
+- Saved searches (found in slice 1, Nov 18, 2026): `POST /search-execution-logs/`
+  never calls `SearchExecutionLogValidator` (only its tests use it), so a bad
+  status answers 500 instead of 422. A fix with tests first, for the author.
 - mypy: 271 errors in 44 files outside the blocking list (#153); add paths
   to the blocking step as each area is fixed.
