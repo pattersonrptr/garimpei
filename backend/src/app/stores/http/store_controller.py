@@ -2,19 +2,20 @@ from fastapi import APIRouter, Depends, Query
 
 from src.app.accounts.entities import User as UserEntity
 from src.app.accounts.http.auth import get_current_active_user, get_current_staff_user
-from src.app.domain.validators.source_website_validator import SourceWebsiteValidator
 from src.app.infrastructure.database_config import get_db
-from src.app.interfaces.http.presenters.source_website_presenter import (
-    SourceWebsitePresenter,
-)
-from src.app.interfaces.http.schemas.source_website_schema import (
-    SourceWebsiteCreateRequest,
-    SourceWebsiteReadResponse,
-    SourceWebsitesCollectionResponse,
-    SourceWebsiteUpdateRequest,
-)
+from src.app.stores import wiring
 from src.app.stores.entities import Store
-from src.app.stores.persistence.repositories import StoreRepository
+from src.app.stores.http.store_presenter import (
+    StorePresenter,
+)
+from src.app.stores.http.store_schema import (
+    StoreCreateRequest,
+    StoreReadResponse,
+    StoresCollectionResponse,
+    StoreUpdateRequest,
+)
+from src.app.stores.http.validators import StoreValidator
+from src.app.stores.ports import StoreRepositoryInterface
 from src.app.stores.use_cases import (
     CreateStoreUseCase,
     DeleteStoreUseCase,
@@ -32,29 +33,31 @@ router = APIRouter(tags=["source_websites"], prefix="/source-websites")
 logger = get_logger(__name__)
 
 
-def get_source_website_repository(db=Depends(get_db)) -> StoreRepository:
-    """Dependency injection for StoreRepository."""
-    return StoreRepository(db)
+def get_source_website_repository(db=Depends(get_db)) -> StoreRepositoryInterface:
+    """Stores' repository, built by stores/wiring.py."""
+    return wiring.stores(db)
 
 
 def get_source_website_validator(
-    source_website_repo: StoreRepository = Depends(get_source_website_repository),
-) -> SourceWebsiteValidator:
-    """Dependency injection for SourceWebsiteValidator."""
-    return SourceWebsiteValidator(source_website_repo)
+    source_website_repo: StoreRepositoryInterface = Depends(
+        get_source_website_repository
+    ),
+) -> StoreValidator:
+    """Dependency injection for StoreValidator."""
+    return StoreValidator(source_website_repo)
 
 
 def _not_found_by_id(store_id: int):
-    return SourceWebsitePresenter.handle_not_found(f"id {store_id}", "/data/id")
+    return StorePresenter.handle_not_found(f"id {store_id}", "/data/id")
 
 
-@router.post("/", response_model=SourceWebsiteReadResponse, status_code=201)
+@router.post("/", response_model=StoreReadResponse, status_code=201)
 def create_source_website(
-    source_website_in: SourceWebsiteCreateRequest,
-    source_website_repo: StoreRepository = Depends(get_source_website_repository),
-    source_website_validator: SourceWebsiteValidator = Depends(
-        get_source_website_validator
+    source_website_in: StoreCreateRequest,
+    source_website_repo: StoreRepositoryInterface = Depends(
+        get_source_website_repository
     ),
+    source_website_validator: StoreValidator = Depends(get_source_website_validator),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
     """
@@ -83,7 +86,7 @@ def create_source_website(
                 "user_id": current_user.id,
             },
         )
-        return SourceWebsitePresenter.handle_validation_errors(validation_errors)
+        return StorePresenter.handle_validation_errors(validation_errors)
 
     attrs = source_website_in.data.attributes
     created = CreateStoreUseCase(source_website_repo).execute(
@@ -98,16 +101,18 @@ def create_source_website(
             "user_id": current_user.id,
         },
     )
-    return SourceWebsitePresenter.handle_success(created)
+    return StorePresenter.handle_success(created)
 
 
-@router.get("/", response_model=SourceWebsitesCollectionResponse)
+@router.get("/", response_model=StoresCollectionResponse)
 def list_source_websites(
     limit: int = Query(default=10, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     sort_by: str | None = Query(default=None),
     sort_order: str | None = Query(default="desc", pattern="^(asc|desc)$"),
-    source_website_repo: StoreRepository = Depends(get_source_website_repository),
+    source_website_repo: StoreRepositoryInterface = Depends(
+        get_source_website_repository
+    ),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
@@ -127,13 +132,15 @@ def list_source_websites(
         sort_by=sort_by,
         sort_order=sort_order,
     )
-    return SourceWebsitePresenter.handle_collection_success(stores, total)
+    return StorePresenter.handle_collection_success(stores, total)
 
 
-@router.get("/name/{name}", response_model=SourceWebsiteReadResponse)
+@router.get("/name/{name}", response_model=StoreReadResponse)
 def get_source_website_by_name(
     name: str,
-    source_website_repo: StoreRepository = Depends(get_source_website_repository),
+    source_website_repo: StoreRepositoryInterface = Depends(
+        get_source_website_repository
+    ),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
@@ -151,14 +158,16 @@ def get_source_website_by_name(
     try:
         store = GetStoreByNameUseCase(source_website_repo).execute(name)
     except StoreNotFoundError:
-        return SourceWebsitePresenter.handle_not_found(f"name '{name}'", "/name")
-    return SourceWebsitePresenter.handle_success(store)
+        return StorePresenter.handle_not_found(f"name '{name}'", "/name")
+    return StorePresenter.handle_success(store)
 
 
-@router.get("/{source_website_id}", response_model=SourceWebsiteReadResponse)
+@router.get("/{source_website_id}", response_model=StoreReadResponse)
 def get_source_website(
     source_website_id: int,
-    source_website_repo: StoreRepository = Depends(get_source_website_repository),
+    source_website_repo: StoreRepositoryInterface = Depends(
+        get_source_website_repository
+    ),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
@@ -181,17 +190,17 @@ def get_source_website(
         store = GetStoreUseCase(source_website_repo).execute(source_website_id)
     except StoreNotFoundError:
         return _not_found_by_id(source_website_id)
-    return SourceWebsitePresenter.handle_success(store)
+    return StorePresenter.handle_success(store)
 
 
-@router.put("/{source_website_id}", response_model=SourceWebsiteReadResponse)
+@router.put("/{source_website_id}", response_model=StoreReadResponse)
 def update_source_website(
     source_website_id: int,
-    source_website_in: SourceWebsiteUpdateRequest,
-    source_website_repo: StoreRepository = Depends(get_source_website_repository),
-    source_website_validator: SourceWebsiteValidator = Depends(
-        get_source_website_validator
+    source_website_in: StoreUpdateRequest,
+    source_website_repo: StoreRepositoryInterface = Depends(
+        get_source_website_repository
     ),
+    source_website_validator: StoreValidator = Depends(get_source_website_validator),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
     """
@@ -231,7 +240,7 @@ def update_source_website(
                 "source_website_id": source_website_id,
             },
         )
-        return SourceWebsitePresenter.handle_validation_errors(validation_errors)
+        return StorePresenter.handle_validation_errors(validation_errors)
 
     attrs = source_website_in.data.attributes
     changes = StoreChanges(
@@ -252,13 +261,15 @@ def update_source_website(
             "user_id": current_user.id,
         },
     )
-    return SourceWebsitePresenter.handle_success(updated)
+    return StorePresenter.handle_success(updated)
 
 
 @router.delete("/{source_website_id}", status_code=204)
 def delete_source_website(
     source_website_id: int,
-    source_website_repo: StoreRepository = Depends(get_source_website_repository),
+    source_website_repo: StoreRepositoryInterface = Depends(
+        get_source_website_repository
+    ),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
     """

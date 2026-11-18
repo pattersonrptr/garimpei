@@ -10,10 +10,10 @@ from datetime import datetime
 import pytest
 from fastapi.responses import JSONResponse
 
-from src.app.interfaces.http.presenters.source_website_presenter import (
-    SourceWebsitePresenter,
-)
 from src.app.stores.entities import Store
+from src.app.stores.http.store_presenter import (
+    StorePresenter,
+)
 from src.common.jsonapi import JsonApiError
 
 # ============================================================================
@@ -70,23 +70,23 @@ def sample_validation_errors():
 
 
 # ============================================================================
-# SourceWebsitePresenter.handle_success Tests
+# StorePresenter.handle_success Tests
 # ============================================================================
 
 
-class TestSourceWebsitePresenterHandleSuccess:
-    """Tests for SourceWebsitePresenter.handle_success()."""
+class TestStorePresenterHandleSuccess:
+    """Tests for StorePresenter.handle_success()."""
 
     def test_handle_success_should_return_jsonapi_response(
         self, sample_source_website_entity
     ):
         """
         Given: A valid source website entity
-        When: SourceWebsitePresenter.handle_success() is called
-        Then: Should return SourceWebsiteReadResponse with correct JSON:API structure
+        When: StorePresenter.handle_success() is called
+        Then: Should return StoreReadResponse with correct JSON:API structure
         """
         # When
-        response = SourceWebsitePresenter.handle_success(sample_source_website_entity)
+        response = StorePresenter.handle_success(sample_source_website_entity)
 
         # Then
         assert response.data.type == "source_websites"
@@ -99,11 +99,11 @@ class TestSourceWebsitePresenterHandleSuccess:
     ):
         """
         Given: A source website entity with all fields
-        When: SourceWebsitePresenter.handle_success() is called
+        When: StorePresenter.handle_success() is called
         Then: Should include all attributes in the response
         """
         # When
-        response = SourceWebsitePresenter.handle_success(sample_source_website_entity)
+        response = StorePresenter.handle_success(sample_source_website_entity)
 
         # Then
         attrs = response.data.attributes
@@ -114,11 +114,11 @@ class TestSourceWebsitePresenterHandleSuccess:
     def test_handle_success_should_have_string_id(self, sample_source_website_entity):
         """
         Given: A source website entity with integer id
-        When: SourceWebsitePresenter.handle_success() is called
+        When: StorePresenter.handle_success() is called
         Then: JSON:API id should be a string
         """
         # When
-        response = SourceWebsitePresenter.handle_success(sample_source_website_entity)
+        response = StorePresenter.handle_success(sample_source_website_entity)
 
         # Then
         assert isinstance(response.data.id, str)
@@ -127,7 +127,7 @@ class TestSourceWebsitePresenterHandleSuccess:
     def test_handle_success_should_reflect_inactive_status(self):
         """
         Given: An inactive source website entity
-        When: SourceWebsitePresenter.handle_success() is called
+        When: StorePresenter.handle_success() is called
         Then: Should correctly reflect is_active=False
         """
         # Given
@@ -139,30 +139,30 @@ class TestSourceWebsitePresenterHandleSuccess:
         )
 
         # When
-        response = SourceWebsitePresenter.handle_success(entity)
+        response = StorePresenter.handle_success(entity)
 
         # Then
         assert response.data.attributes.is_active is False
 
 
 # ============================================================================
-# SourceWebsitePresenter.handle_collection_success Tests
+# StorePresenter.handle_collection_success Tests
 # ============================================================================
 
 
-class TestSourceWebsitePresenterHandleCollectionSuccess:
-    """Tests for SourceWebsitePresenter.handle_collection_success()."""
+class TestStorePresenterHandleCollectionSuccess:
+    """Tests for StorePresenter.handle_collection_success()."""
 
     def test_handle_collection_success_should_return_jsonapi_collection(
         self, sample_source_website_collection
     ):
         """
         Given: A list of source website entities and total count
-        When: SourceWebsitePresenter.handle_collection_success() is called
+        When: StorePresenter.handle_collection_success() is called
         Then: Should return collection response with all items
         """
         # When
-        response = SourceWebsitePresenter.handle_collection_success(
+        response = StorePresenter.handle_collection_success(
             sample_source_website_collection, total=2
         )
 
@@ -177,11 +177,11 @@ class TestSourceWebsitePresenterHandleCollectionSuccess:
     ):
         """
         Given: A collection with a known total
-        When: SourceWebsitePresenter.handle_collection_success() is called
+        When: StorePresenter.handle_collection_success() is called
         Then: Should include meta with total count
         """
         # When
-        response = SourceWebsitePresenter.handle_collection_success(
+        response = StorePresenter.handle_collection_success(
             sample_source_website_collection, total=100
         )
 
@@ -191,11 +191,11 @@ class TestSourceWebsitePresenterHandleCollectionSuccess:
     def test_handle_collection_success_should_handle_empty_collection(self):
         """
         Given: An empty list
-        When: SourceWebsitePresenter.handle_collection_success() is called
+        When: StorePresenter.handle_collection_success() is called
         Then: Should return empty data list with total=0
         """
         # When
-        response = SourceWebsitePresenter.handle_collection_success([], total=0)
+        response = StorePresenter.handle_collection_success([], total=0)
 
         # Then
         assert response.data == []
@@ -203,25 +203,23 @@ class TestSourceWebsitePresenterHandleCollectionSuccess:
 
 
 # ============================================================================
-# SourceWebsitePresenter.handle_validation_errors Tests
+# StorePresenter.handle_validation_errors Tests
 # ============================================================================
 
 
-class TestSourceWebsitePresenterHandleValidationErrors:
-    """Tests for SourceWebsitePresenter.handle_validation_errors()."""
+class TestStorePresenterHandleValidationErrors:
+    """Tests for StorePresenter.handle_validation_errors()."""
 
     def test_handle_validation_errors_should_return_jsonapi_error_response(
         self, sample_validation_errors
     ):
         """
         Given: A list of validation errors
-        When: SourceWebsitePresenter.handle_validation_errors() is called
+        When: StorePresenter.handle_validation_errors() is called
         Then: Should return JSONResponse with correct JSON:API error structure
         """
         # When
-        response = SourceWebsitePresenter.handle_validation_errors(
-            sample_validation_errors
-        )
+        response = StorePresenter.handle_validation_errors(sample_validation_errors)
 
         # Then
         assert isinstance(response, JSONResponse)
@@ -233,13 +231,11 @@ class TestSourceWebsitePresenterHandleValidationErrors:
     ):
         """
         Given: Multiple validation errors
-        When: SourceWebsitePresenter.handle_validation_errors() is called
+        When: StorePresenter.handle_validation_errors() is called
         Then: Should include all errors in the response body
         """
         # When
-        response = SourceWebsitePresenter.handle_validation_errors(
-            sample_validation_errors
-        )
+        response = StorePresenter.handle_validation_errors(sample_validation_errors)
         content = response.body.decode("utf-8")
 
         # Then
@@ -250,7 +246,7 @@ class TestSourceWebsitePresenterHandleValidationErrors:
     def test_handle_validation_errors_should_use_first_error_status_code(self):
         """
         Given: Validation errors starting with status 400
-        When: SourceWebsitePresenter.handle_validation_errors() is called
+        When: StorePresenter.handle_validation_errors() is called
         Then: Should use the first error's status code
         """
         # Given
@@ -264,28 +260,28 @@ class TestSourceWebsitePresenterHandleValidationErrors:
         ]
 
         # When
-        response = SourceWebsitePresenter.handle_validation_errors(errors)
+        response = StorePresenter.handle_validation_errors(errors)
 
         # Then
         assert response.status_code == 400
 
 
 # ============================================================================
-# SourceWebsitePresenter.handle_not_found Tests
+# StorePresenter.handle_not_found Tests
 # ============================================================================
 
 
-class TestSourceWebsitePresenterHandleNotFound:
-    """Tests for SourceWebsitePresenter.handle_not_found()."""
+class TestStorePresenterHandleNotFound:
+    """Tests for StorePresenter.handle_not_found()."""
 
     def test_handle_not_found_should_return_404_jsonapi_error(self):
         """
         Given: A source website identifier
-        When: SourceWebsitePresenter.handle_not_found() is called
+        When: StorePresenter.handle_not_found() is called
         Then: Should return 404 JSONResponse with JSON:API error structure
         """
         # When
-        response = SourceWebsitePresenter.handle_not_found(
+        response = StorePresenter.handle_not_found(
             identifier="id=999", pointer="/data/attributes/id"
         )
 
@@ -297,11 +293,11 @@ class TestSourceWebsitePresenterHandleNotFound:
     def test_handle_not_found_should_include_identifier_in_detail(self):
         """
         Given: A specific source website identifier
-        When: SourceWebsitePresenter.handle_not_found() is called
+        When: StorePresenter.handle_not_found() is called
         Then: Should include identifier in the error detail
         """
         # When
-        response = SourceWebsitePresenter.handle_not_found(
+        response = StorePresenter.handle_not_found(
             identifier="name='NonExistentSite'",
             pointer="/data/attributes/name",
         )
@@ -314,11 +310,11 @@ class TestSourceWebsitePresenterHandleNotFound:
     def test_handle_not_found_should_have_correct_error_structure(self):
         """
         Given: A source website identifier
-        When: SourceWebsitePresenter.handle_not_found() is called
+        When: StorePresenter.handle_not_found() is called
         Then: Should have correct JSON:API error fields
         """
         # When
-        response = SourceWebsitePresenter.handle_not_found(identifier="id=1")
+        response = StorePresenter.handle_not_found(identifier="id=1")
         content = response.body.decode("utf-8")
 
         # Then
@@ -332,11 +328,11 @@ class TestSourceWebsitePresenterHandleNotFound:
     def test_handle_not_found_should_use_default_pointer(self):
         """
         Given: No pointer specified
-        When: SourceWebsitePresenter.handle_not_found() is called
+        When: StorePresenter.handle_not_found() is called
         Then: Should use default pointer '/data'
         """
         # When
-        response = SourceWebsitePresenter.handle_not_found(identifier="id=1")
+        response = StorePresenter.handle_not_found(identifier="id=1")
         content = response.body.decode("utf-8")
 
         # Then

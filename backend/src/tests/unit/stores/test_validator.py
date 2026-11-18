@@ -1,40 +1,40 @@
-"""Unit tests for SourceWebsiteValidator."""
+"""Unit tests for StoreValidator."""
 
 from unittest.mock import Mock
 
 import pytest
 
-from src.app.domain.validators.source_website_validator import SourceWebsiteValidator
-from src.app.interfaces.http.schemas.source_website_schema import (
-    SourceWebsiteAttributesForCreation,
-    SourceWebsiteAttributesForUpdate,
-    SourceWebsiteCreateRequest,
-    SourceWebsiteResourceForCreation,
-    SourceWebsiteResourceForUpdate,
-    SourceWebsiteUpdateRequest,
-)
 from src.app.stores.entities import Store
+from src.app.stores.http.store_schema import (
+    StoreAttributesForCreation,
+    StoreAttributesForUpdate,
+    StoreCreateRequest,
+    StoreResourceForCreation,
+    StoreResourceForUpdate,
+    StoreUpdateRequest,
+)
+from src.app.stores.http.validators import StoreValidator
 
 # ============================================================================
 # Helpers
 # ============================================================================
 
 
-def make_create_request(**overrides) -> SourceWebsiteCreateRequest:
-    attrs = SourceWebsiteAttributesForCreation(
+def make_create_request(**overrides) -> StoreCreateRequest:
+    attrs = StoreAttributesForCreation(
         name=overrides.pop("name", "OLX"),
         base_url=overrides.pop("base_url", "https://www.olx.com.br"),
         **overrides,
     )
-    return SourceWebsiteCreateRequest(
-        data=SourceWebsiteResourceForCreation(type="source_website", attributes=attrs)
+    return StoreCreateRequest(
+        data=StoreResourceForCreation(type="source_website", attributes=attrs)
     )
 
 
-def make_update_request(**overrides) -> SourceWebsiteUpdateRequest:
-    attrs = SourceWebsiteAttributesForUpdate(**overrides)
-    return SourceWebsiteUpdateRequest(
-        data=SourceWebsiteResourceForUpdate(type="source_website", attributes=attrs)
+def make_update_request(**overrides) -> StoreUpdateRequest:
+    attrs = StoreAttributesForUpdate(**overrides)
+    return StoreUpdateRequest(
+        data=StoreResourceForUpdate(type="source_website", attributes=attrs)
     )
 
 
@@ -54,8 +54,8 @@ def make_source_website_entity(**overrides) -> Store:
 # ============================================================================
 
 
-class TestSourceWebsiteValidatorCreate:
-    """Tests for SourceWebsiteValidator.validate_create_request"""
+class TestStoreValidatorCreate:
+    """Tests for StoreValidator.validate_create_request"""
 
     def test_valid_create_request_should_return_no_errors(self):
         """
@@ -65,7 +65,7 @@ class TestSourceWebsiteValidatorCreate:
         """
         mock_repo = Mock()
         mock_repo.get_by_name.return_value = None
-        validator = SourceWebsiteValidator(mock_repo)
+        validator = StoreValidator(mock_repo)
 
         errors = validator.validate_create_request(make_create_request())
 
@@ -81,7 +81,7 @@ class TestSourceWebsiteValidatorCreate:
         request = make_create_request()
         request.data.type = "wrong_type"
 
-        validator = SourceWebsiteValidator(mock_repo)
+        validator = StoreValidator(mock_repo)
         errors = validator.validate_create_request(request)
 
         assert len(errors) == 1
@@ -106,7 +106,7 @@ class TestSourceWebsiteValidatorCreate:
         Then: Returns a 422 MISSING_FIELD error
         """
         mock_repo = Mock()
-        validator = SourceWebsiteValidator(mock_repo)
+        validator = StoreValidator(mock_repo)
 
         errors = validator.validate_create_request(
             make_create_request(**{field: value})
@@ -125,7 +125,7 @@ class TestSourceWebsiteValidatorCreate:
         """
         mock_repo = Mock()
         mock_repo.get_by_name.return_value = make_source_website_entity()
-        validator = SourceWebsiteValidator(mock_repo)
+        validator = StoreValidator(mock_repo)
 
         errors = validator.validate_create_request(make_create_request(name="OLX"))
 
@@ -140,7 +140,7 @@ class TestSourceWebsiteValidatorCreate:
         Then: Returns two MISSING_FIELD errors
         """
         mock_repo = Mock()
-        validator = SourceWebsiteValidator(mock_repo)
+        validator = StoreValidator(mock_repo)
 
         errors = validator.validate_create_request(
             make_create_request(name="", base_url="")
@@ -155,8 +155,8 @@ class TestSourceWebsiteValidatorCreate:
 # ============================================================================
 
 
-class TestSourceWebsiteValidatorUpdate:
-    """Tests for SourceWebsiteValidator.validate_update_request"""
+class TestStoreValidatorUpdate:
+    """Tests for StoreValidator.validate_update_request"""
 
     def test_valid_update_request_should_return_no_errors(self):
         """
@@ -166,7 +166,7 @@ class TestSourceWebsiteValidatorUpdate:
         """
         mock_repo = Mock()
         mock_repo.get_by_name.return_value = None
-        validator = SourceWebsiteValidator(mock_repo)
+        validator = StoreValidator(mock_repo)
 
         errors = validator.validate_update_request(
             1, make_update_request(name="Enjoei")
@@ -181,7 +181,7 @@ class TestSourceWebsiteValidatorUpdate:
         Then: Returns empty errors list (nothing to validate)
         """
         mock_repo = Mock()
-        validator = SourceWebsiteValidator(mock_repo)
+        validator = StoreValidator(mock_repo)
 
         errors = validator.validate_update_request(1, make_update_request())
 
@@ -197,7 +197,7 @@ class TestSourceWebsiteValidatorUpdate:
         request = make_update_request(name="New Name")
         request.data.type = "wrong_type"
 
-        validator = SourceWebsiteValidator(mock_repo)
+        validator = StoreValidator(mock_repo)
         errors = validator.validate_update_request(1, request)
 
         assert len(errors) == 1
@@ -210,7 +210,7 @@ class TestSourceWebsiteValidatorUpdate:
         Then: Returns a 422 INVALID_VALUE error
         """
         mock_repo = Mock()
-        validator = SourceWebsiteValidator(mock_repo)
+        validator = StoreValidator(mock_repo)
 
         errors = validator.validate_update_request(1, make_update_request(name=""))
 
@@ -225,7 +225,7 @@ class TestSourceWebsiteValidatorUpdate:
         Then: Returns a 422 INVALID_VALUE error
         """
         mock_repo = Mock()
-        validator = SourceWebsiteValidator(mock_repo)
+        validator = StoreValidator(mock_repo)
 
         errors = validator.validate_update_request(1, make_update_request(base_url=""))
 
@@ -241,7 +241,7 @@ class TestSourceWebsiteValidatorUpdate:
         """
         mock_repo = Mock()
         mock_repo.get_by_name.return_value = make_source_website_entity(id=2)
-        validator = SourceWebsiteValidator(mock_repo)
+        validator = StoreValidator(mock_repo)
 
         errors = validator.validate_update_request(
             1, make_update_request(name="Mercado Livre")
@@ -259,7 +259,7 @@ class TestSourceWebsiteValidatorUpdate:
         """
         mock_repo = Mock()
         mock_repo.get_by_name.return_value = make_source_website_entity(id=1)
-        validator = SourceWebsiteValidator(mock_repo)
+        validator = StoreValidator(mock_repo)
 
         errors = validator.validate_update_request(1, make_update_request(name="OLX"))
 
