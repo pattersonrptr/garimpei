@@ -1,6 +1,4 @@
-from src.app.interfaces.repositories.search_config_repository import (
-    SearchConfigRepositoryInterface,
-)
+from src.app.searches.ports import SavedSearchRepositoryInterface
 from src.app.stores.ports import StoreRepositoryInterface
 from src.common.jsonapi import JsonApiError
 
@@ -10,7 +8,7 @@ class SearchConfigValidator:
 
     def __init__(
         self,
-        search_config_repo: SearchConfigRepositoryInterface,
+        search_config_repo: SavedSearchRepositoryInterface,
         source_website_repo: StoreRepositoryInterface,
     ):
         self.search_config_repo = search_config_repo

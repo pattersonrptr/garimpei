@@ -12,11 +12,9 @@ from src.app.alerts.persistence.models import (
     price_alert_source_website,
 )
 from src.app.catalog.persistence.models import Product
-from src.app.infrastructure.database.models.search_execution_log_model import (
-    SearchExecutionLog,
-)
 from src.app.infrastructure.database.text_match import title_contains
 from src.app.infrastructure.database_config import get_db
+from src.app.searches.persistence.models import SearchRun
 from src.app.stores.persistence.models import Store as StoreModel
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -55,10 +53,7 @@ def get_admin_summary(
     )
 
     recent_executions = (
-        db.query(SearchExecutionLog)
-        .order_by(SearchExecutionLog.started_at.desc())
-        .limit(20)
-        .all()
+        db.query(SearchRun).order_by(SearchRun.started_at.desc()).limit(20).all()
     )
 
     success_count = sum(1 for e in recent_executions if e.status == "success")

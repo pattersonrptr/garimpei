@@ -6,11 +6,11 @@ from src.app.accounts.persistence.models import User
 from src.app.billing.persistence.models import Plan
 from src.app.catalog.persistence.models import PriceHistory, Product
 from src.app.fixtures.fixtures import get_fixtures
-from src.app.infrastructure.database.models.search_config_model import SearchConfig
-from src.app.infrastructure.database.models.search_config_source_website_model import (
+from src.app.infrastructure.database_config import SessionLocal
+from src.app.searches.persistence.models import (
+    SavedSearch,
     search_config_source_website,
 )
-from src.app.infrastructure.database_config import SessionLocal
 from src.app.stores.persistence.models import Store as StoreModel
 
 FIXTURE_DEPENDENCIES = {
@@ -88,7 +88,7 @@ def load_fixtures(selected_fixtures):
                 sc_copy = sc.copy()
                 sc_copy.pop("source_website_ids", None)
                 search_configs_data.append(sc_copy)
-            _upsert(db, SearchConfig, search_configs_data)
+            _upsert(db, SavedSearch, search_configs_data)
 
             search_config_source_website_data = []
             for sc in data["search_configs"]:

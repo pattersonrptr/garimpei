@@ -8,14 +8,10 @@ from src.app.catalog.persistence.models import (
     PriceHistory,  # noqa: F401
     Product,  # noqa: F401
 )
-from src.app.infrastructure.database.models.search_config_model import (
-    SearchConfig,  # noqa: F401
-)
-from src.app.infrastructure.database.models.search_config_source_website_model import (
-    search_config_source_website,  # noqa: F401
-)
-from src.app.infrastructure.database.models.search_execution_log_model import (
-    SearchExecutionLog,  # noqa: F401
+from src.app.searches.persistence.models import (  # noqa: F401
+    SavedSearch,  # noqa: F401
+    SearchRun,  # noqa: F401
+    search_config_source_website,
 )
 from src.app.stores.persistence.models import (
     Store,  # noqa: F401
@@ -27,9 +23,9 @@ __all__ = [
     "price_alert_source_website",
     "PriceHistory",
     "Product",
-    "SearchConfig",
+    "SavedSearch",
     "search_config_source_website",
-    "SearchExecutionLog",
+    "SearchRun",
     "Store",
     "User",
 ]

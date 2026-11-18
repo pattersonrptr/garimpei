@@ -26,7 +26,7 @@ class Store(Base):
     # Relationships
     products = relationship("Product", back_populates="source_website")
     search_configs = relationship(
-        "SearchConfig",
+        "SavedSearch",
         secondary="search_config_source_website",
         back_populates="source_websites",
     )

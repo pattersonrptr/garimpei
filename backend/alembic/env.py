@@ -7,7 +7,7 @@ from alembic import context
 from src.app import User  # noqa: F401
 from src.app.infrastructure.database_config import Base
 
-# from src.app.infrastructure.database.models.search_config_model import SearchConfig  # noqa: F401
+# from src.app.searches.persistence.models import SavedSearch  # noqa: F401
 # from src.app.catalog.persistence.models import Product  # noqa: F401
 # from src.app.stores.persistence.models import Store  # noqa: F401
 # from src.app.catalog.persistence.models import PriceHistory  # noqa: F401

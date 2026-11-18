@@ -6,12 +6,10 @@ from src.app.alerts.persistence.models import (  # noqa: F401
 )
 from src.app.billing.persistence.models import Plan, Subscription
 from src.app.catalog.persistence.models import PriceHistory, Product
-from src.app.infrastructure.database.models.search_config_model import SearchConfig
-from src.app.infrastructure.database.models.search_config_source_website_model import (  # noqa: F401
+from src.app.searches.persistence.models import (  # noqa: F401
+    SavedSearch,
+    SearchRun,
     search_config_source_website,
-)
-from src.app.infrastructure.database.models.search_execution_log_model import (
-    SearchExecutionLog,
 )
 from src.app.stores.persistence.models import Store
 
@@ -24,6 +22,6 @@ __all__ = [
     "PriceHistory",
     "PriceAlert",
     "NotificationLog",
-    "SearchConfig",
-    "SearchExecutionLog",
+    "SavedSearch",
+    "SearchRun",
 ]

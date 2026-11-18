@@ -24,7 +24,7 @@ class User(Base):
         onupdate=lambda: datetime.now(UTC),
     )
     # Relationships
-    search_configs = relationship("SearchConfig", back_populates="user")
+    search_configs = relationship("SavedSearch", back_populates="user")
     price_alerts = relationship("PriceAlert", back_populates="user")
     notification_logs = relationship("NotificationLog", back_populates="user")
     subscription = relationship("Subscription", back_populates="user", uselist=False)

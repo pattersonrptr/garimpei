@@ -1,17 +1,13 @@
 from datetime import UTC, datetime
 
-from src.app.interfaces.repositories.search_execution_log_repository import (
-    SearchExecutionLogRepositoryInterface,
-)
 from src.app.searches.entities import FINISHED_STATUSES, SearchRun, is_stale_run
+from src.app.searches.ports import SearchRunRepositoryInterface
 
 
 class CreateSearchExecutionLogUseCase:
     """Record a new search execution log."""
 
-    def __init__(
-        self, search_execution_log_repo: SearchExecutionLogRepositoryInterface
-    ):
+    def __init__(self, search_execution_log_repo: SearchRunRepositoryInterface):
         self.search_execution_log_repo = search_execution_log_repo
 
     def execute(self, search_execution_log: SearchRun) -> SearchRun:
@@ -21,9 +17,7 @@ class CreateSearchExecutionLogUseCase:
 class GetSearchExecutionLogByIdUseCase:
     """Retrieve a single search execution log by its id."""
 
-    def __init__(
-        self, search_execution_log_repo: SearchExecutionLogRepositoryInterface
-    ):
+    def __init__(self, search_execution_log_repo: SearchRunRepositoryInterface):
         self.search_execution_log_repo = search_execution_log_repo
 
     def execute(self, search_execution_log_id: int) -> SearchRun | None:
@@ -33,9 +27,7 @@ class GetSearchExecutionLogByIdUseCase:
 class GetSearchExecutionLogsBySearchConfigIdUseCase:
     """Retrieve all search execution logs for a given search config."""
 
-    def __init__(
-        self, search_execution_log_repo: SearchExecutionLogRepositoryInterface
-    ):
+    def __init__(self, search_execution_log_repo: SearchRunRepositoryInterface):
         self.search_execution_log_repo = search_execution_log_repo
 
     def execute(self, search_config_id: int) -> list[SearchRun]:
@@ -45,9 +37,7 @@ class GetSearchExecutionLogsBySearchConfigIdUseCase:
 class ListSearchExecutionLogsUseCase:
     """List all search execution logs with pagination and sorting."""
 
-    def __init__(
-        self, search_execution_log_repo: SearchExecutionLogRepositoryInterface
-    ):
+    def __init__(self, search_execution_log_repo: SearchRunRepositoryInterface):
         self.search_execution_log_repo = search_execution_log_repo
 
     def execute(
@@ -65,9 +55,7 @@ class ListSearchExecutionLogsUseCase:
 class DeleteSearchExecutionLogUseCase:
     """Delete a search execution log by id."""
 
-    def __init__(
-        self, search_execution_log_repo: SearchExecutionLogRepositoryInterface
-    ):
+    def __init__(self, search_execution_log_repo: SearchRunRepositoryInterface):
         self.search_execution_log_repo = search_execution_log_repo
 
     def execute(self, search_execution_log_id: int) -> bool:
@@ -80,9 +68,7 @@ class UpdateSearchExecutionLogUseCase:
     Closing a run (status success or failed) stamps ``finished_at``.
     """
 
-    def __init__(
-        self, search_execution_log_repo: SearchExecutionLogRepositoryInterface
-    ):
+    def __init__(self, search_execution_log_repo: SearchRunRepositoryInterface):
         self.search_execution_log_repo = search_execution_log_repo
 
     def execute(self, search_execution_log_id: int, changes: dict) -> SearchRun | None:
@@ -95,9 +81,7 @@ class UpdateSearchExecutionLogUseCase:
 class GetLatestSearchRunUseCase:
     """The latest run of a search config, closing it first if it was lost."""
 
-    def __init__(
-        self, search_execution_log_repo: SearchExecutionLogRepositoryInterface
-    ):
+    def __init__(self, search_execution_log_repo: SearchRunRepositoryInterface):
         self.search_execution_log_repo = search_execution_log_repo
 
     def execute(

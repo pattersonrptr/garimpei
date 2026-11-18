@@ -1,16 +1,14 @@
 from src.app.alerts.ports import (
     PriceAlertRepositoryInterface,
 )
-from src.app.interfaces.repositories.search_config_repository import (
-    SearchConfigRepositoryInterface,
-)
 from src.app.searches.entities import SavedSearch
+from src.app.searches.ports import SavedSearchRepositoryInterface
 
 
 class CreateSearchConfigUseCase:
     """Create a new search configuration for a user."""
 
-    def __init__(self, search_config_repo: SearchConfigRepositoryInterface):
+    def __init__(self, search_config_repo: SavedSearchRepositoryInterface):
         self.search_config_repo = search_config_repo
 
     def execute(self, search_config: SavedSearch) -> SavedSearch:
@@ -20,7 +18,7 @@ class CreateSearchConfigUseCase:
 class GetSearchConfigByIdUseCase:
     """Retrieve a single search config by its id."""
 
-    def __init__(self, search_config_repo: SearchConfigRepositoryInterface):
+    def __init__(self, search_config_repo: SavedSearchRepositoryInterface):
         self.search_config_repo = search_config_repo
 
     def execute(self, search_config_id: int) -> SavedSearch | None:
@@ -30,7 +28,7 @@ class GetSearchConfigByIdUseCase:
 class GetSearchConfigsByUserIdUseCase:
     """Retrieve all search configs for a given user."""
 
-    def __init__(self, search_config_repo: SearchConfigRepositoryInterface):
+    def __init__(self, search_config_repo: SavedSearchRepositoryInterface):
         self.search_config_repo = search_config_repo
 
     def execute(self, user_id: int) -> list[SavedSearch]:
@@ -40,7 +38,7 @@ class GetSearchConfigsByUserIdUseCase:
 class ListSearchConfigsUseCase:
     """List all search configs with pagination and sorting."""
 
-    def __init__(self, search_config_repo: SearchConfigRepositoryInterface):
+    def __init__(self, search_config_repo: SavedSearchRepositoryInterface):
         self.search_config_repo = search_config_repo
 
     def execute(
@@ -65,7 +63,7 @@ class ListSearchConfigsUseCase:
 class UpdateSearchConfigUseCase:
     """Update an existing search config."""
 
-    def __init__(self, search_config_repo: SearchConfigRepositoryInterface):
+    def __init__(self, search_config_repo: SavedSearchRepositoryInterface):
         self.search_config_repo = search_config_repo
 
     def execute(
@@ -87,7 +85,7 @@ class DeleteSearchConfigUseCase:
 
     def __init__(
         self,
-        search_config_repo: SearchConfigRepositoryInterface,
+        search_config_repo: SavedSearchRepositoryInterface,
         price_alert_repo: PriceAlertRepositoryInterface | None = None,
     ):
         self.search_config_repo = search_config_repo

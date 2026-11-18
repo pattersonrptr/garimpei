@@ -108,6 +108,9 @@ jobs:
             src/app/stores/http/store_controller.py \
             src/app/catalog/adapters/stores.py \
             src/app/searches/entities.py \
+            src/app/searches/ports.py \
+            src/app/searches/persistence/models.py \
+            src/app/searches/persistence/repositories.py \
             src/app/billing/ports.py \
             src/app/billing/persistence/models.py \
             src/app/billing/persistence/repositories.py \
