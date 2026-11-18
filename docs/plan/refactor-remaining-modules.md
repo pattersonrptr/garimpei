@@ -105,6 +105,39 @@ per slice, behavior unchanged:
 5. **HTTP** #204: the plan and subscription schemas, presenters and controllers
    move to `billing/http/`, built by `billing/wiring.py`.
 
+## Stores module plan
+
+Approved by the author (Nov 18, 2026). `stores` holds the stores prices are
+collected from (today "source websites"); the characterization tests (#206)
+pin their behavior. Inside the module the code says `Store` (decided by the
+author, Nov 18, 2026: the old name dates from before the comparator); the
+HTTP contract stays as it is (`/source-websites/`, JSON:API type
+`source_website`, the `source_websites` table), since the scrapers and the
+admin use it. One PR per slice, behavior unchanged:
+
+1. **Entity**: `SourceWebsite` (a Pydantic model) becomes the pure dataclass
+   `Store` in `stores/entities.py`; the repository maps fields one by one
+   instead of `model_dump` (Replace Pydantic model with dataclass + Rename
+   Class).
+2. **Persistence**: the ORM model, the repository and its interface move to
+   `stores/persistence/` and `stores/ports.py` (Move Class); the other
+   modules' imports of the ORM model follow the new path.
+3. **Use cases**: the six pass-through use cases move to
+   `stores/use_cases.py`; the partial-update merge and the "exists, or 404"
+   checks leave the controller for the use cases, which return plain data or
+   a domain error (Extract Function + Move Function).
+4. **Consumers**: catalog's `offer_controller` (does the store exist, which
+   id has this name) asks through a catalog-owned port with an adapter over
+   stores; alerts' `StoreReader` adapter is built from `stores/wiring.py`
+   (Inappropriate Intimacy → Extract Interface).
+5. **HTTP**: the schema, presenter, validator and controller move to
+   `stores/http/`, built by `stores/wiring.py` (Move Function).
+
+Left for the queue: catalog's and alerts' persistence join the stores table
+for the store name (persistence coupling, like catalog → alerts before #182);
+the search-config validator only changes its import until saved searches get
+a module; deleting a store that has offers answers 500.
+
 ## Queue
 
 Found while doing the slices above; each one is proposed to the author
