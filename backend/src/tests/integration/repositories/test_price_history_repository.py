@@ -21,10 +21,8 @@ from src.app.catalog.persistence.models import (  # noqa: F401
 from src.app.catalog.persistence.repositories import (
     PriceHistoryRepository,
 )
-from src.app.infrastructure.database.models.source_website_model import (  # noqa: F401
-    SourceWebsite as SourceWebsiteModel,
-)
 from src.app.infrastructure.database_config import Base
+from src.app.stores.persistence.models import Store as StoreModel  # noqa: F401
 
 # ============================================================================
 # Fixtures
@@ -51,7 +49,7 @@ def sample_product(test_db):
     """Creates a SourceWebsite + Product for FK references."""
     from src.app.catalog.entities import ProductCondition
 
-    source_website = SourceWebsiteModel(
+    source_website = StoreModel(
         name="OLX", base_url="https://www.olx.com.br", is_active=True
     )
     test_db.add(source_website)

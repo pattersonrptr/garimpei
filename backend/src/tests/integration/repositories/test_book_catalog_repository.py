@@ -19,10 +19,8 @@ from src.app.catalog.persistence.repositories import (
     BookCatalogRepository,
     CanonicalProductRepository,
 )
-from src.app.infrastructure.database.models.source_website_model import (
-    SourceWebsite as SourceWebsiteModel,
-)
 from src.app.infrastructure.database_config import Base
+from src.app.stores.persistence.models import Store as StoreModel
 
 EV, VILA = 1, 2
 
@@ -34,8 +32,8 @@ def db():
     session = sessionmaker(bind=engine)()
     session.add_all(
         [
-            SourceWebsiteModel(id=EV, name="estante_virtual", base_url="https://ev"),
-            SourceWebsiteModel(id=VILA, name="livraria_da_vila", base_url="https://v"),
+            StoreModel(id=EV, name="estante_virtual", base_url="https://ev"),
+            StoreModel(id=VILA, name="livraria_da_vila", base_url="https://v"),
         ]
     )
     session.commit()

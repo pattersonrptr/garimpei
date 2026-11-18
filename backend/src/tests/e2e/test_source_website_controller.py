@@ -2,12 +2,10 @@
 E2E Tests for SourceWebsite Controller
 
 Tests the complete source website management flow:
-    HTTP Request → SourceWebsiteController → SourceWebsiteUseCases → SourceWebsiteRepository → Database
+    HTTP Request → SourceWebsiteController → SourceWebsiteUseCases → StoreRepository → Database
 """
 
-from src.app.infrastructure.database.models.source_website_model import (
-    SourceWebsite as SourceWebsiteModel,
-)
+from src.app.stores.persistence.models import Store as StoreModel
 
 SOURCE_WEBSITE_TYPE = "source_website"  # Used in requests (validator enforces singular)
 SOURCE_WEBSITE_RESPONSE_TYPE = (
@@ -178,7 +176,7 @@ class TestSourceWebsiteList:
             ("Site A", "https://site-a.com"),
             ("Site B", "https://site-b.com"),
         ]:
-            test_db.add(SourceWebsiteModel(name=name, base_url=url, is_active=True))
+            test_db.add(StoreModel(name=name, base_url=url, is_active=True))
         test_db.commit()
 
         response = client.get(
@@ -355,7 +353,7 @@ class TestSourceWebsiteUpdate:
         When: PUT with the name of the other source website
         Then: Returns 409 (Conflict)
         """
-        other = SourceWebsiteModel(
+        other = StoreModel(
             name="OtherSite", base_url="https://other.com", is_active=True
         )
         test_db.add(other)

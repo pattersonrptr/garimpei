@@ -26,10 +26,8 @@ from src.app.catalog.persistence.repositories import CanonicalProductRepository
 
 # Import all models to register with Base.metadata
 from src.app.infrastructure.database import models  # noqa: F401
-from src.app.infrastructure.database.models.source_website_model import (
-    SourceWebsite as SourceWebsiteModel,
-)
 from src.app.infrastructure.database_config import Base
+from src.app.stores.persistence.models import Store as StoreModel
 
 OLX, ENJOEI = 1, 2
 
@@ -41,8 +39,8 @@ def db():
     session = sessionmaker(bind=engine)()
     session.add_all(
         [
-            SourceWebsiteModel(id=OLX, name="OLX", base_url="https://olx"),
-            SourceWebsiteModel(id=ENJOEI, name="Enjoei", base_url="https://enjoei"),
+            StoreModel(id=OLX, name="OLX", base_url="https://olx"),
+            StoreModel(id=ENJOEI, name="Enjoei", base_url="https://enjoei"),
         ]
     )
     session.commit()
@@ -110,7 +108,7 @@ def a_keyword_alert(db, search_term, max_price, stores):
     db.add(owner)
     db.flush()
     alert = PriceAlertModel(search_term=search_term, max_price=max_price, user=owner)
-    alert.source_websites = [db.get(SourceWebsiteModel, store) for store in stores]
+    alert.source_websites = [db.get(StoreModel, store) for store in stores]
     db.add(alert)
     db.commit()
     return alert

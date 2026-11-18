@@ -23,13 +23,11 @@ from src.app.infrastructure.database.models.search_config_model import (  # noqa
 from src.app.infrastructure.database.models.search_config_source_website_model import (  # noqa: F401
     search_config_source_website,
 )
-from src.app.infrastructure.database.models.source_website_model import (
-    SourceWebsite as SourceWebsiteModel,
-)
 from src.app.infrastructure.database_config import Base
 from src.app.infrastructure.repositories.search_config_repository import (
     SearchConfigRepository,
 )
+from src.app.stores.persistence.models import Store as StoreModel
 
 
 @pytest.fixture
@@ -55,8 +53,8 @@ def user_id(db):
 @pytest.fixture
 def store_ids(db):
     stores = [
-        SourceWebsiteModel(name="OLX", base_url="https://www.olx.com.br"),
-        SourceWebsiteModel(name="Enjoei", base_url="https://www.enjoei.com.br"),
+        StoreModel(name="OLX", base_url="https://www.olx.com.br"),
+        StoreModel(name="Enjoei", base_url="https://www.enjoei.com.br"),
     ]
     db.add_all(stores)
     db.commit()

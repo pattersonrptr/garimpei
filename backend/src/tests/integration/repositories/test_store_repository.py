@@ -1,5 +1,5 @@
 """
-Integration tests for SourceWebsiteRepository.
+Integration tests for StoreRepository.
 
 Tests Repository + Database interactions with real SQLAlchemy operations.
 Uses SQLite in-memory for fast, isolated tests.
@@ -9,15 +9,12 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-# Import model to register with Base.metadata
-from src.app.infrastructure.database.models.source_website_model import (  # noqa: F401
-    SourceWebsite as SourceWebsiteModel,
-)
 from src.app.infrastructure.database_config import Base
-from src.app.infrastructure.repositories.source_website_repository import (
-    SourceWebsiteRepository,
-)
 from src.app.stores.entities import Store
+
+# Import model to register with Base.metadata
+from src.app.stores.persistence.models import Store as StoreModel  # noqa: F401
+from src.app.stores.persistence.repositories import StoreRepository
 
 # ============================================================================
 # Fixtures
@@ -43,8 +40,8 @@ def test_db():
 
 @pytest.fixture
 def source_website_repository(test_db):
-    """SourceWebsiteRepository with test database session."""
-    return SourceWebsiteRepository(test_db)
+    """StoreRepository with test database session."""
+    return StoreRepository(test_db)
 
 
 @pytest.fixture
@@ -63,7 +60,7 @@ def sample_source_website_entity():
 
 
 class TestCreateSourceWebsite:
-    """Tests for SourceWebsiteRepository.create"""
+    """Tests for StoreRepository.create"""
 
     def test_create_should_persist_and_return_entity_with_id(
         self, source_website_repository, sample_source_website_entity
@@ -98,7 +95,7 @@ class TestCreateSourceWebsite:
 
 
 class TestReadSourceWebsite:
-    """Tests for SourceWebsiteRepository read operations"""
+    """Tests for StoreRepository read operations"""
 
     def test_get_by_id_with_existing_id_should_return_entity(
         self, source_website_repository, sample_source_website_entity
@@ -210,7 +207,7 @@ class TestReadSourceWebsite:
 
 
 class TestUpdateSourceWebsite:
-    """Tests for SourceWebsiteRepository.update"""
+    """Tests for StoreRepository.update"""
 
     def test_update_with_existing_entity_should_return_updated_entity(
         self, source_website_repository, sample_source_website_entity
@@ -248,7 +245,7 @@ class TestUpdateSourceWebsite:
 
 
 class TestDeleteSourceWebsite:
-    """Tests for SourceWebsiteRepository.delete"""
+    """Tests for StoreRepository.delete"""
 
     def test_delete_with_existing_entity_should_return_true_and_remove_it(
         self, source_website_repository, sample_source_website_entity

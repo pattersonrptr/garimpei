@@ -25,10 +25,8 @@ from src.app.catalog.persistence.models import (
 from src.app.infrastructure.database.models.search_execution_log_model import (
     SearchExecutionLog as SearchExecutionLogModel,
 )
-from src.app.infrastructure.database.models.source_website_model import (
-    SourceWebsite as SourceWebsiteModel,
-)
 from src.app.interfaces.services.email_service import EmailResult
+from src.app.stores.persistence.models import Store as StoreModel
 from src.main import app
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -51,7 +49,7 @@ def email_service():
 
 @pytest.fixture
 def other_site(test_db):
-    site = SourceWebsiteModel(
+    site = StoreModel(
         name="other_site", base_url="https://other.example.com", is_active=True
     )
     test_db.add(site)

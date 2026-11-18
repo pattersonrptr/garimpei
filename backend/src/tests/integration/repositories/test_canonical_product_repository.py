@@ -29,10 +29,8 @@ from src.app.catalog.persistence.repositories import (
     CanonicalProductRepository,
     ProductRepository,
 )
-from src.app.infrastructure.database.models.source_website_model import (
-    SourceWebsite as SourceWebsiteModel,
-)
 from src.app.infrastructure.database_config import Base
+from src.app.stores.persistence.models import Store as StoreModel
 
 ISBN13 = "9788535914849"
 
@@ -105,7 +103,7 @@ class TestCanonicalProductRepository:
 class TestOfferLink:
     def test_an_offer_keeps_the_canonical_product_it_points_to(self, db):
         db.add(
-            SourceWebsiteModel(
+            StoreModel(
                 id=1, name="Estante Virtual", base_url="https://estantevirtual.com.br"
             )
         )
@@ -126,7 +124,7 @@ class TestOfferLink:
 
     def test_offers_without_a_canonical_product_still_work(self, db):
         db.add(
-            SourceWebsiteModel(
+            StoreModel(
                 id=1, name="Estante Virtual", base_url="https://estantevirtual.com.br"
             )
         )
@@ -153,8 +151,8 @@ class TestListByStaleness:
     def stores(self, db):
         db.add_all(
             [
-                SourceWebsiteModel(id=self.STORE, name="a", base_url="https://a"),
-                SourceWebsiteModel(id=self.OTHER_STORE, name="b", base_url="https://b"),
+                StoreModel(id=self.STORE, name="a", base_url="https://a"),
+                StoreModel(id=self.OTHER_STORE, name="b", base_url="https://b"),
             ]
         )
         db.commit()
