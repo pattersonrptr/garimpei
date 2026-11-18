@@ -13,10 +13,7 @@ from src.app.searches.persistence.models import SavedSearch as SavedSearchModel
 from src.app.searches.persistence.models import SearchRun as SearchRunModel
 from src.app.stores.persistence.models import Store as StoreModel
 
-DISPATCH = (
-    "src.app.interfaces.http.controllers.search_config_controller"
-    ".dispatch_scraper_search"
-)
+DISPATCH = "src.app.searches.adapters.dispatcher.dispatch_scraper_search"
 
 
 def add_config(test_db, user, search_term="dom casmurro", stores=(), **fields):
