@@ -38,14 +38,12 @@ from src.app.catalog.ports import PriceAlertChecks
 from src.app.infrastructure.repositories.search_config_repository import (
     SearchConfigRepository,
 )
-from src.app.infrastructure.repositories.source_website_repository import (
-    SourceWebsiteRepository,
-)
 from src.app.interfaces.services.email_service import EmailServiceInterface
+from src.app.stores.persistence.repositories import StoreRepository
 
 
 def _stores(db: Session) -> SourceWebsiteStores:
-    return SourceWebsiteStores(SourceWebsiteRepository(db))
+    return SourceWebsiteStores(StoreRepository(db))
 
 
 def _owners(db: Session) -> UserAccountOwners:

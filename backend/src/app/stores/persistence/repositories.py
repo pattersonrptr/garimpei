@@ -4,20 +4,16 @@ from datetime import UTC, datetime
 from sqlalchemy import asc, desc
 from sqlalchemy.orm import Session
 
-from src.app.infrastructure.database.models.source_website_model import (
-    SourceWebsite as SourceWebsiteModel,
-)
-from src.app.interfaces.repositories.source_website_repository import (
-    SourceWebsiteRepositoryInterface,
-)
 from src.app.stores.entities import Store
+from src.app.stores.persistence.models import Store as StoreModel
+from src.app.stores.ports import StoreRepositoryInterface
 
 # The fields an update writes (the controller passes no dates).
 _UPDATABLE = ("name", "base_url", "is_active")
 
 
-class SourceWebsiteRepository(SourceWebsiteRepositoryInterface):
-    """SQLAlchemy implementation of SourceWebsiteRepositoryInterface."""
+class StoreRepository(StoreRepositoryInterface):
+    """SQLAlchemy implementation of StoreRepositoryInterface."""
 
     def __init__(self, db: Session):
         self.db = db
@@ -26,7 +22,7 @@ class SourceWebsiteRepository(SourceWebsiteRepositoryInterface):
         """Create a new source website in the database."""
         columns = asdict(source_website)
         del columns["id"]
-        db_source_website = SourceWebsiteModel(**columns)
+        db_source_website = StoreModel(**columns)
         self.db.add(db_source_website)
         self.db.commit()
         self.db.refresh(db_source_website)
@@ -35,18 +31,14 @@ class SourceWebsiteRepository(SourceWebsiteRepositoryInterface):
     def get_by_id(self, source_website_id: int) -> Store | None:
         """Retrieve a source website by ID."""
         db_source_website = (
-            self.db.query(SourceWebsiteModel)
-            .filter(SourceWebsiteModel.id == source_website_id)
-            .first()
+            self.db.query(StoreModel).filter(StoreModel.id == source_website_id).first()
         )
         return self._to_entity(db_source_website) if db_source_website else None
 
     def get_by_name(self, name: str) -> Store | None:
         """Retrieve a source website by its unique name."""
         db_source_website = (
-            self.db.query(SourceWebsiteModel)
-            .filter(SourceWebsiteModel.name == name)
-            .first()
+            self.db.query(StoreModel).filter(StoreModel.name == name).first()
         )
         return self._to_entity(db_source_website) if db_source_website else None
 
@@ -58,21 +50,21 @@ class SourceWebsiteRepository(SourceWebsiteRepositoryInterface):
         sort_order: str | None = None,
     ) -> tuple[list[Store], int]:
         """Retrieve all source websites with pagination and sorting."""
-        query = self.db.query(SourceWebsiteModel)
+        query = self.db.query(StoreModel)
 
         # Total count before pagination
         total = query.count()
 
         # Apply sorting
-        if sort_by and hasattr(SourceWebsiteModel, sort_by):
-            order_column = getattr(SourceWebsiteModel, sort_by)
+        if sort_by and hasattr(StoreModel, sort_by):
+            order_column = getattr(StoreModel, sort_by)
             if sort_order == "desc":
                 query = query.order_by(desc(order_column))
             else:
                 query = query.order_by(asc(order_column))
         else:
             # Default: most recently created first
-            query = query.order_by(desc(SourceWebsiteModel.created_at))
+            query = query.order_by(desc(StoreModel.created_at))
 
         # Apply pagination
         source_websites = query.limit(limit).offset(offset).all()
@@ -82,9 +74,7 @@ class SourceWebsiteRepository(SourceWebsiteRepositoryInterface):
     def update(self, source_website_id: int, source_website: Store) -> Store | None:
         """Update an existing source website."""
         db_source_website = (
-            self.db.query(SourceWebsiteModel)
-            .filter(SourceWebsiteModel.id == source_website_id)
-            .first()
+            self.db.query(StoreModel).filter(StoreModel.id == source_website_id).first()
         )
         if not db_source_website:
             return None
@@ -92,7 +82,7 @@ class SourceWebsiteRepository(SourceWebsiteRepositoryInterface):
         try:
             for name in _UPDATABLE:
                 setattr(db_source_website, name, getattr(source_website, name))
-            db_source_website.updated_at = datetime.now(UTC)
+            setattr(db_source_website, "updated_at", datetime.now(UTC))  # noqa: B010
             self.db.commit()
             self.db.refresh(db_source_website)
             return self._to_entity(db_source_website)
@@ -103,9 +93,7 @@ class SourceWebsiteRepository(SourceWebsiteRepositoryInterface):
     def delete(self, source_website_id: int) -> bool:
         """Delete a source website from the database."""
         db_source_website = (
-            self.db.query(SourceWebsiteModel)
-            .filter(SourceWebsiteModel.id == source_website_id)
-            .first()
+            self.db.query(StoreModel).filter(StoreModel.id == source_website_id).first()
         )
         if not db_source_website:
             return False
@@ -118,8 +106,8 @@ class SourceWebsiteRepository(SourceWebsiteRepositoryInterface):
             self.db.rollback()
             raise e
 
-    def _to_entity(self, source_website_model: SourceWebsiteModel) -> Store:
-        """Convert SourceWebsiteModel to Store."""
+    def _to_entity(self, source_website_model: StoreModel) -> Store:
+        """Convert StoreModel to Store."""
         return Store(
             **{f.name: getattr(source_website_model, f.name) for f in fields(Store)}
         )

@@ -15,9 +15,9 @@ from src.app.catalog.persistence.models import Product
 from src.app.infrastructure.database.models.search_execution_log_model import (
     SearchExecutionLog,
 )
-from src.app.infrastructure.database.models.source_website_model import SourceWebsite
 from src.app.infrastructure.database.text_match import title_contains
 from src.app.infrastructure.database_config import get_db
+from src.app.stores.persistence.models import Store as StoreModel
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -47,10 +47,10 @@ def get_admin_summary(
         .scalar()
     )
 
-    total_source_websites = db.query(func.count(SourceWebsite.id)).scalar()
+    total_source_websites = db.query(func.count(StoreModel.id)).scalar()
     active_source_websites = (
-        db.query(func.count(SourceWebsite.id))
-        .filter(SourceWebsite.is_active.is_(True))
+        db.query(func.count(StoreModel.id))
+        .filter(StoreModel.is_active.is_(True))
         .scalar()
     )
 

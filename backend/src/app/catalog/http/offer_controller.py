@@ -28,9 +28,7 @@ from src.app.catalog.use_cases import (
     OfferInput,
 )
 from src.app.infrastructure.database_config import get_db
-from src.app.infrastructure.repositories.source_website_repository import (
-    SourceWebsiteRepository,
-)
+from src.app.stores.persistence.repositories import StoreRepository
 from src.common.jsonapi import JsonApiError, JsonApiErrorResponse
 from src.config.logging_config import get_logger
 
@@ -51,8 +49,8 @@ def get_ingest_offer_use_case(
     return wiring.ingest_offer(db, metadata)
 
 
-def get_source_website_repository(db=Depends(get_db)) -> SourceWebsiteRepository:
-    return SourceWebsiteRepository(db)
+def get_source_website_repository(db=Depends(get_db)) -> StoreRepository:
+    return StoreRepository(db)
 
 
 def get_collection_queue_use_case(db=Depends(get_db)) -> ListCollectionQueueUseCase:
@@ -81,7 +79,7 @@ def _error(status: int, code: str, title: str, detail: str, pointer: str):
 def ingest_offer(
     offer_in: OfferIngestRequest,
     use_case: IngestOfferUseCase = Depends(get_ingest_offer_use_case),
-    source_websites: SourceWebsiteRepository = Depends(get_source_website_repository),
+    source_websites: StoreRepository = Depends(get_source_website_repository),
     # Book alerts are checked right after an offer for the book comes in.
     alerts: PriceAlertChecks = Depends(get_price_alert_checks),
     current_user: UserEntity = Depends(get_current_staff_user),
@@ -173,7 +171,7 @@ def ingest_offer(
 def collection_queue(
     store: str = Query(description="The store's slug, e.g. estante_virtual"),
     use_case: ListCollectionQueueUseCase = Depends(get_collection_queue_use_case),
-    source_websites: SourceWebsiteRepository = Depends(get_source_website_repository),
+    source_websites: StoreRepository = Depends(get_source_website_repository),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
     """

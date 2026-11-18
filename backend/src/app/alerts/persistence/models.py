@@ -64,7 +64,7 @@ class PriceAlert(Base):
     user = relationship("User", back_populates="price_alerts")
     search_config = relationship("SearchConfig", back_populates="price_alerts")
     source_websites = relationship(
-        "SourceWebsite",
+        "Store",
         secondary=price_alert_source_website,
         back_populates="price_alerts",
     )

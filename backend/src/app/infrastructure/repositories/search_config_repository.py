@@ -11,13 +11,11 @@ from src.app.infrastructure.database.models.search_config_model import (
 from src.app.infrastructure.database.models.search_execution_log_model import (
     SearchExecutionLog as SearchExecutionLogModel,
 )
-from src.app.infrastructure.database.models.source_website_model import (
-    SourceWebsite as SourceWebsiteModel,
-)
 from src.app.infrastructure.database.text_match import title_contains
 from src.app.interfaces.repositories.search_config_repository import (
     SearchConfigRepositoryInterface,
 )
+from src.app.stores.persistence.models import Store as StoreModel
 
 
 class SearchConfigRepository(SearchConfigRepositoryInterface):
@@ -48,8 +46,8 @@ class SearchConfigRepository(SearchConfigRepositoryInterface):
         db_model.source_websites.clear()
         if source_website_ids:
             source_websites = (
-                self.db.query(SourceWebsiteModel)
-                .filter(SourceWebsiteModel.id.in_(source_website_ids))
+                self.db.query(StoreModel)
+                .filter(StoreModel.id.in_(source_website_ids))
                 .all()
             )
             db_model.source_websites.extend(source_websites)

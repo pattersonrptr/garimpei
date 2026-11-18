@@ -86,7 +86,7 @@ class Product(Base):
     )
 
     # Relationships
-    source_website = relationship("SourceWebsite", back_populates="products")
+    source_website = relationship("Store", back_populates="products")
     price_history = relationship(
         "PriceHistory",
         back_populates="product",

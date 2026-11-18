@@ -17,8 +17,8 @@ from src.app.infrastructure.database.models.search_config_source_website_model i
 from src.app.infrastructure.database.models.search_execution_log_model import (
     SearchExecutionLog,  # noqa: F401
 )
-from src.app.infrastructure.database.models.source_website_model import (
-    SourceWebsite,  # noqa: F401
+from src.app.stores.persistence.models import (
+    Store,  # noqa: F401
 )
 
 __all__ = [
@@ -30,6 +30,6 @@ __all__ = [
     "SearchConfig",
     "search_config_source_website",
     "SearchExecutionLog",
-    "SourceWebsite",
+    "Store",
     "User",
 ]

@@ -19,10 +19,8 @@ from src.app.alerts.ports import (
     NotificationLogRepositoryInterface,
     PriceAlertRepositoryInterface,
 )
-from src.app.infrastructure.database.models.source_website_model import (
-    SourceWebsite as SourceWebsiteModel,
-)
 from src.app.infrastructure.database.text_match import text_contains
+from src.app.stores.persistence.models import Store as StoreModel
 
 
 class PriceAlertRepository(PriceAlertRepositoryInterface):
@@ -57,8 +55,8 @@ class PriceAlertRepository(PriceAlertRepositoryInterface):
         db_model.source_websites.clear()
         if source_website_ids:
             source_websites = (
-                self.db.query(SourceWebsiteModel)
-                .filter(SourceWebsiteModel.id.in_(source_website_ids))
+                self.db.query(StoreModel)
+                .filter(StoreModel.id.in_(source_website_ids))
                 .all()
             )
             db_model.source_websites.extend(source_websites)
@@ -458,13 +456,13 @@ class NotificationLogRepository(NotificationLogRepositoryInterface):
             self.db.query(
                 NotificationLogModel.price_alert_id.label("alert_id"),
                 NotificationLogModel.sent_at.label("sent_at"),
-                SourceWebsiteModel.name.label("store"),
+                StoreModel.name.label("store"),
                 rank,
             )
             .outerjoin(ProductModel, ProductModel.id == NotificationLogModel.product_id)
             .outerjoin(
-                SourceWebsiteModel,
-                SourceWebsiteModel.id == ProductModel.source_website_id,
+                StoreModel,
+                StoreModel.id == ProductModel.source_website_id,
             )
             .filter(*sent)
             .subquery()

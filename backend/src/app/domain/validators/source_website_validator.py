@@ -1,11 +1,9 @@
-from src.app.interfaces.repositories.source_website_repository import (
-    SourceWebsiteRepositoryInterface,
-)
+from src.app.stores.ports import StoreRepositoryInterface
 from src.common.jsonapi import JsonApiError
 
 
 class SourceWebsiteValidator:
-    def __init__(self, source_website_repo: SourceWebsiteRepositoryInterface):
+    def __init__(self, source_website_repo: StoreRepositoryInterface):
         self.source_website_repo = source_website_repo
 
     def validate_create_request(self, source_website_in) -> list[JsonApiError]:

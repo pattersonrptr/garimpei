@@ -10,8 +10,8 @@ from src.app.infrastructure.database.models.search_config_model import SearchCon
 from src.app.infrastructure.database.models.search_config_source_website_model import (
     search_config_source_website,
 )
-from src.app.infrastructure.database.models.source_website_model import SourceWebsite
 from src.app.infrastructure.database_config import SessionLocal
+from src.app.stores.persistence.models import Store as StoreModel
 
 FIXTURE_DEPENDENCIES = {
     "all": [
@@ -71,7 +71,7 @@ def load_fixtures(selected_fixtures):
             _upsert(db, Plan, data.get("plans", []))
 
         if "source_websites" in selected_fixtures:
-            _upsert(db, SourceWebsite, data["source_websites"])
+            _upsert(db, StoreModel, data["source_websites"])
 
         if "users" in selected_fixtures:
             _upsert(db, User, data.get("users", []))

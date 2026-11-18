@@ -6,8 +6,8 @@ from sqlalchemy.orm import relationship
 from src.app.infrastructure.database_config import Base
 
 
-class SourceWebsite(Base):
-    """Source website SQLAlchemy model."""
+class Store(Base):
+    """Store SQLAlchemy model (table source_websites)."""
 
     __tablename__ = "source_websites"
 
