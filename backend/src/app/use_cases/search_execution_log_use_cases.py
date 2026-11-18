@@ -1,12 +1,9 @@
 from datetime import UTC, datetime
 
-from src.app.domain.search_runs import FINISHED_STATUSES, is_stale_run
-from src.app.entities.search_execution_log import (
-    SearchExecutionLog as SearchExecutionLogEntity,
-)
 from src.app.interfaces.repositories.search_execution_log_repository import (
     SearchExecutionLogRepositoryInterface,
 )
+from src.app.searches.entities import FINISHED_STATUSES, SearchRun, is_stale_run
 
 
 class CreateSearchExecutionLogUseCase:
@@ -17,9 +14,7 @@ class CreateSearchExecutionLogUseCase:
     ):
         self.search_execution_log_repo = search_execution_log_repo
 
-    def execute(
-        self, search_execution_log: SearchExecutionLogEntity
-    ) -> SearchExecutionLogEntity:
+    def execute(self, search_execution_log: SearchRun) -> SearchRun:
         return self.search_execution_log_repo.create(search_execution_log)
 
 
@@ -31,7 +26,7 @@ class GetSearchExecutionLogByIdUseCase:
     ):
         self.search_execution_log_repo = search_execution_log_repo
 
-    def execute(self, search_execution_log_id: int) -> SearchExecutionLogEntity | None:
+    def execute(self, search_execution_log_id: int) -> SearchRun | None:
         return self.search_execution_log_repo.get_by_id(search_execution_log_id)
 
 
@@ -43,7 +38,7 @@ class GetSearchExecutionLogsBySearchConfigIdUseCase:
     ):
         self.search_execution_log_repo = search_execution_log_repo
 
-    def execute(self, search_config_id: int) -> list[SearchExecutionLogEntity]:
+    def execute(self, search_config_id: int) -> list[SearchRun]:
         return self.search_execution_log_repo.get_by_search_config_id(search_config_id)
 
 
@@ -61,7 +56,7 @@ class ListSearchExecutionLogsUseCase:
         offset: int = 0,
         sort_by: str | None = None,
         sort_order: str | None = None,
-    ) -> tuple[list[SearchExecutionLogEntity], int]:
+    ) -> tuple[list[SearchRun], int]:
         return self.search_execution_log_repo.get_all(
             limit=limit, offset=offset, sort_by=sort_by, sort_order=sort_order
         )
@@ -90,9 +85,7 @@ class UpdateSearchExecutionLogUseCase:
     ):
         self.search_execution_log_repo = search_execution_log_repo
 
-    def execute(
-        self, search_execution_log_id: int, changes: dict
-    ) -> SearchExecutionLogEntity | None:
+    def execute(self, search_execution_log_id: int, changes: dict) -> SearchRun | None:
         changes = {k: v for k, v in changes.items() if v is not None}
         if changes.get("status") in FINISHED_STATUSES:
             changes.setdefault("finished_at", datetime.now(UTC))
@@ -109,7 +102,7 @@ class GetLatestSearchRunUseCase:
 
     def execute(
         self, search_config_id: int, now: datetime | None = None
-    ) -> SearchExecutionLogEntity | None:
+    ) -> SearchRun | None:
         now = now or datetime.now(UTC)
         latest = self.search_execution_log_repo.get_latest_by_search_config_id(
             search_config_id

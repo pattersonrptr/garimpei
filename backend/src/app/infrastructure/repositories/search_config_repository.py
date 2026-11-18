@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session, joinedload
 from src.app.alerts.persistence.models import (
     PriceAlert as PriceAlertModel,
 )
-from src.app.entities.search_config import SearchConfig as SearchConfigEntity
 from src.app.infrastructure.database.models.search_config_model import (
     SearchConfig as SearchConfigModel,
 )
@@ -15,6 +14,7 @@ from src.app.infrastructure.database.text_match import title_contains
 from src.app.interfaces.repositories.search_config_repository import (
     SearchConfigRepositoryInterface,
 )
+from src.app.searches.entities import SavedSearch
 from src.app.stores.persistence.models import Store as StoreModel
 
 
@@ -24,9 +24,9 @@ class SearchConfigRepository(SearchConfigRepositoryInterface):
     def __init__(self, db: Session):
         self.db = db
 
-    def _to_entity(self, model: SearchConfigModel) -> SearchConfigEntity:
+    def _to_entity(self, model: SearchConfigModel) -> SavedSearch:
         """Convert a SearchConfig ORM model to a domain entity."""
-        return SearchConfigEntity(
+        return SavedSearch(
             id=model.id,
             search_term=model.search_term,
             is_active=model.is_active,
@@ -52,7 +52,7 @@ class SearchConfigRepository(SearchConfigRepositoryInterface):
             )
             db_model.source_websites.extend(source_websites)
 
-    def create(self, search_config: SearchConfigEntity) -> SearchConfigEntity:
+    def create(self, search_config: SavedSearch) -> SavedSearch:
         """Persist a new search config and return it with assigned id."""
         db_search_config = SearchConfigModel(
             search_term=search_config.search_term,
@@ -71,7 +71,7 @@ class SearchConfigRepository(SearchConfigRepositoryInterface):
         self.db.refresh(db_search_config)
         return self._to_entity(db_search_config)
 
-    def get_by_id(self, search_config_id: int) -> SearchConfigEntity | None:
+    def get_by_id(self, search_config_id: int) -> SavedSearch | None:
         """Retrieve a search config by its primary key."""
         db_record = (
             self.db.query(SearchConfigModel)
@@ -81,7 +81,7 @@ class SearchConfigRepository(SearchConfigRepositoryInterface):
         )
         return self._to_entity(db_record) if db_record else None
 
-    def get_by_user_id(self, user_id: int) -> list[SearchConfigEntity]:
+    def get_by_user_id(self, user_id: int) -> list[SavedSearch]:
         """Return all search configs for a given user."""
         records = (
             self.db.query(SearchConfigModel)
@@ -93,7 +93,7 @@ class SearchConfigRepository(SearchConfigRepositoryInterface):
 
     def get_by_search_term_and_user_id(
         self, search_term: str, user_id: int
-    ) -> SearchConfigEntity | None:
+    ) -> SavedSearch | None:
         """Return a search config matching term + user (for uniqueness check)."""
         db_record = (
             self.db.query(SearchConfigModel)
@@ -113,7 +113,7 @@ class SearchConfigRepository(SearchConfigRepositoryInterface):
         sort_order: str | None = None,
         user_id: int | None = None,
         search_term: str | None = None,
-    ) -> tuple[list[SearchConfigEntity], int]:
+    ) -> tuple[list[SavedSearch], int]:
         """Return a paginated list of all search configs and the total count."""
         query = self.db.query(SearchConfigModel).options(
             joinedload(SearchConfigModel.source_websites)
@@ -138,8 +138,8 @@ class SearchConfigRepository(SearchConfigRepositoryInterface):
         return [self._to_entity(r) for r in records], total
 
     def update(
-        self, search_config_id: int, search_config: SearchConfigEntity
-    ) -> SearchConfigEntity | None:
+        self, search_config_id: int, search_config: SavedSearch
+    ) -> SavedSearch | None:
         """Update a search config. Returns updated entity or None if not found."""
         db_record = (
             self.db.query(SearchConfigModel)

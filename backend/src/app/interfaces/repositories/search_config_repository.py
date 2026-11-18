@@ -1,30 +1,30 @@
 from abc import ABC, abstractmethod
 
-from src.app.entities.search_config import SearchConfig as SearchConfigEntity
+from src.app.searches.entities import SavedSearch
 
 
 class SearchConfigRepositoryInterface(ABC):
     """Abstract interface for SearchConfig data access."""
 
     @abstractmethod
-    def create(self, search_config: SearchConfigEntity) -> SearchConfigEntity:
+    def create(self, search_config: SavedSearch) -> SavedSearch:
         """Persist a new search config and return it with assigned id."""
         raise NotImplementedError
 
     @abstractmethod
-    def get_by_id(self, search_config_id: int) -> SearchConfigEntity | None:
+    def get_by_id(self, search_config_id: int) -> SavedSearch | None:
         """Retrieve a search config by its primary key."""
         raise NotImplementedError
 
     @abstractmethod
-    def get_by_user_id(self, user_id: int) -> list[SearchConfigEntity]:
+    def get_by_user_id(self, user_id: int) -> list[SavedSearch]:
         """Return all search configs for a given user."""
         raise NotImplementedError
 
     @abstractmethod
     def get_by_search_term_and_user_id(
         self, search_term: str, user_id: int
-    ) -> SearchConfigEntity | None:
+    ) -> SavedSearch | None:
         """Return a search config matching term + user (for uniqueness check)."""
         raise NotImplementedError
 
@@ -37,14 +37,14 @@ class SearchConfigRepositoryInterface(ABC):
         sort_order: str | None = None,
         user_id: int | None = None,
         search_term: str | None = None,
-    ) -> tuple[list[SearchConfigEntity], int]:
+    ) -> tuple[list[SavedSearch], int]:
         """Return a paginated list of all search configs and the total count."""
         raise NotImplementedError
 
     @abstractmethod
     def update(
-        self, search_config_id: int, search_config: SearchConfigEntity
-    ) -> SearchConfigEntity | None:
+        self, search_config_id: int, search_config: SavedSearch
+    ) -> SavedSearch | None:
         """Update a search config. Returns updated entity or None if not found."""
         raise NotImplementedError
 

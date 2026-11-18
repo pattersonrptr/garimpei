@@ -5,9 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from src.app.entities.search_execution_log import (
-    SearchExecutionLog as SearchExecutionLogEntity,
-)
+from src.app.searches.entities import SearchRun
 from src.app.use_cases.search_execution_log_use_cases import (
     CreateSearchExecutionLogUseCase,
     DeleteSearchExecutionLogUseCase,
@@ -28,7 +26,7 @@ def mock_search_execution_log_repo():
 
 @pytest.fixture
 def sample_search_execution_log_entity():
-    return SearchExecutionLogEntity(
+    return SearchRun(
         id=1,
         search_config_id=10,
         status="success",
@@ -40,7 +38,7 @@ def sample_search_execution_log_entity():
 
 @pytest.fixture
 def sample_new_search_execution_log_entity():
-    return SearchExecutionLogEntity(search_config_id=10, status="pending")
+    return SearchRun(search_config_id=10, status="pending")
 
 
 # ============================================================================
@@ -59,7 +57,7 @@ class TestCreateSearchExecutionLogUseCase:
         When: execute is called
         Then: Repository.create is called and entity is returned with id
         """
-        expected = SearchExecutionLogEntity(id=1, search_config_id=10, status="pending")
+        expected = SearchRun(id=1, search_config_id=10, status="pending")
         mock_search_execution_log_repo.create.return_value = expected
 
         use_case = CreateSearchExecutionLogUseCase(mock_search_execution_log_repo)
@@ -73,7 +71,7 @@ class TestCreateSearchExecutionLogUseCase:
     def test_execute_returns_entity_with_generated_id(
         self, mock_search_execution_log_repo, sample_new_search_execution_log_entity
     ):
-        mock_search_execution_log_repo.create.return_value = SearchExecutionLogEntity(
+        mock_search_execution_log_repo.create.return_value = SearchRun(
             id=42, search_config_id=10, status="pending"
         )
         result = CreateSearchExecutionLogUseCase(

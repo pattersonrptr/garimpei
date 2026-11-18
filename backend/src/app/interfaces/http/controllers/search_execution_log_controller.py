@@ -2,9 +2,6 @@ from fastapi import APIRouter, Depends, Query, status
 
 from src.app.accounts.entities import User as UserEntity
 from src.app.accounts.http.auth import get_current_staff_user
-from src.app.entities.search_execution_log import (
-    SearchExecutionLog as SearchExecutionLogEntity,
-)
 from src.app.infrastructure.database_config import get_db
 from src.app.infrastructure.repositories.search_execution_log_repository import (
     SearchExecutionLogRepository,
@@ -18,6 +15,7 @@ from src.app.interfaces.http.schemas.search_execution_log_schema import (
     SearchExecutionLogsCollectionResponse,
     SearchExecutionLogUpdateRequest,
 )
+from src.app.searches.entities import SearchRun
 from src.app.use_cases.search_execution_log_use_cases import (
     CreateSearchExecutionLogUseCase,
     GetSearchExecutionLogByIdUseCase,
@@ -164,7 +162,7 @@ def create_search_execution_log(
         },
     )
 
-    entity = SearchExecutionLogEntity(
+    entity = SearchRun(
         search_config_id=attrs.search_config_id,
         status=attrs.status,
         results_count=attrs.results_count,

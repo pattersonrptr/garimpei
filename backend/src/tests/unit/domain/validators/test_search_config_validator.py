@@ -6,7 +6,6 @@ from unittest.mock import Mock
 import pytest
 
 from src.app.domain.validators.search_config_validator import SearchConfigValidator
-from src.app.entities.search_config import SearchConfig as SearchConfigEntity
 from src.app.interfaces.http.schemas.search_config_schema import (
     SearchConfigAttributesForCreation,
     SearchConfigAttributesForUpdate,
@@ -15,6 +14,7 @@ from src.app.interfaces.http.schemas.search_config_schema import (
     SearchConfigResourceForUpdate,
     SearchConfigUpdateRequest,
 )
+from src.app.searches.entities import SavedSearch
 
 # ============================================================================
 # Helpers
@@ -44,7 +44,7 @@ def make_update_request(**overrides) -> SearchConfigUpdateRequest:
     )
 
 
-def make_search_config_entity(**overrides) -> SearchConfigEntity:
+def make_search_config_entity(**overrides) -> SavedSearch:
     defaults = {
         "id": 1,
         "search_term": "iPhone 13",
@@ -55,7 +55,7 @@ def make_search_config_entity(**overrides) -> SearchConfigEntity:
         "source_website_ids": [],
     }
     defaults.update(overrides)
-    return SearchConfigEntity(**defaults)
+    return SavedSearch(**defaults)
 
 
 # ============================================================================

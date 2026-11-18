@@ -10,12 +10,10 @@ from datetime import datetime
 import pytest
 from fastapi.responses import JSONResponse
 
-from src.app.entities.search_execution_log import (
-    SearchExecutionLog as SearchExecutionLogEntity,
-)
 from src.app.interfaces.http.presenters.search_execution_log_presenter import (
     SearchExecutionLogPresenter,
 )
+from src.app.searches.entities import SearchRun
 from src.common.jsonapi import JsonApiError
 
 # ============================================================================
@@ -26,7 +24,7 @@ from src.common.jsonapi import JsonApiError
 @pytest.fixture
 def sample_search_execution_log_entity():
     """Sample search execution log entity for testing."""
-    return SearchExecutionLogEntity(
+    return SearchRun(
         id=1,
         search_config_id=10,
         status="success",
@@ -40,7 +38,7 @@ def sample_search_execution_log_entity():
 @pytest.fixture
 def sample_failed_log_entity():
     """Sample failed search execution log entity for testing."""
-    return SearchExecutionLogEntity(
+    return SearchRun(
         id=2,
         search_config_id=10,
         status="failed",
@@ -167,7 +165,7 @@ class TestSearchExecutionLogPresenterHandleSuccess:
         Then: Should reflect status='pending' and finished_at=None
         """
         # Given
-        entity = SearchExecutionLogEntity(
+        entity = SearchRun(
             id=3,
             search_config_id=5,
             status="pending",

@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from src.app.domain.validators.search_execution_log_validator import (
     SearchExecutionLogValidator,
 )
-from src.app.entities.search_config import SearchConfig as SearchConfigEntity
+from src.app.searches.entities import SavedSearch
 
 # ============================================================================
 # Minimal stubs to feed into the validator (mimics internal system usage)
@@ -41,8 +41,8 @@ def make_request_with_type(type_: str, **attr_overrides) -> _Request:
     return _Request(data=_Data(type=type_, attributes=_Attrs(**attrs)))
 
 
-def make_search_config_entity(id: int = 1) -> SearchConfigEntity:
-    return SearchConfigEntity(id=id, search_term="laptop", user_id=1)
+def make_search_config_entity(id: int = 1) -> SavedSearch:
+    return SavedSearch(id=id, search_term="laptop", user_id=1)
 
 
 # ============================================================================

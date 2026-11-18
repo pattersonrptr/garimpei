@@ -10,10 +10,10 @@ from datetime import datetime, time
 import pytest
 from fastapi.responses import JSONResponse
 
-from src.app.entities.search_config import SearchConfig as SearchConfigEntity
 from src.app.interfaces.http.presenters.search_config_presenter import (
     SearchConfigPresenter,
 )
+from src.app.searches.entities import SavedSearch
 from src.common.jsonapi import JsonApiError
 
 # ============================================================================
@@ -24,7 +24,7 @@ from src.common.jsonapi import JsonApiError
 @pytest.fixture
 def sample_search_config_entity():
     """Sample search config entity for testing."""
-    return SearchConfigEntity(
+    return SavedSearch(
         id=1,
         search_term="notebook lenovo",
         is_active=True,
@@ -41,7 +41,7 @@ def sample_search_config_entity():
 @pytest.fixture
 def sample_search_config_collection(sample_search_config_entity):
     """Sample collection of search config entities for testing."""
-    second = SearchConfigEntity(
+    second = SavedSearch(
         id=2,
         search_term="iphone 15",
         is_active=False,
@@ -140,7 +140,7 @@ class TestSearchConfigPresenterHandleSuccess:
         Then: Should correctly reflect is_active=False
         """
         # Given
-        entity = SearchConfigEntity(
+        entity = SavedSearch(
             id=5,
             search_term="test",
             is_active=False,
@@ -162,7 +162,7 @@ class TestSearchConfigPresenterHandleSuccess:
         Then: Should return empty list for source_website_ids
         """
         # Given
-        entity = SearchConfigEntity(
+        entity = SavedSearch(
             id=3,
             search_term="test",
             is_active=True,

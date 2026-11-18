@@ -21,7 +21,6 @@ from src.app.domain.plan_limits import (
     source_limit_violation,
 )
 from src.app.domain.validators.search_config_validator import SearchConfigValidator
-from src.app.entities.search_config import SearchConfig as SearchConfigEntity
 from src.app.infrastructure.celery_client import dispatch_scraper_search
 from src.app.infrastructure.database_config import get_db
 from src.app.infrastructure.repositories.search_config_repository import (
@@ -39,6 +38,7 @@ from src.app.interfaces.http.schemas.search_config_schema import (
     SearchConfigsCollectionResponse,
     SearchConfigUpdateRequest,
 )
+from src.app.searches.entities import SavedSearch
 from src.app.stores.persistence.repositories import StoreRepository
 from src.app.use_cases.search_config_use_cases import (
     CreateSearchConfigUseCase,
@@ -138,7 +138,7 @@ def create_search_config(
         return SearchConfigPresenter.handle_validation_errors(validation_errors)
 
     attrs = search_config_in.data.attributes
-    search_config_entity = SearchConfigEntity(
+    search_config_entity = SavedSearch(
         search_term=attrs.search_term,
         is_active=attrs.is_active,
         frequency_days=attrs.frequency_days,
@@ -321,7 +321,7 @@ def update_search_config(
         return SearchConfigPresenter.handle_validation_errors(validation_errors)
 
     attrs = search_config_in.data.attributes
-    updated_entity = SearchConfigEntity(
+    updated_entity = SavedSearch(
         id=search_config_id,
         search_term=attrs.search_term
         if attrs.search_term is not None

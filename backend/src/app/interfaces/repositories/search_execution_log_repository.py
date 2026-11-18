@@ -1,45 +1,33 @@
 from abc import ABC, abstractmethod
 
-from src.app.entities.search_execution_log import (
-    SearchExecutionLog as SearchExecutionLogEntity,
-)
+from src.app.searches.entities import SearchRun
 
 
 class SearchExecutionLogRepositoryInterface(ABC):
     """Abstract interface for SearchExecutionLog data access."""
 
     @abstractmethod
-    def create(
-        self, search_execution_log: SearchExecutionLogEntity
-    ) -> SearchExecutionLogEntity:
+    def create(self, search_execution_log: SearchRun) -> SearchRun:
         """Persist a new search execution log and return it with assigned id."""
         ...
 
     @abstractmethod
-    def update(
-        self, search_execution_log_id: int, changes: dict
-    ) -> SearchExecutionLogEntity | None:
+    def update(self, search_execution_log_id: int, changes: dict) -> SearchRun | None:
         """Apply field changes to a log; returns None if it does not exist."""
         ...
 
     @abstractmethod
-    def get_by_id(
-        self, search_execution_log_id: int
-    ) -> SearchExecutionLogEntity | None:
+    def get_by_id(self, search_execution_log_id: int) -> SearchRun | None:
         """Retrieve a search execution log by its primary key."""
         ...
 
     @abstractmethod
-    def get_by_search_config_id(
-        self, search_config_id: int
-    ) -> list[SearchExecutionLogEntity]:
+    def get_by_search_config_id(self, search_config_id: int) -> list[SearchRun]:
         """Return all logs for a given search config, ordered by started_at desc."""
         ...
 
     @abstractmethod
-    def get_latest_by_search_config_id(
-        self, search_config_id: int
-    ) -> SearchExecutionLogEntity | None:
+    def get_latest_by_search_config_id(self, search_config_id: int) -> SearchRun | None:
         """Return the most recent log for a given search config, or None."""
         ...
 
@@ -50,7 +38,7 @@ class SearchExecutionLogRepositoryInterface(ABC):
         offset: int = 0,
         sort_by: str | None = None,
         sort_order: str | None = None,
-    ) -> tuple[list[SearchExecutionLogEntity], int]:
+    ) -> tuple[list[SearchRun], int]:
         """Return a paginated list of all search execution logs and the total count."""
         ...
 

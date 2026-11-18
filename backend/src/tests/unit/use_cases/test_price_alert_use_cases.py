@@ -16,7 +16,7 @@ from src.app.alerts.use_cases import (
     _cleanup_orphaned_search_config,
     _find_or_create_search_config,
 )
-from src.app.entities.search_config import SearchConfig as SearchConfigEntity
+from src.app.searches.entities import SavedSearch
 
 # ============================================================================
 # Helpers
@@ -52,7 +52,7 @@ def make_search_config_entity(**overrides):
         "updated_at": datetime(2024, 1, 1),
     }
     defaults.update(overrides)
-    return SearchConfigEntity(**defaults)
+    return SavedSearch(**defaults)
 
 
 # ============================================================================
