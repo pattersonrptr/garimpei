@@ -87,7 +87,7 @@ class SearchExecutionLogResource(ResourceObject):
 
     @classmethod
     def from_entity(cls, entity) -> "SearchExecutionLogResource":
-        """Factory method: converts a SearchExecutionLogEntity to SearchExecutionLogResource."""
+        """Factory method: converts a SearchRun to SearchExecutionLogResource."""
         return cls.from_model(
             entity,
             type_name="search_execution_logs",

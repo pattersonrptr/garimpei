@@ -1,13 +1,11 @@
 from fastapi.responses import JSONResponse
 
-from src.app.entities.search_execution_log import (
-    SearchExecutionLog as SearchExecutionLogEntity,
-)
 from src.app.interfaces.http.schemas.search_execution_log_schema import (
     SearchExecutionLogReadResponse,
     SearchExecutionLogResource,
     SearchExecutionLogsCollectionResponse,
 )
+from src.app.searches.entities import SearchRun
 from src.common.jsonapi import JsonApiError, JsonApiErrorResponse
 
 
@@ -48,7 +46,7 @@ class SearchExecutionLogPresenter:
 
     @staticmethod
     def handle_success(
-        entity: SearchExecutionLogEntity,
+        entity: SearchRun,
     ) -> SearchExecutionLogReadResponse:
         """Returns search execution log in JSON:API format (success)."""
         return SearchExecutionLogReadResponse(
@@ -57,7 +55,7 @@ class SearchExecutionLogPresenter:
 
     @staticmethod
     def handle_collection_success(
-        entities: list[SearchExecutionLogEntity], total: int
+        entities: list[SearchRun], total: int
     ) -> SearchExecutionLogsCollectionResponse:
         """Returns collection of search execution logs in JSON:API format."""
         return SearchExecutionLogsCollectionResponse(

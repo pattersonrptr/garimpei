@@ -1,15 +1,13 @@
 from sqlalchemy import asc, desc
 from sqlalchemy.orm import Session
 
-from src.app.entities.search_execution_log import (
-    SearchExecutionLog as SearchExecutionLogEntity,
-)
 from src.app.infrastructure.database.models.search_execution_log_model import (
     SearchExecutionLog as SearchExecutionLogModel,
 )
 from src.app.interfaces.repositories.search_execution_log_repository import (
     SearchExecutionLogRepositoryInterface,
 )
+from src.app.searches.entities import SearchRun
 
 
 class SearchExecutionLogRepository(SearchExecutionLogRepositoryInterface):
@@ -18,8 +16,8 @@ class SearchExecutionLogRepository(SearchExecutionLogRepositoryInterface):
     def __init__(self, db: Session):
         self.db = db
 
-    def _to_entity(self, model: SearchExecutionLogModel) -> SearchExecutionLogEntity:
-        return SearchExecutionLogEntity(
+    def _to_entity(self, model: SearchExecutionLogModel) -> SearchRun:
+        return SearchRun(
             id=model.id,
             search_config_id=model.search_config_id,
             status=model.status,
@@ -31,9 +29,7 @@ class SearchExecutionLogRepository(SearchExecutionLogRepositoryInterface):
             finished_at=model.finished_at,
         )
 
-    def create(
-        self, search_execution_log: SearchExecutionLogEntity
-    ) -> SearchExecutionLogEntity:
+    def create(self, search_execution_log: SearchRun) -> SearchRun:
         """Persist a new search execution log."""
         db_log = SearchExecutionLogModel(
             search_config_id=search_execution_log.search_config_id,
@@ -50,9 +46,7 @@ class SearchExecutionLogRepository(SearchExecutionLogRepositoryInterface):
         self.db.refresh(db_log)
         return self._to_entity(db_log)
 
-    def update(
-        self, search_execution_log_id: int, changes: dict
-    ) -> SearchExecutionLogEntity | None:
+    def update(self, search_execution_log_id: int, changes: dict) -> SearchRun | None:
         """Apply field changes to a log; returns None if it does not exist."""
         db_log = (
             self.db.query(SearchExecutionLogModel)
@@ -67,9 +61,7 @@ class SearchExecutionLogRepository(SearchExecutionLogRepositoryInterface):
         self.db.refresh(db_log)
         return self._to_entity(db_log)
 
-    def get_by_id(
-        self, search_execution_log_id: int
-    ) -> SearchExecutionLogEntity | None:
+    def get_by_id(self, search_execution_log_id: int) -> SearchRun | None:
         """Retrieve a search execution log by its primary key."""
         db_log = (
             self.db.query(SearchExecutionLogModel)
@@ -78,9 +70,7 @@ class SearchExecutionLogRepository(SearchExecutionLogRepositoryInterface):
         )
         return self._to_entity(db_log) if db_log else None
 
-    def get_by_search_config_id(
-        self, search_config_id: int
-    ) -> list[SearchExecutionLogEntity]:
+    def get_by_search_config_id(self, search_config_id: int) -> list[SearchRun]:
         """Return all logs for a given search config, ordered by started_at desc."""
         records = (
             self.db.query(SearchExecutionLogModel)
@@ -90,9 +80,7 @@ class SearchExecutionLogRepository(SearchExecutionLogRepositoryInterface):
         )
         return [self._to_entity(r) for r in records]
 
-    def get_latest_by_search_config_id(
-        self, search_config_id: int
-    ) -> SearchExecutionLogEntity | None:
+    def get_latest_by_search_config_id(self, search_config_id: int) -> SearchRun | None:
         """Return the most recent log for a given search config, or None."""
         record = (
             self.db.query(SearchExecutionLogModel)
@@ -108,7 +96,7 @@ class SearchExecutionLogRepository(SearchExecutionLogRepositoryInterface):
         offset: int = 0,
         sort_by: str | None = None,
         sort_order: str | None = None,
-    ) -> tuple[list[SearchExecutionLogEntity], int]:
+    ) -> tuple[list[SearchRun], int]:
         """Return a paginated list of all search execution logs and the total count."""
         query = self.db.query(SearchExecutionLogModel)
 

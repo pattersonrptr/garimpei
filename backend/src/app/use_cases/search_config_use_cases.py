@@ -1,10 +1,10 @@
 from src.app.alerts.ports import (
     PriceAlertRepositoryInterface,
 )
-from src.app.entities.search_config import SearchConfig as SearchConfigEntity
 from src.app.interfaces.repositories.search_config_repository import (
     SearchConfigRepositoryInterface,
 )
+from src.app.searches.entities import SavedSearch
 
 
 class CreateSearchConfigUseCase:
@@ -13,7 +13,7 @@ class CreateSearchConfigUseCase:
     def __init__(self, search_config_repo: SearchConfigRepositoryInterface):
         self.search_config_repo = search_config_repo
 
-    def execute(self, search_config: SearchConfigEntity) -> SearchConfigEntity:
+    def execute(self, search_config: SavedSearch) -> SavedSearch:
         return self.search_config_repo.create(search_config)
 
 
@@ -23,7 +23,7 @@ class GetSearchConfigByIdUseCase:
     def __init__(self, search_config_repo: SearchConfigRepositoryInterface):
         self.search_config_repo = search_config_repo
 
-    def execute(self, search_config_id: int) -> SearchConfigEntity | None:
+    def execute(self, search_config_id: int) -> SavedSearch | None:
         return self.search_config_repo.get_by_id(search_config_id)
 
 
@@ -33,7 +33,7 @@ class GetSearchConfigsByUserIdUseCase:
     def __init__(self, search_config_repo: SearchConfigRepositoryInterface):
         self.search_config_repo = search_config_repo
 
-    def execute(self, user_id: int) -> list[SearchConfigEntity]:
+    def execute(self, user_id: int) -> list[SavedSearch]:
         return self.search_config_repo.get_by_user_id(user_id)
 
 
@@ -51,7 +51,7 @@ class ListSearchConfigsUseCase:
         sort_order: str | None = None,
         user_id: int | None = None,
         search_term: str | None = None,
-    ) -> tuple[list[SearchConfigEntity], int]:
+    ) -> tuple[list[SavedSearch], int]:
         return self.search_config_repo.get_all(
             limit=limit,
             offset=offset,
@@ -69,8 +69,8 @@ class UpdateSearchConfigUseCase:
         self.search_config_repo = search_config_repo
 
     def execute(
-        self, search_config_id: int, search_config: SearchConfigEntity
-    ) -> SearchConfigEntity | None:
+        self, search_config_id: int, search_config: SavedSearch
+    ) -> SavedSearch | None:
         return self.search_config_repo.update(search_config_id, search_config)
 
 

@@ -1,14 +1,14 @@
-"""KeywordSearches over the older SearchConfig repository."""
+"""KeywordSearches over the older search config repository."""
 
 from src.app.alerts.entities import KeywordSearch
 from src.app.alerts.ports import KeywordSearches
-from src.app.entities.search_config import SearchConfig
 from src.app.interfaces.repositories.search_config_repository import (
     SearchConfigRepositoryInterface,
 )
+from src.app.searches.entities import SavedSearch
 
 
-def _to_keyword_search(config: SearchConfig) -> KeywordSearch:
+def _to_keyword_search(config: SavedSearch) -> KeywordSearch:
     return KeywordSearch(
         id=config.id,
         search_term=config.search_term,
@@ -37,7 +37,7 @@ class SearchConfigKeywordSearches(KeywordSearches):
 
     def create(self, search: KeywordSearch) -> KeywordSearch:
         created = self.search_configs.create(
-            SearchConfig(
+            SavedSearch(
                 search_term=search.search_term,
                 is_active=search.is_active,
                 frequency_days=search.frequency_days,

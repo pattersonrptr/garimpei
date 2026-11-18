@@ -56,7 +56,7 @@ class SearchConfigResource(ResourceObject):
 
     @classmethod
     def from_entity(cls, entity) -> "SearchConfigResource":
-        """Factory method: converts a SearchConfigEntity to SearchConfigResource."""
+        """Factory method: converts a SavedSearch to SearchConfigResource."""
         return cls.from_model(
             entity,
             type_name="search_configs",

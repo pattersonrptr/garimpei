@@ -1,11 +1,11 @@
 from fastapi.responses import JSONResponse
 
-from src.app.entities.search_config import SearchConfig as SearchConfigEntity
 from src.app.interfaces.http.schemas.search_config_schema import (
     SearchConfigReadResponse,
     SearchConfigResource,
     SearchConfigsCollectionResponse,
 )
+from src.app.searches.entities import SavedSearch
 from src.common.jsonapi import JsonApiError, JsonApiErrorResponse
 
 
@@ -45,13 +45,13 @@ class SearchConfigPresenter:
         )
 
     @staticmethod
-    def handle_success(entity: SearchConfigEntity) -> SearchConfigReadResponse:
+    def handle_success(entity: SavedSearch) -> SearchConfigReadResponse:
         """Returns search config in JSON:API format (success)."""
         return SearchConfigReadResponse(data=SearchConfigResource.from_entity(entity))
 
     @staticmethod
     def handle_collection_success(
-        entities: list[SearchConfigEntity], total: int
+        entities: list[SavedSearch], total: int
     ) -> SearchConfigsCollectionResponse:
         """Returns collection of search configs in JSON:API format."""
         return SearchConfigsCollectionResponse(
