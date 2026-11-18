@@ -446,7 +446,7 @@ class TestSearchProductsByTermUseCase:
         assert total == 1
         mock_product_repo.search_by_term_and_sources.assert_called_once_with(
             search_term="iPhone 13",
-            source_website_ids=[1, 2],
+            store_ids=[1, 2],
             max_price=2500.0,
             limit=20,
             offset=40,
