@@ -20,7 +20,7 @@ from src.app.alerts.persistence.repositories import (
     PriceAlertRepository,
 )
 from src.app.alerts.persistence.stores import StoreReaderOverStores
-from src.app.alerts.ports import BookFinder
+from src.app.alerts.ports import BookFinder, PriceAlertRepositoryInterface
 from src.app.alerts.use_cases import (
     CheckAlertLimitsUseCase,
     CreatePriceAlertUseCase,
@@ -38,6 +38,11 @@ from src.app.catalog.ports import PriceAlertChecks
 from src.app.interfaces.services.email_service import EmailServiceInterface
 from src.app.searches.persistence.repositories import SavedSearchRepository
 from src.app.stores import wiring as stores_wiring
+
+
+def price_alerts(db: Session) -> PriceAlertRepositoryInterface:
+    """Alerts' repository port, for the modules that read who uses a search."""
+    return PriceAlertRepository(db)
 
 
 def _stores(db: Session) -> StoreReaderOverStores:
