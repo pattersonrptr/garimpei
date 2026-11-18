@@ -20,8 +20,8 @@ from src.app.alerts.entities import PriceAlert as PriceAlertEntity
 from src.app.alerts.use_cases import (
     EvaluateProductAlertsUseCase,
 )
-from src.app.entities.source_website import SourceWebsite as SourceWebsiteEntity
 from src.app.interfaces.services.email_service import EmailResult
+from src.app.stores.entities import Store
 
 # ============================================================================
 # Helpers
@@ -80,7 +80,7 @@ def make_source_website(**overrides):
         "is_active": True,
     }
     defaults.update(overrides)
-    return SourceWebsiteEntity(**defaults)
+    return Store(**defaults)
 
 
 # ============================================================================

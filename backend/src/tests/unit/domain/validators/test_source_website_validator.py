@@ -5,7 +5,6 @@ from unittest.mock import Mock
 import pytest
 
 from src.app.domain.validators.source_website_validator import SourceWebsiteValidator
-from src.app.entities.source_website import SourceWebsite as SourceWebsiteEntity
 from src.app.interfaces.http.schemas.source_website_schema import (
     SourceWebsiteAttributesForCreation,
     SourceWebsiteAttributesForUpdate,
@@ -14,6 +13,7 @@ from src.app.interfaces.http.schemas.source_website_schema import (
     SourceWebsiteResourceForUpdate,
     SourceWebsiteUpdateRequest,
 )
+from src.app.stores.entities import Store
 
 # ============================================================================
 # Helpers
@@ -38,7 +38,7 @@ def make_update_request(**overrides) -> SourceWebsiteUpdateRequest:
     )
 
 
-def make_source_website_entity(**overrides) -> SourceWebsiteEntity:
+def make_source_website_entity(**overrides) -> Store:
     defaults = {
         "id": 1,
         "name": "OLX",
@@ -46,7 +46,7 @@ def make_source_website_entity(**overrides) -> SourceWebsiteEntity:
         "is_active": True,
     }
     defaults.update(overrides)
-    return SourceWebsiteEntity(**defaults)
+    return Store(**defaults)
 
 
 # ============================================================================

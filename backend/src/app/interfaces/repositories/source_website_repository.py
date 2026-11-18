@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from src.app.entities.source_website import SourceWebsite as SourceWebsiteEntity
+from src.app.stores.entities import Store
 
 
 class SourceWebsiteRepositoryInterface(ABC):
@@ -12,15 +12,15 @@ class SourceWebsiteRepositoryInterface(ABC):
     """
 
     @abstractmethod
-    def create(self, source_website: SourceWebsiteEntity) -> SourceWebsiteEntity:
+    def create(self, source_website: Store) -> Store:
         """
         Create a new source website in the repository.
 
         Args:
-            source_website: SourceWebsiteEntity with source website data
+            source_website: Store with source website data
 
         Returns:
-            SourceWebsiteEntity: Created source website with generated ID
+            Store: Created source website with generated ID
 
         Raises:
             IntegrityError: If name constraint is violated (duplicate name)
@@ -28,7 +28,7 @@ class SourceWebsiteRepositoryInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_by_id(self, source_website_id: int) -> SourceWebsiteEntity | None:
+    def get_by_id(self, source_website_id: int) -> Store | None:
         """
         Retrieve a source website by its unique ID.
 
@@ -36,12 +36,12 @@ class SourceWebsiteRepositoryInterface(ABC):
             source_website_id: The unique identifier of the source website
 
         Returns:
-            SourceWebsiteEntity if found, None otherwise
+            Store if found, None otherwise
         """
         raise NotImplementedError
 
     @abstractmethod
-    def get_by_name(self, name: str) -> SourceWebsiteEntity | None:
+    def get_by_name(self, name: str) -> Store | None:
         """
         Retrieve a source website by its unique name.
 
@@ -49,7 +49,7 @@ class SourceWebsiteRepositoryInterface(ABC):
             name: The unique name of the source website
 
         Returns:
-            SourceWebsiteEntity if found, None otherwise
+            Store if found, None otherwise
         """
         raise NotImplementedError
 
@@ -60,7 +60,7 @@ class SourceWebsiteRepositoryInterface(ABC):
         offset: int = 0,
         sort_by: str | None = None,
         sort_order: str | None = None,
-    ) -> tuple[list[SourceWebsiteEntity], int]:
+    ) -> tuple[list[Store], int]:
         """
         Retrieve all source websites with pagination and sorting.
 
@@ -71,23 +71,21 @@ class SourceWebsiteRepositoryInterface(ABC):
             sort_order: Sort order ('asc' or 'desc')
 
         Returns:
-            Tuple of (list of SourceWebsiteEntity, total count)
+            Tuple of (list of Store, total count)
         """
         raise NotImplementedError
 
     @abstractmethod
-    def update(
-        self, source_website_id: int, source_website: SourceWebsiteEntity
-    ) -> SourceWebsiteEntity | None:
+    def update(self, source_website_id: int, source_website: Store) -> Store | None:
         """
         Update an existing source website's information.
 
         Args:
             source_website_id: The ID of the source website to update
-            source_website: SourceWebsiteEntity with updated data
+            source_website: Store with updated data
 
         Returns:
-            Updated SourceWebsiteEntity if found, None otherwise
+            Updated Store if found, None otherwise
 
         Raises:
             IntegrityError: If update violates name uniqueness constraint

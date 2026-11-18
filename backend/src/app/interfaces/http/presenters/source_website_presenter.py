@@ -1,11 +1,11 @@
 from fastapi.responses import JSONResponse
 
-from src.app.entities.source_website import SourceWebsite as SourceWebsiteEntity
 from src.app.interfaces.http.schemas.source_website_schema import (
     SourceWebsiteReadResponse,
     SourceWebsiteResource,
     SourceWebsitesCollectionResponse,
 )
+from src.app.stores.entities import Store
 from src.common.jsonapi import JsonApiError, JsonApiErrorResponse
 
 
@@ -45,13 +45,13 @@ class SourceWebsitePresenter:
         )
 
     @staticmethod
-    def handle_success(entity: SourceWebsiteEntity) -> SourceWebsiteReadResponse:
+    def handle_success(entity: Store) -> SourceWebsiteReadResponse:
         """Returns source website in JSON:API format (success)."""
         return SourceWebsiteReadResponse(data=SourceWebsiteResource.from_entity(entity))
 
     @staticmethod
     def handle_collection_success(
-        entities: list[SourceWebsiteEntity], total: int
+        entities: list[Store], total: int
     ) -> SourceWebsitesCollectionResponse:
         """Returns collection of source websites in JSON:API format."""
         return SourceWebsitesCollectionResponse(

@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from src.app.entities.source_website import SourceWebsite as SourceWebsiteEntity
+from src.app.stores.entities import Store
 from src.app.use_cases.source_website_use_cases import (
     CreateSourceWebsiteUseCase,
     DeleteSourceWebsiteUseCase,
@@ -27,7 +27,7 @@ def mock_source_website_repo():
 
 @pytest.fixture
 def sample_source_website_entity():
-    return SourceWebsiteEntity(
+    return Store(
         id=1,
         name="OLX",
         base_url="https://www.olx.com.br",
@@ -40,7 +40,7 @@ def sample_source_website_entity():
 @pytest.fixture
 def sample_new_source_website_entity():
     """Entity without id (before persistence)."""
-    return SourceWebsiteEntity(
+    return Store(
         name="Enjoei",
         base_url="https://www.enjoei.com.br",
         is_active=True,
@@ -63,7 +63,7 @@ class TestCreateSourceWebsiteUseCase:
         When: execute is called
         Then: Repository.create is called and entity is returned
         """
-        expected = SourceWebsiteEntity(
+        expected = Store(
             id=1,
             name="Enjoei",
             base_url="https://www.enjoei.com.br",
@@ -87,7 +87,7 @@ class TestCreateSourceWebsiteUseCase:
         When: execute is called
         Then: Returns entity with id assigned by the repository
         """
-        persisted = SourceWebsiteEntity(
+        persisted = Store(
             id=42,
             name=sample_new_source_website_entity.name,
             base_url=sample_new_source_website_entity.base_url,
@@ -238,7 +238,7 @@ class TestUpdateSourceWebsiteUseCase:
         When: execute is called with updated data
         Then: Returns updated entity
         """
-        updated = SourceWebsiteEntity(
+        updated = Store(
             id=1, name="OLX Brasil", base_url="https://www.olx.com.br", is_active=True
         )
         mock_source_website_repo.update.return_value = updated

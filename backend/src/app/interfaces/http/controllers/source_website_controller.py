@@ -3,7 +3,6 @@ from fastapi import APIRouter, Depends, Query
 from src.app.accounts.entities import User as UserEntity
 from src.app.accounts.http.auth import get_current_active_user, get_current_staff_user
 from src.app.domain.validators.source_website_validator import SourceWebsiteValidator
-from src.app.entities.source_website import SourceWebsite as SourceWebsiteEntity
 from src.app.infrastructure.database_config import get_db
 from src.app.infrastructure.repositories.source_website_repository import (
     SourceWebsiteRepository,
@@ -17,6 +16,7 @@ from src.app.interfaces.http.schemas.source_website_schema import (
     SourceWebsitesCollectionResponse,
     SourceWebsiteUpdateRequest,
 )
+from src.app.stores.entities import Store
 from src.app.use_cases.source_website_use_cases import (
     CreateSourceWebsiteUseCase,
     DeleteSourceWebsiteUseCase,
@@ -86,7 +86,7 @@ def create_source_website(
         return SourceWebsitePresenter.handle_validation_errors(validation_errors)
 
     attrs = source_website_in.data.attributes
-    source_website_entity = SourceWebsiteEntity(
+    source_website_entity = Store(
         name=attrs.name,
         base_url=attrs.base_url,
         is_active=attrs.is_active,
@@ -261,7 +261,7 @@ def update_source_website(
         return SourceWebsitePresenter.handle_validation_errors(validation_errors)
 
     attrs = source_website_in.data.attributes
-    source_website_entity = SourceWebsiteEntity(
+    source_website_entity = Store(
         id=source_website_id,
         name=attrs.name if attrs.name is not None else existing.name,
         base_url=attrs.base_url if attrs.base_url is not None else existing.base_url,
