@@ -15,8 +15,8 @@ Names are the slugs the scrapers, collectors and frontend use
 
 from sqlalchemy.orm import Session
 
-from src.app.infrastructure.database.models.source_website_model import SourceWebsite
 from src.app.infrastructure.database_config import SessionLocal
+from src.app.stores.persistence.models import Store as StoreModel
 
 
 def load_source_websites():
@@ -65,9 +65,7 @@ def load_source_websites():
         for fixture_data in fixtures:
             # Check if source website already exists
             existing = (
-                db.query(SourceWebsite)
-                .filter(SourceWebsite.id == fixture_data["id"])
-                .first()
+                db.query(StoreModel).filter(StoreModel.id == fixture_data["id"]).first()
             )
 
             if existing:
@@ -77,7 +75,7 @@ def load_source_websites():
                 continue
 
             # Create new source website
-            source_website = SourceWebsite(**fixture_data)
+            source_website = StoreModel(**fixture_data)
             db.add(source_website)
             db.commit()
             db.refresh(source_website)

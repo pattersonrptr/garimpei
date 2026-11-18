@@ -1,13 +1,11 @@
-from src.app.interfaces.repositories.source_website_repository import (
-    SourceWebsiteRepositoryInterface,
-)
 from src.app.stores.entities import Store
+from src.app.stores.ports import StoreRepositoryInterface
 
 
 class CreateSourceWebsiteUseCase:
     """Creates a new source website."""
 
-    def __init__(self, source_website_repo: SourceWebsiteRepositoryInterface):
+    def __init__(self, source_website_repo: StoreRepositoryInterface):
         self.source_website_repo = source_website_repo
 
     def execute(self, source_website: Store) -> Store:
@@ -17,7 +15,7 @@ class CreateSourceWebsiteUseCase:
 class GetSourceWebsiteByIdUseCase:
     """Retrieves a source website by its ID."""
 
-    def __init__(self, source_website_repo: SourceWebsiteRepositoryInterface):
+    def __init__(self, source_website_repo: StoreRepositoryInterface):
         self.source_website_repo = source_website_repo
 
     def execute(self, source_website_id: int) -> Store | None:
@@ -27,7 +25,7 @@ class GetSourceWebsiteByIdUseCase:
 class GetSourceWebsiteByNameUseCase:
     """Retrieves a source website by its name."""
 
-    def __init__(self, source_website_repo: SourceWebsiteRepositoryInterface):
+    def __init__(self, source_website_repo: StoreRepositoryInterface):
         self.source_website_repo = source_website_repo
 
     def execute(self, name: str) -> Store | None:
@@ -37,7 +35,7 @@ class GetSourceWebsiteByNameUseCase:
 class ListSourceWebsitesUseCase:
     """Lists source websites with pagination and sorting."""
 
-    def __init__(self, source_website_repo: SourceWebsiteRepositoryInterface):
+    def __init__(self, source_website_repo: StoreRepositoryInterface):
         self.source_website_repo = source_website_repo
 
     def execute(
@@ -58,7 +56,7 @@ class ListSourceWebsitesUseCase:
 class UpdateSourceWebsiteUseCase:
     """Updates an existing source website."""
 
-    def __init__(self, source_website_repo: SourceWebsiteRepositoryInterface):
+    def __init__(self, source_website_repo: StoreRepositoryInterface):
         self.source_website_repo = source_website_repo
 
     def execute(self, source_website_id: int, source_website: Store) -> Store | None:
@@ -68,7 +66,7 @@ class UpdateSourceWebsiteUseCase:
 class DeleteSourceWebsiteUseCase:
     """Deletes a source website."""
 
-    def __init__(self, source_website_repo: SourceWebsiteRepositoryInterface):
+    def __init__(self, source_website_repo: StoreRepositoryInterface):
         self.source_website_repo = source_website_repo
 
     def execute(self, source_website_id: int) -> bool:

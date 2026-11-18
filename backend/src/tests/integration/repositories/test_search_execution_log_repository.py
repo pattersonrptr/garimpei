@@ -26,13 +26,11 @@ from src.app.infrastructure.database.models.search_config_source_website_model i
 from src.app.infrastructure.database.models.search_execution_log_model import (  # noqa: F401
     SearchExecutionLog as SearchExecutionLogModel,
 )
-from src.app.infrastructure.database.models.source_website_model import (  # noqa: F401
-    SourceWebsite as SourceWebsiteModel,
-)
 from src.app.infrastructure.database_config import Base
 from src.app.infrastructure.repositories.search_execution_log_repository import (
     SearchExecutionLogRepository,
 )
+from src.app.stores.persistence.models import Store as StoreModel  # noqa: F401
 
 # ============================================================================
 # Fixtures

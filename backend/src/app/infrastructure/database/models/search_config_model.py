@@ -42,7 +42,7 @@ class SearchConfig(Base):
     # Relationships
     user = relationship("User", back_populates="search_configs")
     source_websites = relationship(
-        "SourceWebsite",
+        "Store",
         secondary=search_config_source_website,
         back_populates="search_configs",
     )

@@ -13,14 +13,14 @@ from src.app.infrastructure.database.models.search_config_source_website_model i
 from src.app.infrastructure.database.models.search_execution_log_model import (
     SearchExecutionLog,
 )
-from src.app.infrastructure.database.models.source_website_model import SourceWebsite
+from src.app.stores.persistence.models import Store
 
 __all__ = [
     "User",
     "Plan",
     "Subscription",
     "Product",
-    "SourceWebsite",
+    "Store",
     "PriceHistory",
     "PriceAlert",
     "NotificationLog",

@@ -30,9 +30,6 @@ from src.app.infrastructure.repositories.search_config_repository import (
 from src.app.infrastructure.repositories.search_execution_log_repository import (
     SearchExecutionLogRepository,
 )
-from src.app.infrastructure.repositories.source_website_repository import (
-    SourceWebsiteRepository,
-)
 from src.app.interfaces.http.presenters.search_config_presenter import (
     SearchConfigPresenter,
 )
@@ -42,6 +39,7 @@ from src.app.interfaces.http.schemas.search_config_schema import (
     SearchConfigsCollectionResponse,
     SearchConfigUpdateRequest,
 )
+from src.app.stores.persistence.repositories import StoreRepository
 from src.app.use_cases.search_config_use_cases import (
     CreateSearchConfigUseCase,
     DeleteSearchConfigUseCase,
@@ -88,16 +86,14 @@ def get_price_alert_repository(db=Depends(get_db)) -> PriceAlertRepository:
     return PriceAlertRepository(db)
 
 
-def get_source_website_repository(db=Depends(get_db)) -> SourceWebsiteRepository:
-    """Dependency injection for SourceWebsiteRepository (used by validator)."""
-    return SourceWebsiteRepository(db)
+def get_source_website_repository(db=Depends(get_db)) -> StoreRepository:
+    """Dependency injection for StoreRepository (used by validator)."""
+    return StoreRepository(db)
 
 
 def get_search_config_validator(
     search_config_repo: SearchConfigRepository = Depends(get_search_config_repository),
-    source_website_repo: SourceWebsiteRepository = Depends(
-        get_source_website_repository
-    ),
+    source_website_repo: StoreRepository = Depends(get_source_website_repository),
 ) -> SearchConfigValidator:
     """Dependency injection for SearchConfigValidator."""
     return SearchConfigValidator(search_config_repo, source_website_repo)

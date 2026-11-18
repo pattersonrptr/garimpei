@@ -49,12 +49,10 @@ from src.app.infrastructure.database.models.search_config_source_website_model i
 from src.app.infrastructure.database.models.search_execution_log_model import (  # noqa: F401
     SearchExecutionLog as SearchExecutionLogModel,
 )
-from src.app.infrastructure.database.models.source_website_model import (  # noqa: F401
-    SourceWebsite as SourceWebsiteModel,
-)
 
 # Then import database config and app
 from src.app.infrastructure.database_config import Base, get_db
+from src.app.stores.persistence.models import Store as StoreModel  # noqa: F401
 from src.main import app
 
 # Password hashing context (same as in use_cases)
@@ -83,9 +81,7 @@ def test_db():
     from src.app.catalog.persistence.models import (  # noqa: F401
         Product as ProductModel,
     )
-    from src.app.infrastructure.database.models.source_website_model import (  # noqa: F401
-        SourceWebsite as SourceWebsiteModel,
-    )
+    from src.app.stores.persistence.models import Store as StoreModel  # noqa: F401
 
     engine = create_engine(
         "sqlite:///:memory:",
@@ -310,9 +306,9 @@ def sample_source_website(test_db):
     Create a sample source website in the database (required FK for products).
 
     Returns:
-        SourceWebsiteModel: Persisted SourceWebsite instance
+        StoreModel: Persisted SourceWebsite instance
     """
-    website = SourceWebsiteModel(
+    website = StoreModel(
         name="Test Website",
         base_url="https://test.example.com",
         is_active=True,

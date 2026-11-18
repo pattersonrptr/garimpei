@@ -17,10 +17,8 @@ from src.app.catalog.persistence.repositories import ProductRepository
 from src.app.infrastructure.database.models import (  # noqa: F401
     Product as ProductModel,
 )
-from src.app.infrastructure.database.models import (
-    SourceWebsite as SourceWebsiteModel,
-)
 from src.app.infrastructure.database_config import Base
+from src.app.stores.persistence.models import Store as StoreModel
 
 # ============================================================================
 # Fixtures
@@ -53,7 +51,7 @@ def product_repository(test_db):
 @pytest.fixture
 def sample_source_website(test_db):
     """Creates a SourceWebsite in the database for foreign key references."""
-    source_website = SourceWebsiteModel(
+    source_website = StoreModel(
         name="OLX",
         base_url="https://www.olx.com.br",
         is_active=True,

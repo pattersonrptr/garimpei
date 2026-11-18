@@ -8,15 +8,13 @@ kills a mutation that survived the existing suite (Nov 18, 2026).
 from datetime import datetime
 
 from src.app.alerts.persistence.models import PriceAlert as PriceAlertModel
-from src.app.infrastructure.database.models.source_website_model import (
-    SourceWebsite as SourceWebsiteModel,
-)
+from src.app.stores.persistence.models import Store as StoreModel
 
 OLD = datetime(2026, 1, 1, 12, 0, 0)
 
 
 def add_store(test_db, name, created_at=None, **fields):
-    store = SourceWebsiteModel(
+    store = StoreModel(
         name=name,
         base_url=fields.pop("base_url", f"https://{name.lower()}.example.com"),
         is_active=fields.pop("is_active", True),

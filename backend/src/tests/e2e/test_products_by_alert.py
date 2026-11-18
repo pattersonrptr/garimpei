@@ -12,9 +12,7 @@ from src.app.alerts.persistence.models import price_alert_source_website
 from src.app.catalog.entities import ProductCondition
 from src.app.catalog.persistence.models import PriceHistory as PriceHistoryModel
 from src.app.catalog.persistence.models import Product as ProductModel
-from src.app.infrastructure.database.models.source_website_model import (
-    SourceWebsite as SourceWebsiteModel,
-)
+from src.app.stores.persistence.models import Store as StoreModel
 
 
 def a_listing(test_db, title, price, store_id, available=True):
@@ -57,7 +55,7 @@ def alert(test_db, sample_user, sample_source_website):
 def listings(test_db, sample_source_website):
     """Matching listings at 800, 200 and 450, plus ones the alert never shows."""
     store = sample_source_website.id
-    other_store = SourceWebsiteModel(name="Other", base_url="https://other.example")
+    other_store = StoreModel(name="Other", base_url="https://other.example")
     test_db.add(other_store)
     test_db.commit()
     a_listing(test_db, "Premium Headphones", 800.0, store)

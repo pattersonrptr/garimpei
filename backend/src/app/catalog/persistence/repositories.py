@@ -37,10 +37,8 @@ from src.app.catalog.ports import (
     PriceHistoryRepositoryInterface,
     ProductRepositoryInterface,
 )
-from src.app.infrastructure.database.models.source_website_model import (
-    SourceWebsite as SourceWebsiteModel,
-)
 from src.app.infrastructure.database.text_match import fold_text, title_contains
+from src.app.stores.persistence.models import Store as StoreModel
 
 
 def _as_utc(moment: datetime | None) -> datetime | None:
@@ -623,13 +621,13 @@ class BookCatalogRepository(BookCatalogReader):
         rows = (
             self.db.query(
                 ProductModel,
-                SourceWebsiteModel.name,
+                StoreModel.name,
                 latest.c.price,
                 latest.c.created_at,
             )
             .join(
-                SourceWebsiteModel,
-                SourceWebsiteModel.id == ProductModel.source_website_id,
+                StoreModel,
+                StoreModel.id == ProductModel.source_website_id,
             )
             .outerjoin(latest, latest.c.product_id == ProductModel.id)
             .filter(ProductModel.canonical_product_id.in_(book_ids))

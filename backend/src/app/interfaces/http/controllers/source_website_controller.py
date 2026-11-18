@@ -4,9 +4,6 @@ from src.app.accounts.entities import User as UserEntity
 from src.app.accounts.http.auth import get_current_active_user, get_current_staff_user
 from src.app.domain.validators.source_website_validator import SourceWebsiteValidator
 from src.app.infrastructure.database_config import get_db
-from src.app.infrastructure.repositories.source_website_repository import (
-    SourceWebsiteRepository,
-)
 from src.app.interfaces.http.presenters.source_website_presenter import (
     SourceWebsitePresenter,
 )
@@ -17,6 +14,7 @@ from src.app.interfaces.http.schemas.source_website_schema import (
     SourceWebsiteUpdateRequest,
 )
 from src.app.stores.entities import Store
+from src.app.stores.persistence.repositories import StoreRepository
 from src.app.use_cases.source_website_use_cases import (
     CreateSourceWebsiteUseCase,
     DeleteSourceWebsiteUseCase,
@@ -32,15 +30,13 @@ router = APIRouter(tags=["source_websites"], prefix="/source-websites")
 logger = get_logger(__name__)
 
 
-def get_source_website_repository(db=Depends(get_db)) -> SourceWebsiteRepository:
-    """Dependency injection for SourceWebsiteRepository."""
-    return SourceWebsiteRepository(db)
+def get_source_website_repository(db=Depends(get_db)) -> StoreRepository:
+    """Dependency injection for StoreRepository."""
+    return StoreRepository(db)
 
 
 def get_source_website_validator(
-    source_website_repo: SourceWebsiteRepository = Depends(
-        get_source_website_repository
-    ),
+    source_website_repo: StoreRepository = Depends(get_source_website_repository),
 ) -> SourceWebsiteValidator:
     """Dependency injection for SourceWebsiteValidator."""
     return SourceWebsiteValidator(source_website_repo)
@@ -49,9 +45,7 @@ def get_source_website_validator(
 @router.post("/", response_model=SourceWebsiteReadResponse, status_code=201)
 def create_source_website(
     source_website_in: SourceWebsiteCreateRequest,
-    source_website_repo: SourceWebsiteRepository = Depends(
-        get_source_website_repository
-    ),
+    source_website_repo: StoreRepository = Depends(get_source_website_repository),
     source_website_validator: SourceWebsiteValidator = Depends(
         get_source_website_validator
     ),
@@ -112,9 +106,7 @@ def list_source_websites(
     offset: int = Query(default=0, ge=0),
     sort_by: str | None = Query(default=None),
     sort_order: str | None = Query(default="desc", pattern="^(asc|desc)$"),
-    source_website_repo: SourceWebsiteRepository = Depends(
-        get_source_website_repository
-    ),
+    source_website_repo: StoreRepository = Depends(get_source_website_repository),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
@@ -142,9 +134,7 @@ def list_source_websites(
 @router.get("/name/{name}", response_model=SourceWebsiteReadResponse)
 def get_source_website_by_name(
     name: str,
-    source_website_repo: SourceWebsiteRepository = Depends(
-        get_source_website_repository
-    ),
+    source_website_repo: StoreRepository = Depends(get_source_website_repository),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
@@ -172,9 +162,7 @@ def get_source_website_by_name(
 @router.get("/{source_website_id}", response_model=SourceWebsiteReadResponse)
 def get_source_website(
     source_website_id: int,
-    source_website_repo: SourceWebsiteRepository = Depends(
-        get_source_website_repository
-    ),
+    source_website_repo: StoreRepository = Depends(get_source_website_repository),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
@@ -209,9 +197,7 @@ def get_source_website(
 def update_source_website(
     source_website_id: int,
     source_website_in: SourceWebsiteUpdateRequest,
-    source_website_repo: SourceWebsiteRepository = Depends(
-        get_source_website_repository
-    ),
+    source_website_repo: StoreRepository = Depends(get_source_website_repository),
     source_website_validator: SourceWebsiteValidator = Depends(
         get_source_website_validator
     ),
@@ -287,9 +273,7 @@ def update_source_website(
 @router.delete("/{source_website_id}", status_code=204)
 def delete_source_website(
     source_website_id: int,
-    source_website_repo: SourceWebsiteRepository = Depends(
-        get_source_website_repository
-    ),
+    source_website_repo: StoreRepository = Depends(get_source_website_repository),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
     """

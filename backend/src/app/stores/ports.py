@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from src.app.stores.entities import Store
 
 
-class SourceWebsiteRepositoryInterface(ABC):
+class StoreRepositoryInterface(ABC):
     """
     Interface for SourceWebsite Repository operations.
 

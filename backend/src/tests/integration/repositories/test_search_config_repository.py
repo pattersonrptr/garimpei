@@ -21,13 +21,11 @@ from src.app.infrastructure.database.models.search_config_model import (  # noqa
 from src.app.infrastructure.database.models.search_config_source_website_model import (  # noqa: F401
     search_config_source_website,
 )
-from src.app.infrastructure.database.models.source_website_model import (  # noqa: F401
-    SourceWebsite as SourceWebsiteModel,
-)
 from src.app.infrastructure.database_config import Base
 from src.app.infrastructure.repositories.search_config_repository import (
     SearchConfigRepository,
 )
+from src.app.stores.persistence.models import Store as StoreModel  # noqa: F401
 
 # ============================================================================
 # Fixtures
@@ -68,7 +66,7 @@ def sample_user(test_db):
 @pytest.fixture
 def sample_source_website(test_db):
     """Creates a SourceWebsite for M2M references."""
-    sw = SourceWebsiteModel(
+    sw = StoreModel(
         name="OLX",
         base_url="https://www.olx.com.br",
         is_active=True,

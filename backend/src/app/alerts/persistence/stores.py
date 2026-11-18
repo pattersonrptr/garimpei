@@ -2,13 +2,11 @@
 
 from src.app.alerts.entities import Store
 from src.app.alerts.ports import StoreReader
-from src.app.interfaces.repositories.source_website_repository import (
-    SourceWebsiteRepositoryInterface,
-)
+from src.app.stores.ports import StoreRepositoryInterface
 
 
 class SourceWebsiteStores(StoreReader):
-    def __init__(self, source_websites: SourceWebsiteRepositoryInterface):
+    def __init__(self, source_websites: StoreRepositoryInterface):
         self.source_websites = source_websites
 
     def get_by_id(self, source_website_id: int) -> Store | None:
