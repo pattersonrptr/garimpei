@@ -305,21 +305,21 @@ class ProductRepository(ProductRepositoryInterface):
     def search_by_term_and_sources(
         self,
         search_term: str,
-        source_website_ids: list[int],
+        store_ids: list[int],
         max_price: float | None = None,
         limit: int = 50,
         offset: int = 0,
     ) -> tuple[list[ProductEntity], int]:
-        """Search products by title (case/accent-insensitive) + source_website_ids, with latest price."""
+        """Search products by title (case/accent-insensitive) + store ids, with latest price."""
         price_sq = self._latest_price_subquery()
 
-        # Base query: products matching search_term + source_website_ids
+        # Base query: products matching search_term + store_ids
         query = (
             self.db.query(ProductModel, price_sq.c.price, price_sq.c.created_at)
             .outerjoin(price_sq, ProductModel.id == price_sq.c.product_id)
             .filter(
                 title_contains(ProductModel.title, search_term),
-                ProductModel.source_website_id.in_(source_website_ids),
+                ProductModel.source_website_id.in_(store_ids),
                 ProductModel.is_available.is_(True),
             )
         )
@@ -480,7 +480,7 @@ class CanonicalProductRepository(
         return self._to_entity(row)
 
     def list_by_staleness(
-        self, kind: IdentifierKind, source_website_id: int
+        self, kind: IdentifierKind, store_id: int
     ) -> list[QueuedProduct]:
         last_point = (
             self.db.query(
@@ -489,7 +489,7 @@ class CanonicalProductRepository(
             )
             .join(PriceHistoryModel, PriceHistoryModel.product_id == ProductModel.id)
             .filter(
-                ProductModel.source_website_id == source_website_id,
+                ProductModel.source_website_id == store_id,
                 ProductModel.canonical_product_id.isnot(None),
             )
             .group_by(ProductModel.canonical_product_id)

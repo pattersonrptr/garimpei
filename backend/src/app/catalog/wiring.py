@@ -8,6 +8,7 @@ concrete repositories or the book metadata client.
 from sqlalchemy.orm import Session
 
 from src.app.catalog.adapters.brasilapi_books import BrasilApiBookMetadata
+from src.app.catalog.adapters.stores import StoreDirectoryOverStores
 from src.app.catalog.persistence.repositories import (
     BookCatalogRepository,
     CanonicalProductRepository,
@@ -20,12 +21,14 @@ from src.app.catalog.ports import (
     ListingScope,
     PriceHistoryRepositoryInterface,
     ProductRepositoryInterface,
+    StoreDirectory,
 )
 from src.app.catalog.use_cases import (
     GetOrCreateBookByIsbnUseCase,
     IngestOfferUseCase,
     ListCollectionQueueUseCase,
 )
+from src.app.stores import wiring as stores_wiring
 
 
 def products(
@@ -42,6 +45,13 @@ def price_histories(db: Session) -> PriceHistoryRepositoryInterface:
 def book_catalog(db: Session) -> BookCatalogReader:
     """The read model behind the public book pages."""
     return BookCatalogRepository(db)
+
+
+def stores(db: Session) -> StoreDirectory:
+    """The stores offers come from (over the stores module)."""
+    return StoreDirectoryOverStores(
+        stores_wiring.store_by_id(db), stores_wiring.store_by_name(db)
+    )
 
 
 def book_metadata() -> BookMetadataGateway:
