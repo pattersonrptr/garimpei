@@ -10,10 +10,10 @@ from datetime import datetime
 import pytest
 from fastapi.responses import JSONResponse
 
-from src.app.entities.source_website import SourceWebsite as SourceWebsiteEntity
 from src.app.interfaces.http.presenters.source_website_presenter import (
     SourceWebsitePresenter,
 )
+from src.app.stores.entities import Store
 from src.common.jsonapi import JsonApiError
 
 # ============================================================================
@@ -24,7 +24,7 @@ from src.common.jsonapi import JsonApiError
 @pytest.fixture
 def sample_source_website_entity():
     """Sample source website entity for testing."""
-    return SourceWebsiteEntity(
+    return Store(
         id=1,
         name="MercadoLivre",
         base_url="https://www.mercadolivre.com.br",
@@ -37,7 +37,7 @@ def sample_source_website_entity():
 @pytest.fixture
 def sample_source_website_collection(sample_source_website_entity):
     """Sample collection of source website entities for testing."""
-    second = SourceWebsiteEntity(
+    second = Store(
         id=2,
         name="OLX",
         base_url="https://www.olx.com.br",
@@ -131,7 +131,7 @@ class TestSourceWebsitePresenterHandleSuccess:
         Then: Should correctly reflect is_active=False
         """
         # Given
-        entity = SourceWebsiteEntity(
+        entity = Store(
             id=3,
             name="Inactive Site",
             base_url="https://inactive.example.com",

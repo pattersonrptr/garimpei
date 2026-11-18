@@ -9,8 +9,6 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from src.app.entities.source_website import SourceWebsite as SourceWebsiteEntity
-
 # Import model to register with Base.metadata
 from src.app.infrastructure.database.models.source_website_model import (  # noqa: F401
     SourceWebsite as SourceWebsiteModel,
@@ -19,6 +17,7 @@ from src.app.infrastructure.database_config import Base
 from src.app.infrastructure.repositories.source_website_repository import (
     SourceWebsiteRepository,
 )
+from src.app.stores.entities import Store
 
 # ============================================================================
 # Fixtures
@@ -51,7 +50,7 @@ def source_website_repository(test_db):
 @pytest.fixture
 def sample_source_website_entity():
     """Sample source website entity for testing (no id)."""
-    return SourceWebsiteEntity(
+    return Store(
         name="OLX",
         base_url="https://www.olx.com.br",
         is_active=True,
@@ -89,8 +88,8 @@ class TestCreateSourceWebsite:
         When: both are created
         Then: They receive distinct IDs
         """
-        sw1 = SourceWebsiteEntity(name="OLX", base_url="https://www.olx.com.br")
-        sw2 = SourceWebsiteEntity(name="Enjoei", base_url="https://www.enjoei.com.br")
+        sw1 = Store(name="OLX", base_url="https://www.olx.com.br")
+        sw2 = Store(name="Enjoei", base_url="https://www.enjoei.com.br")
 
         result1 = source_website_repository.create(sw1)
         result2 = source_website_repository.create(sw2)
@@ -165,10 +164,10 @@ class TestReadSourceWebsite:
         Then: Returns list of 2 entities and total=2
         """
         source_website_repository.create(
-            SourceWebsiteEntity(name="OLX", base_url="https://www.olx.com.br")
+            Store(name="OLX", base_url="https://www.olx.com.br")
         )
         source_website_repository.create(
-            SourceWebsiteEntity(name="Enjoei", base_url="https://www.enjoei.com.br")
+            Store(name="Enjoei", base_url="https://www.enjoei.com.br")
         )
 
         results, total = source_website_repository.get_all()
@@ -189,9 +188,7 @@ class TestReadSourceWebsite:
             ("Enjoei", "https://www.enjoei.com.br"),
             ("Mercado Livre", "https://www.mercadolivre.com.br"),
         ]:
-            source_website_repository.create(
-                SourceWebsiteEntity(name=name, base_url=url)
-            )
+            source_website_repository.create(Store(name=name, base_url=url))
 
         results, total = source_website_repository.get_all(limit=2, offset=1)
 
@@ -225,7 +222,7 @@ class TestUpdateSourceWebsite:
         """
         created = source_website_repository.create(sample_source_website_entity)
 
-        update_entity = SourceWebsiteEntity(
+        update_entity = Store(
             id=created.id,
             name="OLX Brasil",
             base_url="https://www.olx.com.br",
