@@ -1,3 +1,4 @@
+from dataclasses import asdict, fields
 from datetime import UTC, datetime
 
 from sqlalchemy import asc, desc
@@ -11,6 +12,9 @@ from src.app.interfaces.repositories.source_website_repository import (
 )
 from src.app.stores.entities import Store
 
+# The fields an update writes (the controller passes no dates).
+_UPDATABLE = ("name", "base_url", "is_active")
+
 
 class SourceWebsiteRepository(SourceWebsiteRepositoryInterface):
     """SQLAlchemy implementation of SourceWebsiteRepositoryInterface."""
@@ -20,13 +24,9 @@ class SourceWebsiteRepository(SourceWebsiteRepositoryInterface):
 
     def create(self, source_website: Store) -> Store:
         """Create a new source website in the database."""
-        db_source_website = SourceWebsiteModel(
-            name=source_website.name,
-            base_url=source_website.base_url,
-            is_active=source_website.is_active,
-            created_at=source_website.created_at,
-            updated_at=source_website.updated_at,
-        )
+        columns = asdict(source_website)
+        del columns["id"]
+        db_source_website = SourceWebsiteModel(**columns)
         self.db.add(db_source_website)
         self.db.commit()
         self.db.refresh(db_source_website)
@@ -90,9 +90,8 @@ class SourceWebsiteRepository(SourceWebsiteRepositoryInterface):
             return None
 
         try:
-            db_source_website.name = source_website.name
-            db_source_website.base_url = source_website.base_url
-            db_source_website.is_active = source_website.is_active
+            for name in _UPDATABLE:
+                setattr(db_source_website, name, getattr(source_website, name))
             db_source_website.updated_at = datetime.now(UTC)
             self.db.commit()
             self.db.refresh(db_source_website)
@@ -122,10 +121,5 @@ class SourceWebsiteRepository(SourceWebsiteRepositoryInterface):
     def _to_entity(self, source_website_model: SourceWebsiteModel) -> Store:
         """Convert SourceWebsiteModel to Store."""
         return Store(
-            id=source_website_model.id,
-            name=source_website_model.name,
-            base_url=source_website_model.base_url,
-            is_active=source_website_model.is_active,
-            created_at=source_website_model.created_at,
-            updated_at=source_website_model.updated_at,
+            **{f.name: getattr(source_website_model, f.name) for f in fields(Store)}
         )
