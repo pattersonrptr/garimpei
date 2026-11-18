@@ -14,12 +14,14 @@ from src.app.interfaces.http.schemas.search_execution_log_schema import (
 )
 from src.app.searches.entities import SearchRun
 from src.app.searches.persistence.repositories import SearchRunRepository
-from src.app.use_cases.search_execution_log_use_cases import (
-    CreateSearchExecutionLogUseCase,
-    GetSearchExecutionLogByIdUseCase,
-    GetSearchExecutionLogsBySearchConfigIdUseCase,
-    ListSearchExecutionLogsUseCase,
-    UpdateSearchExecutionLogUseCase,
+from src.app.searches.use_cases import (
+    CreateSearchRunUseCase,
+    GetRunsOfSearchUseCase,
+    GetSearchRunUseCase,
+    ListSearchRunsUseCase,
+    SearchRunChanges,
+    SearchRunNotFoundError,
+    UpdateSearchRunUseCase,
 )
 from src.config.logging_config import get_logger
 
@@ -58,7 +60,7 @@ def list_search_execution_logs(
         extra={"action": "list_search_execution_logs", "user_id": current_user.id},
     )
 
-    use_case = ListSearchExecutionLogsUseCase(search_execution_log_repo)
+    use_case = ListSearchRunsUseCase(search_execution_log_repo)
     records, total = use_case.execute(
         limit=limit, offset=offset, sort_by=sort_by, sort_order=sort_order
     )
@@ -92,7 +94,7 @@ def get_search_execution_logs_by_search_config(
         },
     )
 
-    use_case = GetSearchExecutionLogsBySearchConfigIdUseCase(search_execution_log_repo)
+    use_case = GetRunsOfSearchUseCase(search_execution_log_repo)
     records = use_case.execute(search_config_id)
     return SearchExecutionLogPresenter.handle_collection_success(records, len(records))
 
@@ -121,10 +123,10 @@ def get_search_execution_log(
         },
     )
 
-    use_case = GetSearchExecutionLogByIdUseCase(search_execution_log_repo)
-    record = use_case.execute(search_execution_log_id)
-
-    if not record:
+    use_case = GetSearchRunUseCase(search_execution_log_repo)
+    try:
+        record = use_case.execute(search_execution_log_id)
+    except SearchRunNotFoundError:
         return SearchExecutionLogPresenter.handle_not_found(
             f"id {search_execution_log_id}", "/data/id"
         )
@@ -168,7 +170,7 @@ def create_search_execution_log(
         listings_checked=attrs.listings_checked,
         error_message=attrs.error_message,
     )
-    use_case = CreateSearchExecutionLogUseCase(search_execution_log_repo)
+    use_case = CreateSearchRunUseCase(search_execution_log_repo)
     created = use_case.execute(entity)
     return SearchExecutionLogPresenter.handle_success(created)
 
@@ -194,11 +196,20 @@ def update_search_execution_log(
         - 403: Permission denied
         - 404: Log not found
     """
-    use_case = UpdateSearchExecutionLogUseCase(search_execution_log_repo)
-    updated = use_case.execute(
-        search_execution_log_id, payload.data.attributes.model_dump()
-    )
-    if not updated:
+    attrs = payload.data.attributes
+    use_case = UpdateSearchRunUseCase(search_execution_log_repo)
+    try:
+        updated = use_case.execute(
+            search_execution_log_id,
+            SearchRunChanges(
+                status=attrs.status,
+                results_count=attrs.results_count,
+                listings_found=attrs.listings_found,
+                listings_checked=attrs.listings_checked,
+                error_message=attrs.error_message,
+            ),
+        )
+    except SearchRunNotFoundError:
         return SearchExecutionLogPresenter.handle_not_found(
             f"id {search_execution_log_id}", "/data/id"
         )

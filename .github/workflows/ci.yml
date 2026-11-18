@@ -111,6 +111,7 @@ jobs:
             src/app/searches/ports.py \
             src/app/searches/persistence/models.py \
             src/app/searches/persistence/repositories.py \
+            src/app/searches/use_cases.py \
             src/app/billing/ports.py \
             src/app/billing/persistence/models.py \
             src/app/billing/persistence/repositories.py \

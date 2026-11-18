@@ -37,17 +37,20 @@ from src.app.searches.persistence.repositories import (
     SavedSearchRepository,
     SearchRunRepository,
 )
-from src.app.stores.persistence.repositories import StoreRepository
-from src.app.use_cases.search_config_use_cases import (
-    CreateSearchConfigUseCase,
-    DeleteSearchConfigUseCase,
-    GetSearchConfigByIdUseCase,
-    GetSearchConfigsByUserIdUseCase,
-    ListSearchConfigsUseCase,
-    SearchConfigInUseError,
-    UpdateSearchConfigUseCase,
+from src.app.searches.ports import SavedSearchRepositoryInterface
+from src.app.searches.use_cases import (
+    CreateSavedSearchUseCase,
+    DeleteSavedSearchUseCase,
+    GetLatestSearchRunUseCase,
+    GetSavedSearchesOfUserUseCase,
+    GetSavedSearchUseCase,
+    ListSavedSearchesUseCase,
+    SavedSearchChanges,
+    SavedSearchInUseError,
+    SavedSearchNotFoundError,
+    UpdateSavedSearchUseCase,
 )
-from src.app.use_cases.search_execution_log_use_cases import GetLatestSearchRunUseCase
+from src.app.stores.persistence.repositories import StoreRepository
 from src.common.jsonapi import JsonApiError, JsonApiErrorResponse
 from src.config.logging_config import get_logger
 
@@ -66,6 +69,17 @@ def _plan_limit_error(violation: PlanLimitViolation) -> JsonApiError:
         source={"pointer": violation.pointer} if violation.pointer else None,
         meta=violation.meta,
     )
+
+
+def _owned_search(
+    searches: SavedSearchRepositoryInterface, search_id: int, user: UserEntity
+) -> SavedSearch | None:
+    """The saved search, or None when it is missing or not the user's."""
+    try:
+        search = GetSavedSearchUseCase(searches).execute(search_id)
+    except SavedSearchNotFoundError:
+        return None
+    return search if can_access_owned_resource(search.user_id, user) else None
 
 
 def get_search_config_repository(db=Depends(get_db)) -> SavedSearchRepository:
@@ -146,7 +160,7 @@ def create_search_config(
         source_website_ids=attrs.source_website_ids,
     )
 
-    use_case = CreateSearchConfigUseCase(search_config_repo)
+    use_case = CreateSavedSearchUseCase(search_config_repo)
     created = use_case.execute(search_config_entity)
 
     logger.info(
@@ -183,7 +197,7 @@ def list_search_configs(
         extra={"action": "list_search_configs", "user_id": current_user.id},
     )
 
-    use_case = ListSearchConfigsUseCase(search_config_repo)
+    use_case = ListSavedSearchesUseCase(search_config_repo)
     search_configs, total = use_case.execute(
         limit=limit,
         offset=offset,
@@ -218,7 +232,7 @@ def get_search_configs_by_user(
         },
     )
 
-    use_case = GetSearchConfigsByUserIdUseCase(search_config_repo)
+    use_case = GetSavedSearchesOfUserUseCase(search_config_repo)
     if not can_access_owned_resource(user_id, current_user):
         raise HTTPException(
             status_code=403,
@@ -254,12 +268,8 @@ def get_search_config(
         },
     )
 
-    use_case = GetSearchConfigByIdUseCase(search_config_repo)
-    search_config = use_case.execute(search_config_id)
-
-    if not search_config or not can_access_owned_resource(
-        search_config.user_id, current_user
-    ):
+    search_config = _owned_search(search_config_repo, search_config_id, current_user)
+    if search_config is None:
         return SearchConfigPresenter.handle_not_found(
             f"id {search_config_id}", "/data/id"
         )
@@ -297,10 +307,7 @@ def update_search_config(
         },
     )
 
-    get_uc = GetSearchConfigByIdUseCase(search_config_repo)
-    existing = get_uc.execute(search_config_id)
-
-    if not existing or not can_access_owned_resource(existing.user_id, current_user):
+    if _owned_search(search_config_repo, search_config_id, current_user) is None:
         return SearchConfigPresenter.handle_not_found(
             f"id {search_config_id}", "/data/id"
         )
@@ -319,31 +326,17 @@ def update_search_config(
         return SearchConfigPresenter.handle_validation_errors(validation_errors)
 
     attrs = search_config_in.data.attributes
-    updated_entity = SavedSearch(
-        id=search_config_id,
-        search_term=attrs.search_term
-        if attrs.search_term is not None
-        else existing.search_term,
-        is_active=attrs.is_active
-        if attrs.is_active is not None
-        else existing.is_active,
-        frequency_days=attrs.frequency_days
-        if attrs.frequency_days is not None
-        else existing.frequency_days,
-        preferred_time=attrs.preferred_time
-        if attrs.preferred_time is not None
-        else existing.preferred_time,
-        search_metadata=attrs.search_metadata
-        if attrs.search_metadata is not None
-        else existing.search_metadata,
-        user_id=existing.user_id,
-        source_website_ids=attrs.source_website_ids
-        if attrs.source_website_ids is not None
-        else existing.source_website_ids,
+    updated = UpdateSavedSearchUseCase(search_config_repo).execute(
+        search_config_id,
+        SavedSearchChanges(
+            search_term=attrs.search_term,
+            is_active=attrs.is_active,
+            frequency_days=attrs.frequency_days,
+            preferred_time=attrs.preferred_time,
+            search_metadata=attrs.search_metadata,
+            source_website_ids=attrs.source_website_ids,
+        ),
     )
-
-    update_uc = UpdateSearchConfigUseCase(search_config_repo)
-    updated = update_uc.execute(search_config_id, updated_entity)
 
     logger.info(
         f"Search config updated: '{updated.search_term}' (ID: {search_config_id})",
@@ -381,20 +374,16 @@ def delete_search_config(
         },
     )
 
-    get_uc = GetSearchConfigByIdUseCase(search_config_repo)
-    search_config = get_uc.execute(search_config_id)
-
-    if not search_config or not can_access_owned_resource(
-        search_config.user_id, current_user
-    ):
+    search_config = _owned_search(search_config_repo, search_config_id, current_user)
+    if search_config is None:
         return SearchConfigPresenter.handle_not_found(
             f"id {search_config_id}", "/data/id"
         )
 
-    delete_uc = DeleteSearchConfigUseCase(search_config_repo, price_alert_repo)
+    delete_uc = DeleteSavedSearchUseCase(search_config_repo, price_alert_repo)
     try:
-        deleted = delete_uc.execute(search_config_id)
-    except SearchConfigInUseError as in_use:
+        delete_uc.execute(search_config_id)
+    except SavedSearchInUseError as in_use:
         return JSONResponse(
             status_code=409,
             content=JsonApiErrorResponse(
@@ -413,8 +402,7 @@ def delete_search_config(
             ).model_dump(),
             media_type="application/vnd.api+json",
         )
-
-    if not deleted:
+    except SavedSearchNotFoundError:
         return SearchConfigPresenter.handle_not_found(
             f"id {search_config_id}", "/data/id"
         )
@@ -460,14 +448,8 @@ def trigger_search_config(
         - 404: Search config not found (or not linked to your active alerts)
         - 409: Already running
     """
-    from src.app.use_cases.search_config_use_cases import GetSearchConfigByIdUseCase
-
-    get_uc = GetSearchConfigByIdUseCase(search_config_repo)
-    search_config = get_uc.execute(search_config_id)
-
-    if not search_config or not can_access_owned_resource(
-        search_config.user_id, current_user
-    ):
+    search_config = _owned_search(search_config_repo, search_config_id, current_user)
+    if search_config is None:
         return SearchConfigPresenter.handle_not_found(
             f"id {search_config_id}", "/data/id"
         )
@@ -572,14 +554,8 @@ def get_execution_status(
         - 200: Latest execution status (idle / pending / running / success / failed)
         - 404: Search config not found
     """
-    from src.app.use_cases.search_config_use_cases import GetSearchConfigByIdUseCase
-
-    get_uc = GetSearchConfigByIdUseCase(search_config_repo)
-    search_config = get_uc.execute(search_config_id)
-
-    if not search_config or not can_access_owned_resource(
-        search_config.user_id, current_user
-    ):
+    search_config = _owned_search(search_config_repo, search_config_id, current_user)
+    if search_config is None:
         return SearchConfigPresenter.handle_not_found(
             f"id {search_config_id}", "/data/id"
         )
