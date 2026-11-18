@@ -14,7 +14,6 @@ from sqlalchemy.orm import sessionmaker
 from src.app.accounts.persistence.models import User
 from src.app.alerts.entities import KeywordSearch
 from src.app.alerts.persistence.keyword_searches import SearchConfigKeywordSearches
-from src.app.entities.search_config import SearchConfig as SearchConfigEntity
 
 # Import all models to register with Base.metadata
 from src.app.infrastructure.database.models.search_config_model import (  # noqa: F401
@@ -27,6 +26,7 @@ from src.app.infrastructure.database_config import Base
 from src.app.infrastructure.repositories.search_config_repository import (
     SearchConfigRepository,
 )
+from src.app.searches.entities import SavedSearch
 from src.app.stores.persistence.models import Store as StoreModel
 
 
@@ -90,7 +90,7 @@ def test_created_search_is_saved_with_its_stores(searches, configs, user_id, sto
 
 def test_finds_the_users_search_by_term(searches, configs, user_id, store_ids):
     existing = configs.create(
-        SearchConfigEntity(
+        SavedSearch(
             search_term="iPhone 13", user_id=user_id, source_website_ids=store_ids[:1]
         )
     )
@@ -102,9 +102,7 @@ def test_finds_the_users_search_by_term(searches, configs, user_id, store_ids):
 
 
 def test_pausing_a_search_is_saved(searches, configs, user_id):
-    existing = configs.create(
-        SearchConfigEntity(search_term="iPhone 13", user_id=user_id)
-    )
+    existing = configs.create(SavedSearch(search_term="iPhone 13", user_id=user_id))
     search = searches.get_by_id(existing.id)
     search.is_active = False
 
@@ -115,7 +113,7 @@ def test_pausing_a_search_is_saved(searches, configs, user_id):
 
 def test_new_stores_and_frequency_are_saved(searches, configs, user_id, store_ids):
     existing = configs.create(
-        SearchConfigEntity(
+        SavedSearch(
             search_term="iPhone 13", user_id=user_id, source_website_ids=store_ids[:1]
         )
     )
@@ -132,7 +130,7 @@ def test_new_stores_and_frequency_are_saved(searches, configs, user_id, store_id
 
 def test_update_keeps_the_fields_alerts_does_not_know(searches, configs, user_id):
     existing = configs.create(
-        SearchConfigEntity(
+        SavedSearch(
             search_term="iPhone 13",
             user_id=user_id,
             preferred_time=time(8, 30),

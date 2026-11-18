@@ -12,7 +12,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from src.app.accounts.persistence.models import User  # noqa: F401
-from src.app.entities.search_config import SearchConfig as SearchConfigEntity
 
 # Import all models to register with Base.metadata
 from src.app.infrastructure.database.models.search_config_model import (  # noqa: F401
@@ -25,6 +24,7 @@ from src.app.infrastructure.database_config import Base
 from src.app.infrastructure.repositories.search_config_repository import (
     SearchConfigRepository,
 )
+from src.app.searches.entities import SavedSearch
 from src.app.stores.persistence.models import Store as StoreModel  # noqa: F401
 
 # ============================================================================
@@ -80,7 +80,7 @@ def sample_store(test_db):
 @pytest.fixture
 def sample_entity(sample_user):
     """Sample SearchConfig entity (no id, no source websites)."""
-    return SearchConfigEntity(
+    return SavedSearch(
         search_term="iPhone 13",
         is_active=True,
         frequency_days=1,
@@ -122,7 +122,7 @@ class TestCreateSearchConfig:
         When: create is called
         Then: M2M relationship is persisted and ids are returned
         """
-        entity = SearchConfigEntity(
+        entity = SavedSearch(
             search_term="Laptop",
             user_id=sample_user.id,
             source_website_ids=[sample_store.id],
@@ -140,8 +140,8 @@ class TestCreateSearchConfig:
         When: both are created
         Then: They receive distinct IDs
         """
-        e1 = SearchConfigEntity(search_term="iPhone", user_id=sample_user.id)
-        e2 = SearchConfigEntity(search_term="Samsung", user_id=sample_user.id)
+        e1 = SavedSearch(search_term="iPhone", user_id=sample_user.id)
+        e2 = SavedSearch(search_term="Samsung", user_id=sample_user.id)
 
         r1 = search_config_repository.create(e1)
         r2 = search_config_repository.create(e2)
@@ -189,8 +189,8 @@ class TestGetSearchConfigsByUserId:
         When: get_by_user_id is called
         Then: Returns both entities
         """
-        e1 = SearchConfigEntity(search_term="iPhone", user_id=sample_user.id)
-        e2 = SearchConfigEntity(search_term="iPad", user_id=sample_user.id)
+        e1 = SavedSearch(search_term="iPhone", user_id=sample_user.id)
+        e2 = SavedSearch(search_term="iPad", user_id=sample_user.id)
         search_config_repository.create(e1)
         search_config_repository.create(e2)
 
@@ -223,7 +223,7 @@ class TestGetSearchConfigByTermAndUserId:
         Then: Returns the entity
         """
         search_config_repository.create(
-            SearchConfigEntity(search_term="Xbox", user_id=sample_user.id)
+            SavedSearch(search_term="Xbox", user_id=sample_user.id)
         )
         result = search_config_repository.get_by_search_term_and_user_id(
             "Xbox", sample_user.id
@@ -259,10 +259,10 @@ class TestGetAllSearchConfigs:
         Then: Returns (list, total=2)
         """
         search_config_repository.create(
-            SearchConfigEntity(search_term="iPhone", user_id=sample_user.id)
+            SavedSearch(search_term="iPhone", user_id=sample_user.id)
         )
         search_config_repository.create(
-            SearchConfigEntity(search_term="Android", user_id=sample_user.id)
+            SavedSearch(search_term="Android", user_id=sample_user.id)
         )
 
         results, total = search_config_repository.get_all(limit=10, offset=0)
@@ -278,7 +278,7 @@ class TestGetAllSearchConfigs:
         """
         for term in ["iPhone", "Android", "Windows"]:
             search_config_repository.create(
-                SearchConfigEntity(search_term=term, user_id=sample_user.id)
+                SavedSearch(search_term=term, user_id=sample_user.id)
             )
 
         results, total = search_config_repository.get_all(limit=2, offset=0)
@@ -298,7 +298,7 @@ class TestUpdateSearchConfig:
         """
         created = search_config_repository.create(sample_entity)
 
-        updated_entity = SearchConfigEntity(
+        updated_entity = SavedSearch(
             id=created.id,
             search_term="iPhone 14 Pro",
             is_active=False,
@@ -335,10 +335,10 @@ class TestUpdateSearchConfig:
         Then: M2M relationship is updated
         """
         created = search_config_repository.create(
-            SearchConfigEntity(search_term="Laptop", user_id=sample_user.id)
+            SavedSearch(search_term="Laptop", user_id=sample_user.id)
         )
 
-        updated_entity = SearchConfigEntity(
+        updated_entity = SavedSearch(
             id=created.id,
             search_term="Laptop",
             is_active=True,

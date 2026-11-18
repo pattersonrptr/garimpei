@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from src.app.entities.search_config import SearchConfig as SearchConfigEntity
+from src.app.searches.entities import SavedSearch
 from src.app.use_cases.search_config_use_cases import (
     CreateSearchConfigUseCase,
     DeleteSearchConfigUseCase,
@@ -27,7 +27,7 @@ def mock_repo():
 
 @pytest.fixture
 def sample_entity():
-    return SearchConfigEntity(
+    return SavedSearch(
         id=1,
         search_term="iPhone 13",
         is_active=True,
@@ -43,7 +43,7 @@ def sample_entity():
 @pytest.fixture
 def new_entity():
     """Entity without id (before persistence)."""
-    return SearchConfigEntity(
+    return SavedSearch(
         search_term="Samsung S23",
         is_active=True,
         frequency_days=2,
@@ -196,7 +196,7 @@ class TestUpdateSearchConfigUseCase:
         When: execute is called
         Then: Returns updated entity
         """
-        updated = SearchConfigEntity(
+        updated = SavedSearch(
             id=1,
             search_term="iPhone 14",
             is_active=True,

@@ -12,9 +12,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from src.app.accounts.persistence.models import User  # noqa: F401
-from src.app.entities.search_execution_log import (
-    SearchExecutionLog as SearchExecutionLogEntity,
-)
 
 # Import all models to register with Base.metadata
 from src.app.infrastructure.database.models.search_config_model import (  # noqa: F401
@@ -30,6 +27,7 @@ from src.app.infrastructure.database_config import Base
 from src.app.infrastructure.repositories.search_execution_log_repository import (
     SearchExecutionLogRepository,
 )
+from src.app.searches.entities import SearchRun
 from src.app.stores.persistence.models import Store as StoreModel  # noqa: F401
 
 # ============================================================================
@@ -86,7 +84,7 @@ def sample_search_config(test_db, sample_user):
 @pytest.fixture
 def sample_entity(sample_search_config):
     """Sample SearchExecutionLog entity (no id)."""
-    return SearchExecutionLogEntity(
+    return SearchRun(
         search_config_id=sample_search_config.id,
         status="pending",
     )
@@ -111,14 +109,10 @@ class TestCreateSearchExecutionLog:
         self, search_execution_log_repository, sample_search_config
     ):
         r1 = search_execution_log_repository.create(
-            SearchExecutionLogEntity(
-                search_config_id=sample_search_config.id, status="pending"
-            )
+            SearchRun(search_config_id=sample_search_config.id, status="pending")
         )
         r2 = search_execution_log_repository.create(
-            SearchExecutionLogEntity(
-                search_config_id=sample_search_config.id, status="success"
-            )
+            SearchRun(search_config_id=sample_search_config.id, status="success")
         )
         assert r1.id != r2.id
 
@@ -126,7 +120,7 @@ class TestCreateSearchExecutionLog:
         self, search_execution_log_repository, sample_search_config
     ):
         now = datetime.now(UTC).replace(microsecond=0)
-        entity = SearchExecutionLogEntity(
+        entity = SearchRun(
             search_config_id=sample_search_config.id,
             status="failed",
             results_count=0,
@@ -160,14 +154,10 @@ class TestReadSearchExecutionLog:
         self, search_execution_log_repository, sample_search_config
     ):
         search_execution_log_repository.create(
-            SearchExecutionLogEntity(
-                search_config_id=sample_search_config.id, status="pending"
-            )
+            SearchRun(search_config_id=sample_search_config.id, status="pending")
         )
         search_execution_log_repository.create(
-            SearchExecutionLogEntity(
-                search_config_id=sample_search_config.id, status="success"
-            )
+            SearchRun(search_config_id=sample_search_config.id, status="success")
         )
 
         results = search_execution_log_repository.get_by_search_config_id(
@@ -187,9 +177,7 @@ class TestReadSearchExecutionLog:
     ):
         for _ in range(5):
             search_execution_log_repository.create(
-                SearchExecutionLogEntity(
-                    search_config_id=sample_search_config.id, status="success"
-                )
+                SearchRun(search_config_id=sample_search_config.id, status="success")
             )
 
         results, total = search_execution_log_repository.get_all(limit=3, offset=0)
@@ -202,9 +190,7 @@ class TestReadSearchExecutionLog:
     ):
         for _ in range(5):
             search_execution_log_repository.create(
-                SearchExecutionLogEntity(
-                    search_config_id=sample_search_config.id, status="pending"
-                )
+                SearchRun(search_config_id=sample_search_config.id, status="pending")
             )
 
         results, total = search_execution_log_repository.get_all(limit=3, offset=3)
@@ -239,14 +225,10 @@ class TestDeleteSearchExecutionLog:
         self, search_execution_log_repository, sample_search_config
     ):
         r1 = search_execution_log_repository.create(
-            SearchExecutionLogEntity(
-                search_config_id=sample_search_config.id, status="pending"
-            )
+            SearchRun(search_config_id=sample_search_config.id, status="pending")
         )
         r2 = search_execution_log_repository.create(
-            SearchExecutionLogEntity(
-                search_config_id=sample_search_config.id, status="success"
-            )
+            SearchRun(search_config_id=sample_search_config.id, status="success")
         )
 
         search_execution_log_repository.delete(r1.id)
