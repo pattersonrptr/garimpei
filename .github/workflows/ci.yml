@@ -102,6 +102,10 @@ jobs:
             src/app/stores/persistence/repositories.py \
             src/app/stores/use_cases.py \
             src/app/stores/wiring.py \
+            src/app/stores/http/store_schema.py \
+            src/app/stores/http/store_presenter.py \
+            src/app/stores/http/validators.py \
+            src/app/stores/http/store_controller.py \
             src/app/catalog/adapters/stores.py \
             src/app/billing/ports.py \
             src/app/billing/persistence/models.py \

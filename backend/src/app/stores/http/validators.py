@@ -2,7 +2,7 @@ from src.app.stores.ports import StoreRepositoryInterface
 from src.common.jsonapi import JsonApiError
 
 
-class SourceWebsiteValidator:
+class StoreValidator:
     def __init__(self, source_website_repo: StoreRepositoryInterface):
         self.source_website_repo = source_website_repo
 

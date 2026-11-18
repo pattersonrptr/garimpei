@@ -47,7 +47,7 @@ from src.app.interfaces.http.controllers.search_config_controller import (
 from src.app.interfaces.http.controllers.search_execution_log_controller import (
     router as search_execution_log_controller,
 )
-from src.app.interfaces.http.controllers.source_website_controller import (
+from src.app.stores.http.store_controller import (
     router as source_website_controller,
 )
 

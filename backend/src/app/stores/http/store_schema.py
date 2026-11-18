@@ -11,7 +11,7 @@ from src.common.jsonapi import (
 )
 
 
-class SourceWebsiteAttributes(BaseModel):
+class StoreAttributes(BaseModel):
     """Source website attributes for responses."""
 
     name: str
@@ -21,7 +21,7 @@ class SourceWebsiteAttributes(BaseModel):
     updated_at: datetime | None = None
 
 
-class SourceWebsiteAttributesForCreation(BaseModel):
+class StoreAttributesForCreation(BaseModel):
     """Attributes for source website creation."""
 
     name: str
@@ -29,7 +29,7 @@ class SourceWebsiteAttributesForCreation(BaseModel):
     is_active: bool = True
 
 
-class SourceWebsiteAttributesForUpdate(BaseModel):
+class StoreAttributesForUpdate(BaseModel):
     """Attributes for source website update — all fields optional."""
 
     name: str | None = None
@@ -37,55 +37,55 @@ class SourceWebsiteAttributesForUpdate(BaseModel):
     is_active: bool | None = None
 
 
-class SourceWebsiteResource(ResourceObject):
+class StoreResource(ResourceObject):
     """Source website resource following JSON:API specification."""
 
     type: str = Field(default="source_websites", examples=["source_websites"])
-    attributes: SourceWebsiteAttributes
+    attributes: StoreAttributes
 
     @classmethod
-    def from_entity(cls, entity) -> "SourceWebsiteResource":
-        """Factory method: converts a SourceWebsiteEntity to SourceWebsiteResource."""
+    def from_entity(cls, entity) -> "StoreResource":
+        """Factory method: converts a StoreEntity to StoreResource."""
         return cls.from_model(
             entity,
             type_name="source_websites",
-            attributes_field=SourceWebsiteAttributes,
+            attributes_field=StoreAttributes,
         )
 
 
-class SourceWebsiteResourceForCreation(ResourceObjectForCreation):
+class StoreResourceForCreation(ResourceObjectForCreation):
     """ResourceObject for source website creation (without id)."""
 
     type: str = Field(default="source_websites", examples=["source_websites"])
-    attributes: SourceWebsiteAttributesForCreation
+    attributes: StoreAttributesForCreation
 
 
-class SourceWebsiteResourceForUpdate(ResourceObjectForCreation):
+class StoreResourceForUpdate(ResourceObjectForCreation):
     """ResourceObject for source website update (without id)."""
 
     type: str = Field(default="source_websites", examples=["source_websites"])
-    attributes: SourceWebsiteAttributesForUpdate
+    attributes: StoreAttributesForUpdate
 
 
-class SourceWebsiteCreateRequest(SingleResourceRequest):
+class StoreCreateRequest(SingleResourceRequest):
     """Request schema for creating a source website."""
 
-    data: SourceWebsiteResourceForCreation
+    data: StoreResourceForCreation
 
 
-class SourceWebsiteUpdateRequest(SingleResourceRequest):
+class StoreUpdateRequest(SingleResourceRequest):
     """Request schema for updating a source website."""
 
-    data: SourceWebsiteResourceForUpdate
+    data: StoreResourceForUpdate
 
 
-class SourceWebsiteReadResponse(SingleResourceResponse):
+class StoreReadResponse(SingleResourceResponse):
     """Response schema for a single source website."""
 
-    data: SourceWebsiteResource
+    data: StoreResource
 
 
-class SourceWebsitesCollectionResponse(CollectionResponse):
+class StoresCollectionResponse(CollectionResponse):
     """Response schema for a collection of source websites."""
 
-    data: list[SourceWebsiteResource]
+    data: list[StoreResource]  # type: ignore[assignment]
