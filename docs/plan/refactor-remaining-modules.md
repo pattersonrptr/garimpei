@@ -57,6 +57,7 @@ characterization tests first, in their own PR, reviewed by the author.
 | Stores slice 5: HTTP | #213 | Move Function + Rename Class | `source_website_schema`, `source_website_presenter`, `source_website_validator` and `source_website_controller` leave `interfaces/http/` and `domain/validators/` for `stores/http/` (`store_schema.py`, `store_presenter.py`, `validators.py`, `store_controller.py`), with `Store*` class names; the controller gets the repository from `stores/wiring.py` (`stores`). URLs, the JSON:API type, bodies and error texts are unchanged; only the OpenAPI component names now say `Store*` (nothing generates code from them). Tests: the validator and presenter tests move to `tests/unit/stores/` and the controller e2e file is renamed `test_store_controller.py`; imports and class names only. The four files join the blocking mypy step. **Stores module done** |
 | Store test fixtures renamed | #214 | Rename Variable | Proposed after the stores module and agreed by the author (Nov 18, 2026) as its own PR: the test fixtures `sample_source_website`, `sample_source_website_entity` and `sample_source_website_collection` become `sample_store`, `sample_store_entity` and `sample_store_collection` in 19 test files. Names only; no assertion changed |
 | Characterization tests for saved searches | #215 | — | Before search configs and their runs move into their own module (chosen by the author, Nov 18, 2026). A mutation run (28 mutations over the search-config and execution-log controllers, use cases, repositories, validator, `manual_run_violation` and the stale-run rule) left 12 survivors; 8 e2e tests in `test_saved_searches_characterization.py` kill all 12: the list shows the newest config first; a regular user gets 403 listing another user's configs; a partial update keeps the fields left out (term, `is_active`, frequency, metadata, stores); "Run Now" on an own config with no alert answers 404, and with more stores than the plan allows 403 `PLAN_LIMIT_REACHED` (`max_sources`); `execution-status` says `idle` before any run and shows a failed run's `error_message`; a config's runs list the latest first |
+| Saved searches module plan | (this PR) | — | Six slices, approved by the author (Nov 18, 2026): see *Saved searches module plan* below |
 
 ## Accounts module plan
 
@@ -144,6 +145,52 @@ Left for the queue: catalog's and alerts' persistence join the stores table
 for the store name (persistence coupling, like catalog → alerts before #182);
 the search-config validator only changes its import until saved searches get
 a module; deleting a store that has offers answers 500.
+
+## Saved searches module plan
+
+Approved by the author (Nov 18, 2026). `searches` holds the
+collector searches (today "search configs") and their runs (today "search
+execution logs"); the characterization tests (#215) pin their behavior.
+Inside the module the code says `SavedSearch` and `SearchRun`; the HTTP
+contract stays as it is (`/search-configs/`, `/search-execution-logs/`, the
+JSON:API types, the `search_configs`, `search_config_source_website` and
+`search_execution_logs` tables), since the scrapers, the admin and the site
+use it. One PR per slice, behavior unchanged:
+
+1. **Entities**: `SearchConfig` and `SearchExecutionLog` (Pydantic models)
+   become the pure dataclasses `SavedSearch` and `SearchRun` in
+   `searches/entities.py`, with the run statuses and `is_stale_run` from
+   `domain/search_runs.py`; the repositories map fields one by one (Replace
+   Pydantic model with dataclass + Rename Class + Move Function).
+2. **Persistence**: the three ORM models, both repositories and their
+   interfaces move to `searches/persistence/` and `searches/ports.py` (Move
+   Class + Rename Class); accounts', stores' and alerts' relationship names
+   and the admin and dashboard imports follow.
+3. **Use cases**: the pass-through use cases of both move to
+   `searches/use_cases.py`; the partial-update merge and the "exists, or
+   404" checks leave the controller (Extract Function + Move Function +
+   Introduce Parameter Object, like `StoreChanges`).
+4. **Run Now**: the trigger's rules leave the controller for a
+   `RunSearchNowUseCase`. It asks through ports searches owns: which alerts
+   use a search (adapter over alerts; also the delete's "in use" check, now
+   on alerts' repository), the user's plan limits (adapter over billing) and
+   the dispatch to the scrapers (adapter over `celery_client`).
+   `source_limit_violation` and `manual_run_violation` move from
+   `domain/plan_limits.py` into searches, which owns its limit rules like
+   alerts does since #203 (Inappropriate Intimacy → Extract Interface +
+   Move Function).
+5. **Consumers**: alerts' `KeywordSearches` adapter is built over searches'
+   use cases from `searches/wiring.py` instead of the old repository
+   (Inappropriate Intimacy → adapter over use cases, like stores #212).
+6. **HTTP**: the schemas, presenters, validators and controllers of both
+   move to `searches/http/`, built by `searches/wiring.py`; the
+   search-config validator checks stores through a searches-owned port
+   instead of importing stores' (Move Function + Extract Interface).
+
+Left for the queue: the admin and dashboard controllers query the run ORM
+model directly (they move when admin gets its home); searches' persistence
+joins the stores table through `search_config_source_website`; the 404/403
+and non-JSON:API answers found by the characterization.
 
 ## Queue
 
