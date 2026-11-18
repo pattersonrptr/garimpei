@@ -49,7 +49,7 @@ def product_repository(test_db):
 
 
 @pytest.fixture
-def sample_source_website(test_db):
+def sample_store(test_db):
     """Creates a SourceWebsite in the database for foreign key references."""
     source_website = StoreModel(
         name="OLX",
@@ -63,7 +63,7 @@ def sample_source_website(test_db):
 
 
 @pytest.fixture
-def sample_product_entity(sample_source_website):
+def sample_product_entity(sample_store):
     """Sample product entity for testing."""
     return ProductEntity(
         url="https://www.olx.com.br/item/iphone-13",
@@ -73,7 +73,7 @@ def sample_product_entity(sample_source_website):
         condition=ProductCondition.USED,
         seller_name="João Silva",
         is_available=True,
-        source_website_id=sample_source_website.id,
+        source_website_id=sample_store.id,
     )
 
 
@@ -110,7 +110,7 @@ class TestProductRepositoryCreate:
         assert found.url == created_product.url
 
     def test_create_product_should_use_default_values(
-        self, product_repository, sample_source_website
+        self, product_repository, sample_store
     ):
         """
         Given: Product entity with only required fields
@@ -121,7 +121,7 @@ class TestProductRepositoryCreate:
         minimal_product = ProductEntity(
             url="https://www.olx.com.br/item/minimal",
             title="Minimal Product",
-            source_website_id=sample_source_website.id,
+            source_website_id=sample_store.id,
         )
 
         # When
@@ -197,7 +197,7 @@ class TestProductRepositoryRead:
         )
 
     def test_get_all_should_return_products_and_total(
-        self, product_repository, sample_source_website
+        self, product_repository, sample_store
     ):
         """
         Given: Multiple products in database
@@ -210,7 +210,7 @@ class TestProductRepositoryRead:
                 ProductEntity(
                     url=f"https://www.olx.com.br/item/product-{i}",
                     title=f"Product {i}",
-                    source_website_id=sample_source_website.id,
+                    source_website_id=sample_store.id,
                 )
             )
 
@@ -222,7 +222,7 @@ class TestProductRepositoryRead:
         assert len(products) == 3
 
     def test_get_all_with_pagination_should_return_correct_slice(
-        self, product_repository, sample_source_website
+        self, product_repository, sample_store
     ):
         """
         Given: 5 products in database
@@ -235,7 +235,7 @@ class TestProductRepositoryRead:
                 ProductEntity(
                     url=f"https://www.olx.com.br/item/product-{i}",
                     title=f"Product {i}",
-                    source_website_id=sample_source_website.id,
+                    source_website_id=sample_store.id,
                 )
             )
 
@@ -387,10 +387,10 @@ class TestProductRepositoryFreshness:
         self.assert_latest_point(product)
 
     def test_search_carries_the_last_check(
-        self, product_repository, offer_with_points, sample_source_website
+        self, product_repository, offer_with_points, sample_store
     ):
         (product,), _ = product_repository.search_by_term_and_sources(
-            "iPhone", [sample_source_website.id]
+            "iPhone", [sample_store.id]
         )
 
         self.assert_latest_point(product)

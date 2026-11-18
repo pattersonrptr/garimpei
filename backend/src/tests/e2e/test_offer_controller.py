@@ -63,11 +63,11 @@ def payload(source_website_id, **changes):
 
 class TestIngestOffer:
     def test_new_offer_returns_201_linked_to_the_book(
-        self, client, staff_auth_headers, sample_source_website, known_book, test_db
+        self, client, staff_auth_headers, sample_store, known_book, test_db
     ):
         response = client.post(
             "/offers/",
-            json=payload(sample_source_website.id),
+            json=payload(sample_store.id),
             headers=staff_auth_headers,
         )
 
@@ -81,17 +81,17 @@ class TestIngestOffer:
         assert attributes["canonical_product_id"] == book.id
 
     def test_same_url_again_returns_200_and_adds_history(
-        self, client, staff_auth_headers, sample_source_website, known_book, test_db
+        self, client, staff_auth_headers, sample_store, known_book, test_db
     ):
         client.post(
             "/offers/",
-            json=payload(sample_source_website.id, price=28.5),
+            json=payload(sample_store.id, price=28.5),
             headers=staff_auth_headers,
         )
 
         response = client.post(
             "/offers/",
-            json=payload(sample_source_website.id, price=26.0),
+            json=payload(sample_store.id, price=26.0),
             headers=staff_auth_headers,
         )
 
@@ -103,29 +103,27 @@ class TestIngestOffer:
         assert prices == [28.5, 26.0]
 
     def test_regular_users_cannot_ingest(
-        self, client, auth_headers, sample_source_website, known_book
+        self, client, auth_headers, sample_store, known_book
     ):
         response = client.post(
-            "/offers/", json=payload(sample_source_website.id), headers=auth_headers
+            "/offers/", json=payload(sample_store.id), headers=auth_headers
         )
 
         assert response.status_code == 403
 
-    def test_anonymous_requests_are_rejected(
-        self, client, sample_source_website, known_book
-    ):
-        response = client.post("/offers/", json=payload(sample_source_website.id))
+    def test_anonymous_requests_are_rejected(self, client, sample_store, known_book):
+        response = client.post("/offers/", json=payload(sample_store.id))
 
         # FastAPI's HTTPBearer answers 403 when no token is sent (same as the
         # other endpoints' tests accept).
         assert response.status_code in (401, 403)
 
     def test_invalid_isbn_returns_422(
-        self, client, staff_auth_headers, sample_source_website, known_book, test_db
+        self, client, staff_auth_headers, sample_store, known_book, test_db
     ):
         response = client.post(
             "/offers/",
-            json=payload(sample_source_website.id, isbn="9788535914848"),
+            json=payload(sample_store.id, isbn="9788535914848"),
             headers=staff_auth_headers,
         )
 
@@ -134,13 +132,13 @@ class TestIngestOffer:
         assert test_db.query(ProductModel).count() == 0
 
     def test_unknown_book_returns_422(
-        self, client, staff_auth_headers, sample_source_website, use_metadata
+        self, client, staff_auth_headers, sample_store, use_metadata
     ):
         use_metadata(StubMetadata(book=None))
 
         response = client.post(
             "/offers/",
-            json=payload(sample_source_website.id),
+            json=payload(sample_store.id),
             headers=staff_auth_headers,
         )
 
@@ -148,7 +146,7 @@ class TestIngestOffer:
         assert response.json()["errors"][0]["code"] == "UNKNOWN_ISBN"
 
     def test_unknown_store_returns_422(
-        self, client, staff_auth_headers, sample_source_website, known_book
+        self, client, staff_auth_headers, sample_store, known_book
     ):
         response = client.post(
             "/offers/", json=payload(9999), headers=staff_auth_headers
@@ -158,11 +156,11 @@ class TestIngestOffer:
         assert response.json()["errors"][0]["code"] == "UNKNOWN_SOURCE_WEBSITE"
 
     def test_non_positive_price_is_rejected(
-        self, client, staff_auth_headers, sample_source_website, known_book, test_db
+        self, client, staff_auth_headers, sample_store, known_book, test_db
     ):
         response = client.post(
             "/offers/",
-            json=payload(sample_source_website.id, price=0),
+            json=payload(sample_store.id, price=0),
             headers=staff_auth_headers,
         )
 
@@ -170,13 +168,13 @@ class TestIngestOffer:
         assert test_db.query(ProductModel).count() == 0
 
     def test_metadata_source_down_returns_503(
-        self, client, staff_auth_headers, sample_source_website, use_metadata, test_db
+        self, client, staff_auth_headers, sample_store, use_metadata, test_db
     ):
         use_metadata(StubMetadata(error=BookMetadataUnavailableError("timeout")))
 
         response = client.post(
             "/offers/",
-            json=payload(sample_source_website.id),
+            json=payload(sample_store.id),
             headers=staff_auth_headers,
         )
 
@@ -187,7 +185,7 @@ class TestIngestOffer:
 
 class TestCollectionQueue:
     def test_lists_books_the_store_never_priced_before_priced_ones(
-        self, client, staff_auth_headers, sample_source_website, known_book, test_db
+        self, client, staff_auth_headers, sample_store, known_book, test_db
     ):
         test_db.add(
             CanonicalProductModel(
@@ -200,13 +198,13 @@ class TestCollectionQueue:
         test_db.commit()
         client.post(
             "/offers/",
-            json=payload(sample_source_website.id),
+            json=payload(sample_store.id),
             headers=staff_auth_headers,
         )
 
         response = client.get(
             "/offers/collection-queue",
-            params={"store": sample_source_website.name},
+            params={"store": sample_store.name},
             headers=staff_auth_headers,
         )
 
@@ -226,10 +224,10 @@ class TestCollectionQueue:
         assert response.status_code == 404
         assert response.json()["errors"][0]["code"] == "UNKNOWN_SOURCE_WEBSITE"
 
-    def test_requires_staff(self, client, auth_headers, sample_source_website):
+    def test_requires_staff(self, client, auth_headers, sample_store):
         response = client.get(
             "/offers/collection-queue",
-            params={"store": sample_source_website.name},
+            params={"store": sample_store.name},
             headers=auth_headers,
         )
 

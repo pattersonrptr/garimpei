@@ -63,7 +63,7 @@ class TestPriceAlertSoftDelete:
         staff_auth_headers,
         test_db,
         sample_staff_user,
-        sample_source_website,
+        sample_store,
     ):
         """
         Given: An existing active price alert
@@ -179,7 +179,7 @@ class TestDashboardSummary:
         staff_auth_headers,
         test_db,
         sample_staff_user,
-        sample_source_website,
+        sample_store,
     ):
         """
         Given: A staff user with alerts and matching products
@@ -214,7 +214,7 @@ class TestDashboardSummary:
         test_db.execute(
             price_alert_source_website.insert().values(
                 price_alert_id=alert.id,
-                source_website_id=sample_source_website.id,
+                source_website_id=sample_store.id,
             )
         )
         test_db.commit()
@@ -225,7 +225,7 @@ class TestDashboardSummary:
             title="Great Phone Deal",
             condition=ProductCondition.NEW,
             is_available=True,
-            source_website_id=sample_source_website.id,
+            source_website_id=sample_store.id,
         )
         test_db.add(product)
         test_db.commit()
@@ -313,7 +313,7 @@ class TestOpportunitiesEndpoint:
         staff_auth_headers,
         test_db,
         sample_staff_user,
-        sample_source_website,
+        sample_store,
     ):
         """
         Given: An alert with max_price=500 and products at various prices
@@ -346,7 +346,7 @@ class TestOpportunitiesEndpoint:
         test_db.execute(
             price_alert_source_website.insert().values(
                 price_alert_id=alert.id,
-                source_website_id=sample_source_website.id,
+                source_website_id=sample_store.id,
             )
         )
         test_db.commit()
@@ -357,14 +357,14 @@ class TestOpportunitiesEndpoint:
             title="Budget Headphones",
             condition=ProductCondition.NEW,
             is_available=True,
-            source_website_id=sample_source_website.id,
+            source_website_id=sample_store.id,
         )
         expensive = ProductModel(
             url="https://test.example.com/headphones/expensive",
             title="Premium Headphones",
             condition=ProductCondition.NEW,
             is_available=True,
-            source_website_id=sample_source_website.id,
+            source_website_id=sample_store.id,
         )
         test_db.add_all([cheap, expensive])
         test_db.commit()
@@ -403,7 +403,7 @@ class TestOpportunitiesEndpoint:
         staff_auth_headers,
         test_db,
         sample_staff_user,
-        sample_source_website,
+        sample_store,
     ):
         """
         Given: An alert with multiple matching products
@@ -435,7 +435,7 @@ class TestOpportunitiesEndpoint:
         test_db.execute(
             price_alert_source_website.insert().values(
                 price_alert_id=alert.id,
-                source_website_id=sample_source_website.id,
+                source_website_id=sample_store.id,
             )
         )
         test_db.commit()
@@ -446,7 +446,7 @@ class TestOpportunitiesEndpoint:
                 title=f"Earbuds Model {i}",
                 condition=ProductCondition.NEW,
                 is_available=True,
-                source_website_id=sample_source_website.id,
+                source_website_id=sample_store.id,
             )
             test_db.add(p)
             test_db.commit()
@@ -474,7 +474,7 @@ class TestCleanupProducts:
     """Test POST /admin/cleanup-products endpoint."""
 
     def test_dry_run_returns_eligible_count(
-        self, client, superuser_auth_headers, test_db, sample_source_website
+        self, client, superuser_auth_headers, test_db, sample_store
     ):
         """
         Given: Old orphaned products
@@ -486,7 +486,7 @@ class TestCleanupProducts:
             title="Orphaned Old Product",
             condition=ProductCondition.NEW,
             is_available=True,
-            source_website_id=sample_source_website.id,
+            source_website_id=sample_store.id,
             updated_at=datetime.now(UTC) - timedelta(days=5),
         )
         test_db.add(old_product)
@@ -512,7 +512,7 @@ class TestCleanupProducts:
         assert still_exists is not None
 
     def test_cleanup_deletes_orphaned_products(
-        self, client, superuser_auth_headers, test_db, sample_source_website
+        self, client, superuser_auth_headers, test_db, sample_store
     ):
         """
         Given: Old orphaned products
@@ -524,7 +524,7 @@ class TestCleanupProducts:
             title="Orphaned Product",
             condition=ProductCondition.NEW,
             is_available=True,
-            source_website_id=sample_source_website.id,
+            source_website_id=sample_store.id,
             updated_at=datetime.now(UTC) - timedelta(days=5),
         )
         test_db.add(old_product)

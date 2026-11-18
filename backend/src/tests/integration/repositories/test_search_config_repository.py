@@ -64,7 +64,7 @@ def sample_user(test_db):
 
 
 @pytest.fixture
-def sample_source_website(test_db):
+def sample_store(test_db):
     """Creates a SourceWebsite for M2M references."""
     sw = StoreModel(
         name="OLX",
@@ -115,7 +115,7 @@ class TestCreateSearchConfig:
         assert result.source_website_ids == []
 
     def test_create_with_source_websites_persists_m2m(
-        self, search_config_repository, sample_user, sample_source_website
+        self, search_config_repository, sample_user, sample_store
     ):
         """
         Given: A search config entity with source_website_ids
@@ -125,12 +125,12 @@ class TestCreateSearchConfig:
         entity = SearchConfigEntity(
             search_term="Laptop",
             user_id=sample_user.id,
-            source_website_ids=[sample_source_website.id],
+            source_website_ids=[sample_store.id],
         )
         result = search_config_repository.create(entity)
 
         assert result.id is not None
-        assert result.source_website_ids == [sample_source_website.id]
+        assert result.source_website_ids == [sample_store.id]
 
     def test_create_two_configs_assigns_different_ids(
         self, search_config_repository, sample_user
@@ -327,7 +327,7 @@ class TestUpdateSearchConfig:
         assert result is None
 
     def test_update_syncs_source_websites(
-        self, search_config_repository, sample_user, sample_source_website
+        self, search_config_repository, sample_user, sample_store
     ):
         """
         Given: A search config without source websites
@@ -345,11 +345,11 @@ class TestUpdateSearchConfig:
             frequency_days=1,
             preferred_time=time(0, 0),
             user_id=sample_user.id,
-            source_website_ids=[sample_source_website.id],
+            source_website_ids=[sample_store.id],
         )
         result = search_config_repository.update(created.id, updated_entity)
 
-        assert result.source_website_ids == [sample_source_website.id]
+        assert result.source_website_ids == [sample_store.id]
 
 
 class TestDeleteSearchConfig:

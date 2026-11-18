@@ -301,7 +301,7 @@ def staff_auth_headers(staff_token):
 
 
 @pytest.fixture(scope="function")
-def sample_source_website(test_db):
+def sample_store(test_db):
     """
     Create a sample source website in the database (required FK for products).
 
@@ -320,7 +320,7 @@ def sample_source_website(test_db):
 
 
 @pytest.fixture(scope="function")
-def sample_product(test_db, sample_source_website):
+def sample_product(test_db, sample_store):
     """
     Create a sample product in the database.
 
@@ -336,7 +336,7 @@ def sample_product(test_db, sample_source_website):
         description="A test product description",
         condition=ProductCondition.NEW,
         is_available=True,
-        source_website_id=sample_source_website.id,
+        source_website_id=sample_store.id,
     )
     test_db.add(product)
     test_db.commit()

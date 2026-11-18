@@ -31,7 +31,7 @@ def a_listing(test_db, title, price, store_id, available=True):
 
 
 @pytest.fixture
-def alert(test_db, sample_user, sample_source_website):
+def alert(test_db, sample_user, sample_store):
     """A keyword alert on "headphones", max R$ 500, watching one store."""
     alert = PriceAlertModel(
         search_term="headphones",
@@ -44,7 +44,7 @@ def alert(test_db, sample_user, sample_source_website):
     test_db.commit()
     test_db.execute(
         price_alert_source_website.insert().values(
-            price_alert_id=alert.id, source_website_id=sample_source_website.id
+            price_alert_id=alert.id, source_website_id=sample_store.id
         )
     )
     test_db.commit()
@@ -52,9 +52,9 @@ def alert(test_db, sample_user, sample_source_website):
 
 
 @pytest.fixture
-def listings(test_db, sample_source_website):
+def listings(test_db, sample_store):
     """Matching listings at 800, 200 and 450, plus ones the alert never shows."""
-    store = sample_source_website.id
+    store = sample_store.id
     other_store = StoreModel(name="Other", base_url="https://other.example")
     test_db.add(other_store)
     test_db.commit()
