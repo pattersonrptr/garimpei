@@ -15,9 +15,7 @@ import pytest
 from passlib.context import CryptContext
 
 from src.app.accounts.persistence.models import User
-from src.app.infrastructure.database.models.search_execution_log_model import (
-    SearchExecutionLog as SearchExecutionLogModel,
-)
+from src.app.searches.persistence.models import SearchRun as SearchRunModel
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -109,7 +107,7 @@ def user_alert(client, auth_headers, sample_user, sample_store):
 
 
 def _add_run(test_db, search_config_id, minutes_ago, status="success"):
-    log = SearchExecutionLogModel(
+    log = SearchRunModel(
         search_config_id=search_config_id,
         status=status,
         started_at=datetime.now(UTC) - timedelta(minutes=minutes_ago),

@@ -1,5 +1,5 @@
 """
-Integration tests for SearchExecutionLogRepository.
+Integration tests for SearchRunRepository.
 
 Tests Repository + Database interactions with real SQLAlchemy operations.
 Uses SQLite in-memory for fast, isolated tests.
@@ -12,22 +12,16 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from src.app.accounts.persistence.models import User  # noqa: F401
+from src.app.infrastructure.database_config import Base
+from src.app.searches.entities import SearchRun
 
 # Import all models to register with Base.metadata
-from src.app.infrastructure.database.models.search_config_model import (  # noqa: F401
-    SearchConfig as SearchConfigModel,
-)
-from src.app.infrastructure.database.models.search_config_source_website_model import (  # noqa: F401
+from src.app.searches.persistence.models import SavedSearch as SavedSearchModel  # noqa: F401
+from src.app.searches.persistence.models import SearchRun as SearchRunModel  # noqa: F401
+from src.app.searches.persistence.models import (  # noqa: F401
     search_config_source_website,
 )
-from src.app.infrastructure.database.models.search_execution_log_model import (  # noqa: F401
-    SearchExecutionLog as SearchExecutionLogModel,
-)
-from src.app.infrastructure.database_config import Base
-from src.app.infrastructure.repositories.search_execution_log_repository import (
-    SearchExecutionLogRepository,
-)
-from src.app.searches.entities import SearchRun
+from src.app.searches.persistence.repositories import SearchRunRepository
 from src.app.stores.persistence.models import Store as StoreModel  # noqa: F401
 
 # ============================================================================
@@ -48,7 +42,7 @@ def test_db():
 
 @pytest.fixture
 def search_execution_log_repository(test_db):
-    return SearchExecutionLogRepository(test_db)
+    return SearchRunRepository(test_db)
 
 
 @pytest.fixture
@@ -69,7 +63,7 @@ def sample_user(test_db):
 @pytest.fixture
 def sample_search_config(test_db, sample_user):
     """Creates a SearchConfig for FK references."""
-    config = SearchConfigModel(
+    config = SavedSearchModel(
         search_term="laptop",
         is_active=True,
         frequency_days=1,

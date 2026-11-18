@@ -40,18 +40,14 @@ from src.app.catalog.persistence.models import (
 from src.app.catalog.persistence.models import (
     Product as ProductModel,  # noqa: F401
 )
-from src.app.infrastructure.database.models.search_config_model import (  # noqa: F401
-    SearchConfig as SearchConfigModel,
-)
-from src.app.infrastructure.database.models.search_config_source_website_model import (  # noqa: F401
-    search_config_source_website,
-)
-from src.app.infrastructure.database.models.search_execution_log_model import (  # noqa: F401
-    SearchExecutionLog as SearchExecutionLogModel,
-)
 
 # Then import database config and app
 from src.app.infrastructure.database_config import Base, get_db
+from src.app.searches.persistence.models import SavedSearch as SavedSearchModel  # noqa: F401
+from src.app.searches.persistence.models import SearchRun as SearchRunModel  # noqa: F401
+from src.app.searches.persistence.models import (  # noqa: F401
+    search_config_source_website,
+)
 from src.app.stores.persistence.models import Store as StoreModel  # noqa: F401
 from src.main import app
 
@@ -350,10 +346,10 @@ def sample_search_config(test_db, sample_user):
     Create a sample search config in the database.
 
     Returns:
-        SearchConfigModel: Persisted SearchConfig instance
+        SavedSearchModel: Persisted SearchConfig instance
     """
 
-    config = SearchConfigModel(
+    config = SavedSearchModel(
         search_term="laptop",
         is_active=True,
         frequency_days=1,
@@ -371,10 +367,10 @@ def sample_search_execution_log(test_db, sample_search_config):
     Create a sample search execution log in the database.
 
     Returns:
-        SearchExecutionLogModel: Persisted SearchExecutionLog instance
+        SearchRunModel: Persisted SearchExecutionLog instance
     """
 
-    log = SearchExecutionLogModel(
+    log = SearchRunModel(
         search_config_id=sample_search_config.id,
         status="success",
         results_count=3,

@@ -14,19 +14,15 @@ from sqlalchemy.orm import sessionmaker
 from src.app.accounts.persistence.models import User
 from src.app.alerts.entities import KeywordSearch
 from src.app.alerts.persistence.keyword_searches import SearchConfigKeywordSearches
+from src.app.infrastructure.database_config import Base
+from src.app.searches.entities import SavedSearch
 
 # Import all models to register with Base.metadata
-from src.app.infrastructure.database.models.search_config_model import (  # noqa: F401
-    SearchConfig as SearchConfigModel,
-)
-from src.app.infrastructure.database.models.search_config_source_website_model import (  # noqa: F401
+from src.app.searches.persistence.models import SavedSearch as SavedSearchModel  # noqa: F401
+from src.app.searches.persistence.models import (  # noqa: F401
     search_config_source_website,
 )
-from src.app.infrastructure.database_config import Base
-from src.app.infrastructure.repositories.search_config_repository import (
-    SearchConfigRepository,
-)
-from src.app.searches.entities import SavedSearch
+from src.app.searches.persistence.repositories import SavedSearchRepository
 from src.app.stores.persistence.models import Store as StoreModel
 
 
@@ -63,7 +59,7 @@ def store_ids(db):
 
 @pytest.fixture
 def configs(db):
-    return SearchConfigRepository(db)
+    return SavedSearchRepository(db)
 
 
 @pytest.fixture

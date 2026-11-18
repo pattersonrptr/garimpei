@@ -1,5 +1,5 @@
 """
-Integration tests for SearchConfigRepository.
+Integration tests for SavedSearchRepository.
 
 Tests Repository + Database interactions with real SQLAlchemy operations.
 Uses SQLite in-memory for fast, isolated tests.
@@ -12,19 +12,15 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from src.app.accounts.persistence.models import User  # noqa: F401
+from src.app.infrastructure.database_config import Base
+from src.app.searches.entities import SavedSearch
 
 # Import all models to register with Base.metadata
-from src.app.infrastructure.database.models.search_config_model import (  # noqa: F401
-    SearchConfig as SearchConfigModel,
-)
-from src.app.infrastructure.database.models.search_config_source_website_model import (  # noqa: F401
+from src.app.searches.persistence.models import SavedSearch as SavedSearchModel  # noqa: F401
+from src.app.searches.persistence.models import (  # noqa: F401
     search_config_source_website,
 )
-from src.app.infrastructure.database_config import Base
-from src.app.infrastructure.repositories.search_config_repository import (
-    SearchConfigRepository,
-)
-from src.app.searches.entities import SavedSearch
+from src.app.searches.persistence.repositories import SavedSearchRepository
 from src.app.stores.persistence.models import Store as StoreModel  # noqa: F401
 
 # ============================================================================
@@ -45,7 +41,7 @@ def test_db():
 
 @pytest.fixture
 def search_config_repository(test_db):
-    return SearchConfigRepository(test_db)
+    return SavedSearchRepository(test_db)
 
 
 @pytest.fixture
@@ -96,7 +92,7 @@ def sample_entity(sample_user):
 
 
 class TestCreateSearchConfig:
-    """Tests for SearchConfigRepository.create"""
+    """Tests for SavedSearchRepository.create"""
 
     def test_create_persists_and_returns_entity_with_id(
         self, search_config_repository, sample_entity
@@ -150,7 +146,7 @@ class TestCreateSearchConfig:
 
 
 class TestGetSearchConfigById:
-    """Tests for SearchConfigRepository.get_by_id"""
+    """Tests for SavedSearchRepository.get_by_id"""
 
     def test_get_by_id_returns_entity_when_found(
         self, search_config_repository, sample_entity
@@ -179,7 +175,7 @@ class TestGetSearchConfigById:
 
 
 class TestGetSearchConfigsByUserId:
-    """Tests for SearchConfigRepository.get_by_user_id"""
+    """Tests for SavedSearchRepository.get_by_user_id"""
 
     def test_get_by_user_id_returns_all_configs_for_user(
         self, search_config_repository, sample_user
@@ -214,7 +210,7 @@ class TestGetSearchConfigsByUserId:
 
 
 class TestGetSearchConfigByTermAndUserId:
-    """Tests for SearchConfigRepository.get_by_search_term_and_user_id"""
+    """Tests for SavedSearchRepository.get_by_search_term_and_user_id"""
 
     def test_returns_entity_when_found(self, search_config_repository, sample_user):
         """
@@ -248,7 +244,7 @@ class TestGetSearchConfigByTermAndUserId:
 
 
 class TestGetAllSearchConfigs:
-    """Tests for SearchConfigRepository.get_all"""
+    """Tests for SavedSearchRepository.get_all"""
 
     def test_get_all_returns_all_configs_and_total(
         self, search_config_repository, sample_user
@@ -288,7 +284,7 @@ class TestGetAllSearchConfigs:
 
 
 class TestUpdateSearchConfig:
-    """Tests for SearchConfigRepository.update"""
+    """Tests for SavedSearchRepository.update"""
 
     def test_update_changes_fields(self, search_config_repository, sample_entity):
         """
@@ -353,7 +349,7 @@ class TestUpdateSearchConfig:
 
 
 class TestDeleteSearchConfig:
-    """Tests for SearchConfigRepository.delete"""
+    """Tests for SavedSearchRepository.delete"""
 
     def test_delete_removes_record_and_returns_true(
         self, search_config_repository, sample_entity
