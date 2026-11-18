@@ -102,7 +102,7 @@ class TestEvaluateProductAlerts:
         client,
         staff_auth_headers,
         test_db,
-        sample_source_website,
+        sample_store,
         sample_staff_user,
     ):
         """
@@ -126,7 +126,7 @@ class TestEvaluateProductAlerts:
             title="iPhone 13 128GB Preto",
             condition=ProductCondition.USED,
             is_available=True,
-            source_website_id=sample_source_website.id,
+            source_website_id=sample_store.id,
         )
         test_db.add(product)
         test_db.flush()
@@ -148,7 +148,7 @@ class TestEvaluateProductAlerts:
         test_db.flush()
 
         # Add alert ↔ source_website M2M
-        alert.source_websites.append(sample_source_website)
+        alert.source_websites.append(sample_store)
         test_db.commit()
 
         # Mock email service
@@ -179,7 +179,7 @@ class TestEvaluateProductAlerts:
         client,
         staff_auth_headers,
         test_db,
-        sample_source_website,
+        sample_store,
         sample_staff_user,
     ):
         """
@@ -205,7 +205,7 @@ class TestEvaluateProductAlerts:
             title="Galaxy S24 Ultra",
             condition=ProductCondition.NEW,
             is_available=True,
-            source_website_id=sample_source_website.id,
+            source_website_id=sample_store.id,
         )
         test_db.add(product)
         test_db.flush()
@@ -223,7 +223,7 @@ class TestEvaluateProductAlerts:
         )
         test_db.add(alert)
         test_db.flush()
-        alert.source_websites.append(sample_source_website)
+        alert.source_websites.append(sample_store)
         test_db.flush()
 
         # Pre-existing notification log for this alert + product
@@ -273,7 +273,7 @@ class TestEvaluateProductAlerts:
         client,
         staff_auth_headers,
         test_db,
-        sample_source_website,
+        sample_store,
         sample_staff_user,
     ):
         """
@@ -296,7 +296,7 @@ class TestEvaluateProductAlerts:
             title="iPhone 15 Pro Max",
             condition=ProductCondition.NEW,
             is_available=True,
-            source_website_id=sample_source_website.id,
+            source_website_id=sample_store.id,
         )
         test_db.add(product)
         test_db.flush()
@@ -314,7 +314,7 @@ class TestEvaluateProductAlerts:
         )
         test_db.add(alert)
         test_db.flush()
-        alert.source_websites.append(sample_source_website)
+        alert.source_websites.append(sample_store)
         test_db.commit()
 
         response = client.post(

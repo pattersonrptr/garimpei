@@ -62,7 +62,7 @@ class TestSearchConfigCreate:
         assert "id" in data["data"]
 
     def test_create_with_source_website_ids(
-        self, client, staff_auth_headers, sample_user, sample_source_website, test_db
+        self, client, staff_auth_headers, sample_user, sample_store, test_db
     ):
         """
         Given: Valid payload with existing source_website_ids
@@ -73,16 +73,14 @@ class TestSearchConfigCreate:
             "/search-configs/",
             json=make_create_payload(
                 user_id=sample_user.id,
-                source_website_ids=[sample_source_website.id],
+                source_website_ids=[sample_store.id],
             ),
             headers=staff_auth_headers,
         )
 
         assert response.status_code == 201
         data = response.json()
-        assert (
-            sample_source_website.id in data["data"]["attributes"]["source_website_ids"]
-        )
+        assert sample_store.id in data["data"]["attributes"]["source_website_ids"]
 
     def test_create_with_invalid_type_returns_400(
         self, client, staff_auth_headers, sample_user

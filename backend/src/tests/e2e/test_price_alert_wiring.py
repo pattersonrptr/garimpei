@@ -50,7 +50,7 @@ def mailer():
 
 
 @pytest.fixture
-def alert(test_db, sample_user, sample_source_website):
+def alert(test_db, sample_user, sample_store):
     """A keyword alert on "headphones", max R$ 500, watching one store."""
     alert = PriceAlertModel(
         search_term="headphones",
@@ -63,7 +63,7 @@ def alert(test_db, sample_user, sample_source_website):
     test_db.commit()
     test_db.execute(
         price_alert_source_website.insert().values(
-            price_alert_id=alert.id, source_website_id=sample_source_website.id
+            price_alert_id=alert.id, source_website_id=sample_store.id
         )
     )
     test_db.commit()
@@ -71,9 +71,9 @@ def alert(test_db, sample_user, sample_source_website):
 
 
 @pytest.fixture
-def listings(test_db, sample_source_website):
+def listings(test_db, sample_store):
     """Matches at 800, 450 and 200 in the alert's store, 100 in another."""
-    store = sample_source_website.id
+    store = sample_store.id
     other_store = StoreModel(name="Other", base_url="https://other.example")
     test_db.add(other_store)
     test_db.commit()
@@ -90,7 +90,7 @@ def test_notify_emails_the_owner_the_cheapest_match_under_the_max_price(
     alert,
     listings,
     sample_user,
-    sample_source_website,
+    sample_store,
 ):
     response = client.post(
         f"/price-alerts/{alert.id}/notify", headers=staff_auth_headers
@@ -107,11 +107,11 @@ def test_notify_emails_the_owner_the_cheapest_match_under_the_max_price(
     assert sent["product_title"] == "Budget Headphones"
     assert sent["product_price"] == 200.0
     assert sent["max_price"] == 500.0
-    assert sent["source_website_name"] == sample_source_website.name
+    assert sent["source_website_name"] == sample_store.name
 
 
 def test_deleting_the_only_alert_of_a_search_stops_the_search(
-    client, auth_headers, sample_user, sample_source_website
+    client, auth_headers, sample_user, sample_store
 ):
     created = client.post(
         "/price-alerts/",
@@ -123,7 +123,7 @@ def test_deleting_the_only_alert_of_a_search_stops_the_search(
                     "max_price": 500,
                     "user_id": sample_user.id,
                     "frequency_minutes": 1440,
-                    "source_website_ids": [sample_source_website.id],
+                    "source_website_ids": [sample_store.id],
                 },
             }
         },
@@ -145,9 +145,9 @@ def test_deleting_the_only_alert_of_a_search_stops_the_search(
 
 
 def test_notify_sends_nothing_when_no_match_is_under_the_max_price(
-    client, staff_auth_headers, mailer, alert, test_db, sample_source_website
+    client, staff_auth_headers, mailer, alert, test_db, sample_store
 ):
-    a_listing(test_db, "Premium Headphones", 800.0, sample_source_website.id)
+    a_listing(test_db, "Premium Headphones", 800.0, sample_store.id)
 
     response = client.post(
         f"/price-alerts/{alert.id}/notify", headers=staff_auth_headers

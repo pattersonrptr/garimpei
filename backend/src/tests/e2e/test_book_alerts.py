@@ -73,9 +73,9 @@ def create_alert(client, headers, user_id, max_price, condition="used", isbn=ISB
 
 
 @pytest.fixture
-def book(client, staff_auth_headers, sample_source_website, email):
+def book(client, staff_auth_headers, sample_store, email):
     """The book exists in the catalog with a used offer at R$ 28.50."""
-    ingest(client, staff_auth_headers, sample_source_website.id, 28.5)
+    ingest(client, staff_auth_headers, sample_store.id, 28.5)
 
 
 class TestCreateBookAlert:
@@ -165,7 +165,7 @@ class TestIngestingOffersChecksBookAlerts:
         auth_headers,
         staff_auth_headers,
         sample_user,
-        sample_source_website,
+        sample_store,
         book,
         email,
         test_db,
@@ -173,7 +173,7 @@ class TestIngestingOffersChecksBookAlerts:
         create_alert(client, auth_headers, sample_user.id, 20)
         email.send_price_alert_email.assert_not_called()  # R$ 28.50 is too much
 
-        ingest(client, staff_auth_headers, sample_source_website.id, 19.9)
+        ingest(client, staff_auth_headers, sample_store.id, 19.9)
 
         email.send_price_alert_email.assert_called_once()
         sent = email.send_price_alert_email.call_args.kwargs
@@ -187,7 +187,7 @@ class TestIngestingOffersChecksBookAlerts:
         auth_headers,
         staff_auth_headers,
         sample_user,
-        sample_source_website,
+        sample_store,
         book,
         email,
     ):
@@ -195,14 +195,14 @@ class TestIngestingOffersChecksBookAlerts:
         ingest(
             client,
             staff_auth_headers,
-            sample_source_website.id,
+            sample_store.id,
             19.9,
             url="https://s/a",
         )
         ingest(
             client,
             staff_auth_headers,
-            sample_source_website.id,
+            sample_store.id,
             19.5,
             url="https://s/a",
         )
@@ -215,15 +215,13 @@ class TestIngestingOffersChecksBookAlerts:
         auth_headers,
         staff_auth_headers,
         sample_user,
-        sample_source_website,
+        sample_store,
         book,
         email,
     ):
         create_alert(client, auth_headers, sample_user.id, 20, condition="used")
 
-        ingest(
-            client, staff_auth_headers, sample_source_website.id, 15, condition="new"
-        )
+        ingest(client, staff_auth_headers, sample_store.id, 15, condition="new")
 
         email.send_price_alert_email.assert_not_called()
 
@@ -233,7 +231,7 @@ class TestIngestingOffersChecksBookAlerts:
         auth_headers,
         staff_auth_headers,
         sample_user,
-        sample_source_website,
+        sample_store,
         book,
         email,
         test_db,
@@ -242,7 +240,7 @@ class TestIngestingOffersChecksBookAlerts:
         test_db.query(PriceAlertModel).update({"is_active": False})
         test_db.commit()
 
-        ingest(client, staff_auth_headers, sample_source_website.id, 10)
+        ingest(client, staff_auth_headers, sample_store.id, 10)
 
         email.send_price_alert_email.assert_not_called()
 
@@ -252,13 +250,13 @@ class TestIngestingOffersChecksBookAlerts:
         auth_headers,
         staff_auth_headers,
         sample_user,
-        sample_source_website,
+        sample_store,
         book,
         email,
     ):
         create_alert(client, auth_headers, sample_user.id, 20)
         email.send_price_alert_email.side_effect = RuntimeError("smtp down")
 
-        response = ingest(client, staff_auth_headers, sample_source_website.id, 10)
+        response = ingest(client, staff_auth_headers, sample_store.id, 10)
 
         assert response.status_code == 201

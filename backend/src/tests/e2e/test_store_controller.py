@@ -56,7 +56,7 @@ class TestSourceWebsiteCreate:
         assert "id" in data["data"]
 
     def test_create_source_website_with_duplicate_name_returns_409(
-        self, client, staff_auth_headers, sample_source_website
+        self, client, staff_auth_headers, sample_store
     ):
         """
         Given: A source website with the given name already exists
@@ -65,7 +65,7 @@ class TestSourceWebsiteCreate:
         """
         response = client.post(
             "/source-websites/",
-            json=make_create_payload(name=sample_source_website.name),
+            json=make_create_payload(name=sample_store.name),
             headers=staff_auth_headers,
         )
 
@@ -135,7 +135,7 @@ class TestSourceWebsiteList:
     """Tests for GET /source-websites/ - List source websites"""
 
     def test_list_source_websites_returns_collection(
-        self, client, staff_auth_headers, sample_source_website
+        self, client, staff_auth_headers, sample_store
     ):
         """
         Given: A source website exists in the database
@@ -208,7 +208,7 @@ class TestSourceWebsiteGetById:
     """Tests for GET /source-websites/{id} - Get source website by ID"""
 
     def test_get_source_website_by_id_found_returns_200(
-        self, client, staff_auth_headers, sample_source_website
+        self, client, staff_auth_headers, sample_store
     ):
         """
         Given: A source website exists with a known ID
@@ -216,15 +216,15 @@ class TestSourceWebsiteGetById:
         Then: Returns 200 with the source website
         """
         response = client.get(
-            f"/source-websites/{sample_source_website.id}",
+            f"/source-websites/{sample_store.id}",
             headers=staff_auth_headers,
         )
 
         assert response.status_code == 200
         data = response.json()
         assert data["data"]["type"] == SOURCE_WEBSITE_RESPONSE_TYPE
-        assert data["data"]["id"] == str(sample_source_website.id)
-        assert data["data"]["attributes"]["name"] == sample_source_website.name
+        assert data["data"]["id"] == str(sample_store.id)
+        assert data["data"]["attributes"]["name"] == sample_store.name
 
     def test_get_source_website_by_id_not_found_returns_404(
         self, client, staff_auth_headers
@@ -239,14 +239,14 @@ class TestSourceWebsiteGetById:
         assert response.status_code == 404
 
     def test_get_source_website_by_id_without_auth_returns_401(
-        self, client, sample_source_website
+        self, client, sample_store
     ):
         """
         Given: No authentication token
         When: GET /source-websites/{id}
         Then: Returns 401 or 403 (Unauthorized/Forbidden)
         """
-        response = client.get(f"/source-websites/{sample_source_website.id}")
+        response = client.get(f"/source-websites/{sample_store.id}")
 
         assert response.status_code in (401, 403)
 
@@ -260,7 +260,7 @@ class TestSourceWebsiteGetByName:
     """Tests for GET /source-websites/name/{name} - Get source website by name"""
 
     def test_get_source_website_by_name_found_returns_200(
-        self, client, staff_auth_headers, sample_source_website
+        self, client, staff_auth_headers, sample_store
     ):
         """
         Given: A source website exists with a known name
@@ -268,13 +268,13 @@ class TestSourceWebsiteGetByName:
         Then: Returns 200 with the source website
         """
         response = client.get(
-            f"/source-websites/name/{sample_source_website.name}",
+            f"/source-websites/name/{sample_store.name}",
             headers=staff_auth_headers,
         )
 
         assert response.status_code == 200
         data = response.json()
-        assert data["data"]["attributes"]["name"] == sample_source_website.name
+        assert data["data"]["attributes"]["name"] == sample_store.name
 
     def test_get_source_website_by_name_not_found_returns_404(
         self, client, staff_auth_headers
@@ -291,14 +291,14 @@ class TestSourceWebsiteGetByName:
         assert response.status_code == 404
 
     def test_get_source_website_by_name_without_auth_returns_401(
-        self, client, sample_source_website
+        self, client, sample_store
     ):
         """
         Given: No authentication token
         When: GET /source-websites/name/{name}
         Then: Returns 401 or 403 (Unauthorized/Forbidden)
         """
-        response = client.get(f"/source-websites/name/{sample_source_website.name}")
+        response = client.get(f"/source-websites/name/{sample_store.name}")
 
         assert response.status_code in (401, 403)
 
@@ -312,7 +312,7 @@ class TestSourceWebsiteUpdate:
     """Tests for PUT /source-websites/{id} - Update source website"""
 
     def test_update_source_website_successfully(
-        self, client, staff_auth_headers, sample_source_website
+        self, client, staff_auth_headers, sample_store
     ):
         """
         Given: A source website exists
@@ -320,7 +320,7 @@ class TestSourceWebsiteUpdate:
         Then: Returns 200 with updated source website
         """
         response = client.put(
-            f"/source-websites/{sample_source_website.id}",
+            f"/source-websites/{sample_store.id}",
             json=make_update_payload(name="Updated Name"),
             headers=staff_auth_headers,
         )
@@ -346,7 +346,7 @@ class TestSourceWebsiteUpdate:
         assert response.status_code == 404
 
     def test_update_source_website_with_duplicate_name_returns_409(
-        self, client, staff_auth_headers, sample_source_website, test_db
+        self, client, staff_auth_headers, sample_store, test_db
     ):
         """
         Given: Two source websites exist
@@ -361,23 +361,21 @@ class TestSourceWebsiteUpdate:
         test_db.refresh(other)
 
         response = client.put(
-            f"/source-websites/{sample_source_website.id}",
+            f"/source-websites/{sample_store.id}",
             json=make_update_payload(name="OtherSite"),
             headers=staff_auth_headers,
         )
 
         assert response.status_code == 409
 
-    def test_update_source_website_without_auth_returns_401(
-        self, client, sample_source_website
-    ):
+    def test_update_source_website_without_auth_returns_401(self, client, sample_store):
         """
         Given: No authentication token
         When: PUT /source-websites/{id}
         Then: Returns 401 or 403 (Unauthorized/Forbidden)
         """
         response = client.put(
-            f"/source-websites/{sample_source_website.id}",
+            f"/source-websites/{sample_store.id}",
             json=make_update_payload(name="No Auth"),
         )
 
@@ -393,7 +391,7 @@ class TestSourceWebsiteDelete:
     """Tests for DELETE /source-websites/{id} - Delete source website"""
 
     def test_delete_source_website_successfully(
-        self, client, staff_auth_headers, sample_source_website
+        self, client, staff_auth_headers, sample_store
     ):
         """
         Given: A source website exists
@@ -401,7 +399,7 @@ class TestSourceWebsiteDelete:
         Then: Returns 204 and source website is no longer retrievable
         """
         response = client.delete(
-            f"/source-websites/{sample_source_website.id}",
+            f"/source-websites/{sample_store.id}",
             headers=staff_auth_headers,
         )
 
@@ -409,7 +407,7 @@ class TestSourceWebsiteDelete:
 
         # Verify it's gone
         get_response = client.get(
-            f"/source-websites/{sample_source_website.id}",
+            f"/source-websites/{sample_store.id}",
             headers=staff_auth_headers,
         )
         assert get_response.status_code == 404
@@ -426,14 +424,12 @@ class TestSourceWebsiteDelete:
 
         assert response.status_code == 404
 
-    def test_delete_source_website_without_auth_returns_401(
-        self, client, sample_source_website
-    ):
+    def test_delete_source_website_without_auth_returns_401(self, client, sample_store):
         """
         Given: No authentication token
         When: DELETE /source-websites/{id}
         Then: Returns 401 or 403 (Unauthorized/Forbidden)
         """
-        response = client.delete(f"/source-websites/{sample_source_website.id}")
+        response = client.delete(f"/source-websites/{sample_store.id}")
 
         assert response.status_code in (401, 403)

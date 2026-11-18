@@ -146,9 +146,9 @@ def create_alert(client, headers, user_id, **attributes):
 
 class TestMyAlerts:
     @pytest.fixture
-    def book(self, client, staff_auth_headers, sample_source_website, email):
-        ingest(client, staff_auth_headers, sample_source_website.id, 28.5, "used")
-        ingest(client, staff_auth_headers, sample_source_website.id, 50.0, "new")
+    def book(self, client, staff_auth_headers, sample_store, email):
+        ingest(client, staff_auth_headers, sample_store.id, 28.5, "used")
+        ingest(client, staff_auth_headers, sample_store.id, 50.0, "new")
 
     def test_lists_product_alerts_with_today_and_the_emails_sent(
         self, client, auth_headers, sample_user, book
@@ -197,7 +197,7 @@ class TestMyAlerts:
         assert item["attributes"]["notices"] == {"total": 0, "recent": []}
 
     def test_keyword_alerts_are_left_out(
-        self, client, auth_headers, sample_user, sample_source_website, book
+        self, client, auth_headers, sample_user, sample_store, book
     ):
         create_alert(
             client,
@@ -206,7 +206,7 @@ class TestMyAlerts:
             search_term="orwell",
             max_price=30,
             frequency_minutes=1440,
-            source_website_ids=[sample_source_website.id],
+            source_website_ids=[sample_store.id],
         )
 
         assert client.get("/me/alerts", headers=auth_headers).json()["data"] == []

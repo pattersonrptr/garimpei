@@ -34,7 +34,7 @@ class TestProductCreate:
     """Test POST /products/ - Create new product"""
 
     def test_create_product_successfully(
-        self, client, staff_auth_headers, sample_source_website
+        self, client, staff_auth_headers, sample_store
     ):
         """
         Given: Authenticated staff user and an existing source website
@@ -44,7 +44,7 @@ class TestProductCreate:
         # When
         response = client.post(
             "/products/",
-            json=make_create_payload(source_website_id=sample_source_website.id),
+            json=make_create_payload(source_website_id=sample_store.id),
             headers=staff_auth_headers,
         )
 
@@ -83,7 +83,7 @@ class TestProductCreate:
         assert any("url" in err["detail"].lower() for err in data["errors"])
 
     def test_create_product_with_invalid_condition(
-        self, client, staff_auth_headers, sample_source_website
+        self, client, staff_auth_headers, sample_store
     ):
         """
         Given: Authenticated staff user
@@ -95,7 +95,7 @@ class TestProductCreate:
             "/products/",
             json=make_create_payload(
                 condition="not_a_valid_condition",
-                source_website_id=sample_source_website.id,
+                source_website_id=sample_store.id,
             ),
             headers=staff_auth_headers,
         )
@@ -119,7 +119,7 @@ class TestProductCreate:
         # Then
         assert response.status_code == 422
 
-    def test_create_product_without_authentication(self, client, sample_source_website):
+    def test_create_product_without_authentication(self, client, sample_store):
         """
         Given: No authentication token
         When: POST /products/ without auth headers
@@ -128,14 +128,14 @@ class TestProductCreate:
         # When
         response = client.post(
             "/products/",
-            json=make_create_payload(source_website_id=sample_source_website.id),
+            json=make_create_payload(source_website_id=sample_store.id),
         )
 
         # Then
         assert response.status_code in (401, 403)
 
     def test_create_product_with_regular_user_is_forbidden(
-        self, client, auth_headers, sample_source_website
+        self, client, auth_headers, sample_store
     ):
         """
         Given: Authenticated regular user (not staff, not superuser)
@@ -145,7 +145,7 @@ class TestProductCreate:
         # When
         response = client.post(
             "/products/",
-            json=make_create_payload(source_website_id=sample_source_website.id),
+            json=make_create_payload(source_website_id=sample_store.id),
             headers=auth_headers,
         )
 
@@ -382,7 +382,7 @@ class TestProductUpdate:
         assert "errors" in data
 
     def test_update_product_with_duplicate_url(
-        self, client, staff_auth_headers, sample_product, sample_source_website
+        self, client, staff_auth_headers, sample_product, sample_store
     ):
         """
         Given: Two products exist — sample_product and a second one
@@ -396,7 +396,7 @@ class TestProductUpdate:
                 url="https://test.example.com/product/second",
                 title="Second Product",
                 condition="used",
-                source_website_id=sample_source_website.id,
+                source_website_id=sample_store.id,
             ),
             headers=staff_auth_headers,
         )

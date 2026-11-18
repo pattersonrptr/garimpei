@@ -22,7 +22,7 @@ from src.common.jsonapi import JsonApiError
 
 
 @pytest.fixture
-def sample_source_website_entity():
+def sample_store_entity():
     """Sample source website entity for testing."""
     return Store(
         id=1,
@@ -35,7 +35,7 @@ def sample_source_website_entity():
 
 
 @pytest.fixture
-def sample_source_website_collection(sample_source_website_entity):
+def sample_store_collection(sample_store_entity):
     """Sample collection of source website entities for testing."""
     second = Store(
         id=2,
@@ -45,7 +45,7 @@ def sample_source_website_collection(sample_source_website_entity):
         created_at=datetime(2025, 1, 2, 12, 0, 0),
         updated_at=datetime(2025, 1, 2, 12, 0, 0),
     )
-    return [sample_source_website_entity, second]
+    return [sample_store_entity, second]
 
 
 @pytest.fixture
@@ -77,16 +77,14 @@ def sample_validation_errors():
 class TestStorePresenterHandleSuccess:
     """Tests for StorePresenter.handle_success()."""
 
-    def test_handle_success_should_return_jsonapi_response(
-        self, sample_source_website_entity
-    ):
+    def test_handle_success_should_return_jsonapi_response(self, sample_store_entity):
         """
         Given: A valid source website entity
         When: StorePresenter.handle_success() is called
         Then: Should return StoreReadResponse with correct JSON:API structure
         """
         # When
-        response = StorePresenter.handle_success(sample_source_website_entity)
+        response = StorePresenter.handle_success(sample_store_entity)
 
         # Then
         assert response.data.type == "source_websites"
@@ -94,16 +92,14 @@ class TestStorePresenterHandleSuccess:
         assert response.data.attributes.name == "MercadoLivre"
         assert response.data.attributes.base_url == "https://www.mercadolivre.com.br"
 
-    def test_handle_success_should_include_all_attributes(
-        self, sample_source_website_entity
-    ):
+    def test_handle_success_should_include_all_attributes(self, sample_store_entity):
         """
         Given: A source website entity with all fields
         When: StorePresenter.handle_success() is called
         Then: Should include all attributes in the response
         """
         # When
-        response = StorePresenter.handle_success(sample_source_website_entity)
+        response = StorePresenter.handle_success(sample_store_entity)
 
         # Then
         attrs = response.data.attributes
@@ -111,14 +107,14 @@ class TestStorePresenterHandleSuccess:
         assert attrs.created_at == datetime(2025, 1, 1, 12, 0, 0)
         assert attrs.updated_at == datetime(2025, 1, 1, 12, 0, 0)
 
-    def test_handle_success_should_have_string_id(self, sample_source_website_entity):
+    def test_handle_success_should_have_string_id(self, sample_store_entity):
         """
         Given: A source website entity with integer id
         When: StorePresenter.handle_success() is called
         Then: JSON:API id should be a string
         """
         # When
-        response = StorePresenter.handle_success(sample_source_website_entity)
+        response = StorePresenter.handle_success(sample_store_entity)
 
         # Then
         assert isinstance(response.data.id, str)
@@ -154,7 +150,7 @@ class TestStorePresenterHandleCollectionSuccess:
     """Tests for StorePresenter.handle_collection_success()."""
 
     def test_handle_collection_success_should_return_jsonapi_collection(
-        self, sample_source_website_collection
+        self, sample_store_collection
     ):
         """
         Given: A list of source website entities and total count
@@ -163,7 +159,7 @@ class TestStorePresenterHandleCollectionSuccess:
         """
         # When
         response = StorePresenter.handle_collection_success(
-            sample_source_website_collection, total=2
+            sample_store_collection, total=2
         )
 
         # Then
@@ -173,7 +169,7 @@ class TestStorePresenterHandleCollectionSuccess:
         assert response.data[1].id == "2"
 
     def test_handle_collection_success_should_include_meta_total(
-        self, sample_source_website_collection
+        self, sample_store_collection
     ):
         """
         Given: A collection with a known total
@@ -182,7 +178,7 @@ class TestStorePresenterHandleCollectionSuccess:
         """
         # When
         response = StorePresenter.handle_collection_success(
-            sample_source_website_collection, total=100
+            sample_store_collection, total=100
         )
 
         # Then

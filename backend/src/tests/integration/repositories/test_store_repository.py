@@ -45,7 +45,7 @@ def source_website_repository(test_db):
 
 
 @pytest.fixture
-def sample_source_website_entity():
+def sample_store_entity():
     """Sample source website entity for testing (no id)."""
     return Store(
         name="OLX",
@@ -63,14 +63,14 @@ class TestCreateSourceWebsite:
     """Tests for StoreRepository.create"""
 
     def test_create_should_persist_and_return_entity_with_id(
-        self, source_website_repository, sample_source_website_entity
+        self, source_website_repository, sample_store_entity
     ):
         """
         Given: A valid source website entity
         When: create is called
         Then: Entity is persisted and returned with an assigned ID
         """
-        result = source_website_repository.create(sample_source_website_entity)
+        result = source_website_repository.create(sample_store_entity)
 
         assert result.id is not None
         assert result.name == "OLX"
@@ -98,14 +98,14 @@ class TestReadSourceWebsite:
     """Tests for StoreRepository read operations"""
 
     def test_get_by_id_with_existing_id_should_return_entity(
-        self, source_website_repository, sample_source_website_entity
+        self, source_website_repository, sample_store_entity
     ):
         """
         Given: A source website is created in the database
         When: get_by_id is called with its ID
         Then: Returns the corresponding entity
         """
-        created = source_website_repository.create(sample_source_website_entity)
+        created = source_website_repository.create(sample_store_entity)
 
         result = source_website_repository.get_by_id(created.id)
 
@@ -126,14 +126,14 @@ class TestReadSourceWebsite:
         assert result is None
 
     def test_get_by_name_with_existing_name_should_return_entity(
-        self, source_website_repository, sample_source_website_entity
+        self, source_website_repository, sample_store_entity
     ):
         """
         Given: A source website with the given name exists
         When: get_by_name is called
         Then: Returns the corresponding entity
         """
-        source_website_repository.create(sample_source_website_entity)
+        source_website_repository.create(sample_store_entity)
 
         result = source_website_repository.get_by_name("OLX")
 
@@ -210,14 +210,14 @@ class TestUpdateSourceWebsite:
     """Tests for StoreRepository.update"""
 
     def test_update_with_existing_entity_should_return_updated_entity(
-        self, source_website_repository, sample_source_website_entity
+        self, source_website_repository, sample_store_entity
     ):
         """
         Given: A source website exists in the database
         When: update is called with changed fields
         Then: Returns the updated entity
         """
-        created = source_website_repository.create(sample_source_website_entity)
+        created = source_website_repository.create(sample_store_entity)
 
         update_entity = Store(
             id=created.id,
@@ -232,14 +232,14 @@ class TestUpdateSourceWebsite:
         assert result.id == created.id
 
     def test_update_with_nonexistent_entity_should_return_none(
-        self, source_website_repository, sample_source_website_entity
+        self, source_website_repository, sample_store_entity
     ):
         """
         Given: No source website with the given ID exists
         When: update is called
         Then: Returns None
         """
-        result = source_website_repository.update(99999, sample_source_website_entity)
+        result = source_website_repository.update(99999, sample_store_entity)
 
         assert result is None
 
@@ -248,14 +248,14 @@ class TestDeleteSourceWebsite:
     """Tests for StoreRepository.delete"""
 
     def test_delete_with_existing_entity_should_return_true_and_remove_it(
-        self, source_website_repository, sample_source_website_entity
+        self, source_website_repository, sample_store_entity
     ):
         """
         Given: A source website exists in the database
         When: delete is called with its ID
         Then: Returns True and entity is no longer retrievable
         """
-        created = source_website_repository.create(sample_source_website_entity)
+        created = source_website_repository.create(sample_store_entity)
 
         result = source_website_repository.delete(created.id)
 

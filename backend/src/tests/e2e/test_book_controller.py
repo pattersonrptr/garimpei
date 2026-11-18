@@ -18,7 +18,7 @@ ISBN13 = "9788535914849"
 
 
 @pytest.fixture
-def book_with_offer(test_db, sample_source_website):
+def book_with_offer(test_db, sample_store):
     book = CanonicalProductRepository(test_db).create(
         CanonicalProduct(
             category=ProductCategory.BOOK,
@@ -30,7 +30,7 @@ def book_with_offer(test_db, sample_source_website):
     offer = ProductModel(
         url="https://ev/1984?condition=usado",
         title="1984",
-        source_website_id=sample_source_website.id,
+        source_website_id=sample_store.id,
         condition="used",
         canonical_product_id=book.id,
     )

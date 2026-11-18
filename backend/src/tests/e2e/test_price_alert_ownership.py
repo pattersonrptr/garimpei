@@ -98,12 +98,10 @@ def _max_price_update(alert_id, max_price):
 
 
 @pytest.fixture
-def user_alert(client, auth_headers, sample_user, sample_source_website):
+def user_alert(client, auth_headers, sample_user, sample_store):
     response = client.post(
         "/price-alerts/",
-        json=_alert_body(
-            "clean architecture", sample_user.id, [sample_source_website.id]
-        ),
+        json=_alert_body("clean architecture", sample_user.id, [sample_store.id]),
         headers=auth_headers,
     )
     assert response.status_code == 201, response.text
@@ -131,11 +129,11 @@ class TestRegularUserOwnAlerts:
         assert user_alert["attributes"]["search_config_id"] is not None
 
     def test_create_ignores_user_id_of_someone_else(
-        self, client, auth_headers, sample_user, other_user, sample_source_website
+        self, client, auth_headers, sample_user, other_user, sample_store
     ):
         response = client.post(
             "/price-alerts/",
-            json=_alert_body("python", other_user.id, [sample_source_website.id]),
+            json=_alert_body("python", other_user.id, [sample_store.id]),
             headers=auth_headers,
         )
         assert response.status_code == 201
@@ -174,7 +172,7 @@ class TestRegularUserOwnAlerts:
         assert response.status_code == 200
 
     def test_cannot_manage_search_configs_directly(
-        self, client, auth_headers, sample_user, sample_source_website, user_alert
+        self, client, auth_headers, sample_user, sample_store, user_alert
     ):
         """Search configs come from alerts; creating one directly would bypass the plan."""
         body = {
@@ -183,7 +181,7 @@ class TestRegularUserOwnAlerts:
                 "attributes": {
                     "search_term": "anything",
                     "user_id": sample_user.id,
-                    "source_website_ids": [sample_source_website.id],
+                    "source_website_ids": [sample_store.id],
                 },
             }
         }

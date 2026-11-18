@@ -158,17 +158,15 @@ class TestProductsList:
         client,
         auth_headers,
         sample_user,
-        sample_source_website,
+        sample_store,
         other_site,
         test_db,
         email_service,
     ):
-        add_listing(test_db, sample_source_website, "Python Fluente 2a edição", 120)
+        add_listing(test_db, sample_store, "Python Fluente 2a edição", 120)
         add_listing(test_db, other_site, "Python Fluente from another site", 10)
-        add_listing(test_db, sample_source_website, "Cookbook nobody asked for", 10)
-        create_alert(
-            client, auth_headers, sample_user, sample_source_website, "python fluente"
-        )
+        add_listing(test_db, sample_store, "Cookbook nobody asked for", 10)
+        create_alert(client, auth_headers, sample_user, sample_store, "python fluente")
 
         listed = titles(client.get("/products/", headers=auth_headers))
 
@@ -179,17 +177,15 @@ class TestProductsList:
         client,
         auth_headers,
         sample_user,
-        sample_source_website,
+        sample_store,
         test_db,
         email_service,
     ):
-        add_listing(test_db, sample_source_website, "Python Fluente", 120)
-        add_listing(test_db, sample_source_website, "Clean Code", 120)
-        create_alert(
-            client, auth_headers, sample_user, sample_source_website, "python fluente"
-        )
+        add_listing(test_db, sample_store, "Python Fluente", 120)
+        add_listing(test_db, sample_store, "Clean Code", 120)
+        create_alert(client, auth_headers, sample_user, sample_store, "python fluente")
         other, other_headers = other_customer(client, test_db)
-        create_alert(client, other_headers, other, sample_source_website, "clean code")
+        create_alert(client, other_headers, other, sample_store, "clean code")
 
         assert titles(client.get("/products/", headers=auth_headers)) == {
             "Python Fluente"
@@ -201,13 +197,13 @@ class TestProductsList:
         client,
         auth_headers,
         sample_user,
-        sample_source_website,
+        sample_store,
         test_db,
         email_service,
     ):
-        add_listing(test_db, sample_source_website, "Python Fluente", 120)
+        add_listing(test_db, sample_store, "Python Fluente", 120)
         alert = create_alert(
-            client, auth_headers, sample_user, sample_source_website, "python fluente"
+            client, auth_headers, sample_user, sample_store, "python fluente"
         )
         deleted = client.delete(f"/price-alerts/{alert['id']}", headers=auth_headers)
         assert deleted.status_code == 204, deleted.text
@@ -215,17 +211,17 @@ class TestProductsList:
         assert titles(client.get("/products/", headers=auth_headers)) == set()
 
     def test_staff_see_the_whole_catalog(
-        self, client, superuser_auth_headers, sample_source_website, test_db
+        self, client, superuser_auth_headers, sample_store, test_db
     ):
-        add_listing(test_db, sample_source_website, "Anything", 10)
+        add_listing(test_db, sample_store, "Anything", 10)
         listed = titles(client.get("/products/", headers=superuser_auth_headers))
         assert "Anything" in listed
 
     def test_title_filter_ignores_case_and_accents(
-        self, client, superuser_auth_headers, sample_source_website, test_db
+        self, client, superuser_auth_headers, sample_store, test_db
     ):
-        add_listing(test_db, sample_source_website, "Microsserviços prontos", 10)
-        add_listing(test_db, sample_source_website, "Outro livro", 10)
+        add_listing(test_db, sample_store, "Microsserviços prontos", 10)
+        add_listing(test_db, sample_store, "Outro livro", 10)
 
         listed = titles(
             client.get(
@@ -242,15 +238,13 @@ class TestProductsList:
         client,
         auth_headers,
         sample_user,
-        sample_source_website,
+        sample_store,
         test_db,
         email_service,
     ):
-        add_listing(test_db, sample_source_website, "Clean Code capa dura", 120)
-        add_listing(test_db, sample_source_website, "Clean Code bolso", 40)
-        create_alert(
-            client, auth_headers, sample_user, sample_source_website, "clean code"
-        )
+        add_listing(test_db, sample_store, "Clean Code capa dura", 120)
+        add_listing(test_db, sample_store, "Clean Code bolso", 40)
+        create_alert(client, auth_headers, sample_user, sample_store, "clean code")
 
         response = client.get(
             "/products/", params={"opportunities_only": True}, headers=auth_headers
@@ -271,13 +265,13 @@ class TestAlertChecksCollectedListings:
         client,
         auth_headers,
         sample_user,
-        sample_source_website,
+        sample_store,
         test_db,
         email_service,
     ):
-        product = add_listing(test_db, sample_source_website, "Fluent Python", 120)
+        product = add_listing(test_db, sample_store, "Fluent Python", 120)
         alert = create_alert(
-            client, auth_headers, sample_user, sample_source_website, "fluent python"
+            client, auth_headers, sample_user, sample_store, "fluent python"
         )
         email_service.send_price_alert_email.assert_not_called()
 
@@ -301,14 +295,12 @@ class TestAlertChecksCollectedListings:
         client,
         auth_headers,
         sample_user,
-        sample_source_website,
+        sample_store,
         test_db,
         email_service,
     ):
-        add_listing(test_db, sample_source_website, "Fluent Python barato", 30)
-        create_alert(
-            client, auth_headers, sample_user, sample_source_website, "fluent python"
-        )
+        add_listing(test_db, sample_store, "Fluent Python barato", 30)
+        create_alert(client, auth_headers, sample_user, sample_store, "fluent python")
         email_service.send_price_alert_email.assert_called_once()
 
     def test_a_notified_listing_can_still_be_deleted(
@@ -317,14 +309,12 @@ class TestAlertChecksCollectedListings:
         auth_headers,
         superuser_auth_headers,
         sample_user,
-        sample_source_website,
+        sample_store,
         test_db,
         email_service,
     ):
-        product = add_listing(test_db, sample_source_website, "Fluent Python", 30)
-        create_alert(
-            client, auth_headers, sample_user, sample_source_website, "fluent python"
-        )
+        product = add_listing(test_db, sample_store, "Fluent Python", 30)
+        create_alert(client, auth_headers, sample_user, sample_store, "fluent python")
 
         response = client.delete(
             f"/products/{product.id}", headers=superuser_auth_headers
@@ -340,13 +330,13 @@ class TestAlertChecksCollectedListings:
         client,
         auth_headers,
         sample_user,
-        sample_source_website,
+        sample_store,
         test_db,
         email_service,
     ):
-        add_listing(test_db, sample_source_website, "Fluent Python barato", 30)
+        add_listing(test_db, sample_store, "Fluent Python barato", 30)
         alert = create_alert(
-            client, auth_headers, sample_user, sample_source_website, "fluent python"
+            client, auth_headers, sample_user, sample_store, "fluent python"
         )
         client.put(
             f"/price-alerts/{alert['id']}",
@@ -360,13 +350,13 @@ class TestAlertChecksCollectedListings:
         client,
         auth_headers,
         sample_user,
-        sample_source_website,
+        sample_store,
         test_db,
         email_service,
     ):
-        add_listing(test_db, sample_source_website, "Fluent Python", 120)
+        add_listing(test_db, sample_store, "Fluent Python", 120)
         alert = create_alert(
-            client, auth_headers, sample_user, sample_source_website, "fluent python"
+            client, auth_headers, sample_user, sample_store, "fluent python"
         )
         client.put(
             f"/price-alerts/{alert['id']}",
@@ -383,11 +373,9 @@ class TestAlertChecksCollectedListings:
 
 class TestEditRespectsPlan:
     def test_cannot_edit_frequency_below_plan_minimum(
-        self, client, auth_headers, sample_user, sample_source_website, email_service
+        self, client, auth_headers, sample_user, sample_store, email_service
     ):
-        alert = create_alert(
-            client, auth_headers, sample_user, sample_source_website, "ddd"
-        )
+        alert = create_alert(client, auth_headers, sample_user, sample_store, "ddd")
         response = client.put(
             f"/price-alerts/{alert['id']}",
             json=update_body(alert["id"], frequency_minutes=30),
@@ -403,10 +391,10 @@ class TestEditRespectsPlan:
         }
 
     def test_cannot_reactivate_beyond_the_alert_limit(
-        self, client, auth_headers, sample_user, sample_source_website, email_service
+        self, client, auth_headers, sample_user, sample_store, email_service
     ):
         paused = create_alert(
-            client, auth_headers, sample_user, sample_source_website, "paused one"
+            client, auth_headers, sample_user, sample_store, "paused one"
         )
         client.put(
             f"/price-alerts/{paused['id']}",
@@ -414,7 +402,7 @@ class TestEditRespectsPlan:
             headers=auth_headers,
         )
         for term in ("one", "two", "three"):
-            create_alert(client, auth_headers, sample_user, sample_source_website, term)
+            create_alert(client, auth_headers, sample_user, sample_store, term)
 
         response = client.put(
             f"/price-alerts/{paused['id']}",
@@ -426,11 +414,9 @@ class TestEditRespectsPlan:
         assert response.json()["errors"][0]["meta"]["limit"] == "max_active_alerts"
 
     def test_editing_price_only_is_not_blocked(
-        self, client, auth_headers, sample_user, sample_source_website, email_service
+        self, client, auth_headers, sample_user, sample_store, email_service
     ):
-        alert = create_alert(
-            client, auth_headers, sample_user, sample_source_website, "ok"
-        )
+        alert = create_alert(client, auth_headers, sample_user, sample_store, "ok")
         response = client.put(
             f"/price-alerts/{alert['id']}",
             json=update_body(alert["id"], max_price=99),
@@ -451,12 +437,10 @@ class TestDeleteSearch:
         auth_headers,
         superuser_auth_headers,
         sample_user,
-        sample_source_website,
+        sample_store,
         email_service,
     ):
-        alert = create_alert(
-            client, auth_headers, sample_user, sample_source_website, "in use"
-        )
+        alert = create_alert(client, auth_headers, sample_user, sample_store, "in use")
         sc_id = alert["attributes"]["search_config_id"]
 
         response = client.delete(
@@ -489,12 +473,10 @@ class TestDeleteSearch:
         auth_headers,
         superuser_auth_headers,
         sample_user,
-        sample_source_website,
+        sample_store,
         email_service,
     ):
-        alert = create_alert(
-            client, auth_headers, sample_user, sample_source_website, "gone"
-        )
+        alert = create_alert(client, auth_headers, sample_user, sample_store, "gone")
         sc_id = alert["attributes"]["search_config_id"]
         client.delete(f"/price-alerts/{alert['id']}", headers=auth_headers)
 
@@ -509,13 +491,11 @@ class TestDeleteSearch:
         auth_headers,
         superuser_auth_headers,
         sample_user,
-        sample_source_website,
+        sample_store,
         email_service,
     ):
-        create_alert(
-            client, auth_headers, sample_user, sample_source_website, "Pocket Book"
-        )
-        create_alert(client, auth_headers, sample_user, sample_source_website, "other")
+        create_alert(client, auth_headers, sample_user, sample_store, "Pocket Book")
+        create_alert(client, auth_headers, sample_user, sample_store, "other")
 
         response = client.get(
             "/search-configs/",

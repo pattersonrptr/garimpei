@@ -67,27 +67,25 @@ class TestOnlyStaffChangesStores:
         )
 
     def test_a_regular_user_cannot_update_a_store(
-        self, client, auth_headers, sample_source_website
+        self, client, auth_headers, sample_store
     ):
-        response = update(
-            client, auth_headers, sample_source_website.id, name="Renamed"
-        )
+        response = update(client, auth_headers, sample_store.id, name="Renamed")
 
         assert response.status_code == 403
         assert (
-            attributes_of(client, auth_headers, sample_source_website.id)["name"]
+            attributes_of(client, auth_headers, sample_store.id)["name"]
             == "Test Website"
         )
 
     def test_a_regular_user_cannot_delete_a_store(
-        self, client, auth_headers, sample_source_website
+        self, client, auth_headers, sample_store
     ):
         response = client.delete(
-            f"/source-websites/{sample_source_website.id}", headers=auth_headers
+            f"/source-websites/{sample_store.id}", headers=auth_headers
         )
 
         assert response.status_code == 403
-        attributes_of(client, auth_headers, sample_source_website.id)
+        attributes_of(client, auth_headers, sample_store.id)
 
 
 class TestPartialUpdate:
@@ -171,7 +169,7 @@ class TestListOrder:
 
 class TestDeleteStoreInUse:
     def test_deleting_a_store_an_alert_uses_removes_it_from_the_alert(
-        self, client, test_db, staff_auth_headers, sample_user, sample_source_website
+        self, client, test_db, staff_auth_headers, sample_user, sample_store
     ):
         alert = PriceAlertModel(
             search_term="dom casmurro",
@@ -179,12 +177,12 @@ class TestDeleteStoreInUse:
             is_active=True,
             user_id=sample_user.id,
         )
-        alert.source_websites.append(sample_source_website)
+        alert.source_websites.append(sample_store)
         test_db.add(alert)
         test_db.commit()
 
         response = client.delete(
-            f"/source-websites/{sample_source_website.id}", headers=staff_auth_headers
+            f"/source-websites/{sample_store.id}", headers=staff_auth_headers
         )
 
         assert response.status_code == 204
@@ -197,13 +195,13 @@ class TestDeleteStoreInUse:
         test_db,
         staff_auth_headers,
         sample_search_config,
-        sample_source_website,
+        sample_store,
     ):
-        sample_search_config.source_websites.append(sample_source_website)
+        sample_search_config.source_websites.append(sample_store)
         test_db.commit()
 
         response = client.delete(
-            f"/source-websites/{sample_source_website.id}", headers=staff_auth_headers
+            f"/source-websites/{sample_store.id}", headers=staff_auth_headers
         )
 
         assert response.status_code == 204
