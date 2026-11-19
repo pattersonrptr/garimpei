@@ -13,10 +13,7 @@ from src.app.searches.persistence.models import SavedSearch as SavedSearchModel
 from src.app.searches.persistence.models import SearchRun as SearchRunModel
 from src.app.stores.persistence.models import Store as StoreModel
 
-DISPATCH = (
-    "src.app.interfaces.http.controllers.search_config_controller"
-    ".dispatch_scraper_search"
-)
+DISPATCH = "src.app.searches.adapters.dispatcher.dispatch_scraper_search"
 
 
 def add_config(test_db, user, search_term="dom casmurro", stores=(), **fields):
@@ -134,6 +131,21 @@ class TestRunNow:
             response = client.post(
                 f"/search-configs/{sample_search_config.id}/trigger",
                 headers=auth_headers,
+            )
+
+        assert response.status_code == 404
+        dispatch.assert_not_called()
+
+    def test_an_alert_on_another_search_does_not_unlock_this_one(
+        self, client, auth_headers, test_db, sample_user
+    ):
+        with_alert = add_config(test_db, sample_user, "dom casmurro")
+        add_alert(test_db, sample_user, with_alert)
+        without_alert = add_config(test_db, sample_user, "quincas borba")
+
+        with patch(DISPATCH) as dispatch:
+            response = client.post(
+                f"/search-configs/{without_alert.id}/trigger", headers=auth_headers
             )
 
         assert response.status_code == 404

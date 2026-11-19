@@ -11,10 +11,6 @@ from datetime import UTC, datetime, time, timedelta
 import pytest
 
 from src.app.searches.entities import SavedSearch, SearchRun
-from src.app.searches.ports import (
-    SavedSearchRepositoryInterface,
-    SearchRunRepositoryInterface,
-)
 from src.app.searches.use_cases import (
     DeleteSavedSearchUseCase,
     GetLatestSearchRunUseCase,
@@ -22,11 +18,17 @@ from src.app.searches.use_cases import (
     GetSavedSearchUseCase,
     GetSearchRunUseCase,
     SavedSearchChanges,
+    SavedSearchInUseError,
     SavedSearchNotFoundError,
     SearchRunChanges,
     SearchRunNotFoundError,
     UpdateSavedSearchUseCase,
     UpdateSearchRunUseCase,
+)
+from src.tests.unit.searches.fakes import (
+    FakeSavedSearches,
+    FakeSearchAlerts,
+    FakeSearchRuns,
 )
 
 NOW = datetime(2026, 11, 18, 12, 0, tzinfo=UTC)
@@ -41,91 +43,6 @@ DOM_CASMURRO = SavedSearch(
     user_id=10,
     source_website_ids=[1, 2],
 )
-
-
-class FakeSavedSearches(SavedSearchRepositoryInterface):
-    def __init__(self, *searches: SavedSearch):
-        self.rows = {s.id: s for s in searches}
-
-    def create(self, search_config: SavedSearch) -> SavedSearch:
-        created = replace(search_config, id=max(self.rows, default=0) + 1)
-        self.rows[created.id] = created
-        return created
-
-    def get_by_id(self, search_config_id: int) -> SavedSearch | None:
-        return self.rows.get(search_config_id)
-
-    def get_by_user_id(self, user_id: int) -> list[SavedSearch]:
-        return [s for s in self.rows.values() if s.user_id == user_id]
-
-    def get_by_search_term_and_user_id(
-        self, search_term: str, user_id: int
-    ) -> SavedSearch | None:
-        return next(
-            (
-                s
-                for s in self.rows.values()
-                if s.search_term == search_term and s.user_id == user_id
-            ),
-            None,
-        )
-
-    def get_all(
-        self,
-        limit=10,
-        offset=0,
-        sort_by=None,
-        sort_order=None,
-        user_id=None,
-        search_term=None,
-    ):
-        searches = list(self.rows.values())
-        return searches[offset : offset + limit], len(searches)
-
-    def update(
-        self, search_config_id: int, search_config: SavedSearch
-    ) -> SavedSearch | None:
-        if search_config_id not in self.rows:
-            return None
-        self.rows[search_config_id] = search_config
-        return search_config
-
-    def delete(self, search_config_id: int) -> bool:
-        return self.rows.pop(search_config_id, None) is not None
-
-
-class FakeSearchRuns(SearchRunRepositoryInterface):
-    def __init__(self, *runs: SearchRun):
-        self.rows = {r.id: r for r in runs}
-
-    def create(self, search_execution_log: SearchRun) -> SearchRun:
-        created = replace(search_execution_log, id=max(self.rows, default=0) + 1)
-        self.rows[created.id] = created
-        return created
-
-    def update(self, search_execution_log_id: int, changes: dict) -> SearchRun | None:
-        if search_execution_log_id not in self.rows:
-            return None
-        updated = replace(self.rows[search_execution_log_id], **changes)
-        self.rows[search_execution_log_id] = updated
-        return updated
-
-    def get_by_id(self, search_execution_log_id: int) -> SearchRun | None:
-        return self.rows.get(search_execution_log_id)
-
-    def get_by_search_config_id(self, search_config_id: int) -> list[SearchRun]:
-        runs = [r for r in self.rows.values() if r.search_config_id == search_config_id]
-        return sorted(runs, key=lambda r: r.started_at, reverse=True)
-
-    def get_latest_by_search_config_id(self, search_config_id: int) -> SearchRun | None:
-        return next(iter(self.get_by_search_config_id(search_config_id)), None)
-
-    def get_all(self, limit=10, offset=0, sort_by=None, sort_order=None):
-        runs = list(self.rows.values())
-        return runs[offset : offset + limit], len(runs)
-
-    def delete(self, search_execution_log_id: int) -> bool:
-        return self.rows.pop(search_execution_log_id, None) is not None
 
 
 def a_run(minutes_ago: int, status="running", **fields) -> SearchRun:
@@ -203,6 +120,23 @@ class TestDeleteSavedSearch:
     def test_deleting_a_missing_search_is_not_found(self):
         with pytest.raises(SavedSearchNotFoundError):
             DeleteSavedSearchUseCase(FakeSavedSearches(DOM_CASMURRO)).execute(99)
+
+    def test_a_search_alerts_still_use_cannot_be_deleted(self):
+        searches = FakeSavedSearches(DOM_CASMURRO)
+        alerts = FakeSearchAlerts({1: [10, 20]})
+
+        with pytest.raises(SavedSearchInUseError) as in_use:
+            DeleteSavedSearchUseCase(searches, alerts).execute(1)
+
+        assert in_use.value.alert_count == 2
+        assert searches.get_by_id(1) == DOM_CASMURRO
+
+    def test_a_search_no_alert_uses_is_deleted(self):
+        searches = FakeSavedSearches(DOM_CASMURRO)
+
+        DeleteSavedSearchUseCase(searches, FakeSearchAlerts({2: [10]})).execute(1)
+
+        assert searches.get_by_id(1) is None
 
 
 class TestGetSearchRun:

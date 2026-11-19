@@ -1,4 +1,7 @@
-"""Unit tests for the pure plan-limit rules (no FastAPI, no database)."""
+"""Unit tests for the pure Run Now limit rules (no FastAPI, no database).
+
+Moved from tests/unit/domain/test_plan_limit_rules.py with the rules.
+"""
 
 import ast
 from datetime import UTC, datetime, timedelta
@@ -6,27 +9,20 @@ from pathlib import Path
 
 import pytest
 
-from src.app.billing.entities import Plan
-from src.app.billing.limits import PlanLimits, limits_for_plan
-from src.app.domain import plan_limits
-from src.app.domain.plan_limits import (
+from src.app.searches import entities
+from src.app.searches.entities import (
+    RunLimits,
     manual_run_violation,
     source_limit_violation,
 )
 
-FREE = limits_for_plan(None)
-PRO = PlanLimits(
-    plan_name="pro",
-    max_active_alerts=None,
-    min_frequency_minutes=30,
-    price_history_days=None,
-    max_sources=None,
-)
+FREE = RunLimits(plan_name="free", min_frequency_minutes=360, max_sources=2)
+PRO = RunLimits(plan_name="pro", min_frequency_minutes=30, max_sources=None)
 NOW = datetime(2026, 11, 3, 20, 0, tzinfo=UTC)
 
 
 def test_domain_module_has_no_framework_or_database_imports():
-    tree = ast.parse(Path(plan_limits.__file__).read_text(encoding="utf-8"))
+    tree = ast.parse(Path(entities.__file__).read_text(encoding="utf-8"))
     imported = {
         (node.module or "").split(".")[0]
         for node in ast.walk(tree)
@@ -38,30 +34,8 @@ def test_domain_module_has_no_framework_or_database_imports():
         for alias in node.names
     }
     assert not imported & {"fastapi", "sqlalchemy", "sendgrid"}
-    source = Path(plan_limits.__file__).read_text(encoding="utf-8")
+    source = Path(entities.__file__).read_text(encoding="utf-8")
     assert "infrastructure" not in source
-
-
-class TestLimitsForPlan:
-    def test_no_plan_means_free_defaults(self):
-        assert FREE.plan_name == "free"
-        assert FREE.max_active_alerts == 3
-        assert FREE.min_frequency_minutes == 360
-        assert FREE.max_sources == 2
-
-    def test_copies_plan_limits(self):
-        plan = Plan(
-            name="pro",
-            display_name="Pro",
-            max_active_alerts=20,
-            min_frequency_minutes=60,
-            price_history_days=None,
-            max_sources=None,
-        )
-        limits = limits_for_plan(plan)
-        assert (limits.plan_name, limits.max_active_alerts) == ("pro", 20)
-        assert limits.min_frequency_minutes == 60
-        assert limits.max_sources is None
 
 
 @pytest.mark.parametrize("sources,blocked", [(1, False), (2, False), (3, True)])

@@ -19,10 +19,7 @@ from src.app.searches.persistence.models import SearchRun as SearchRunModel
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-DISPATCH = (
-    "src.app.interfaces.http.controllers.search_config_controller"
-    ".dispatch_scraper_search"
-)
+DISPATCH = "src.app.searches.adapters.dispatcher.dispatch_scraper_search"
 
 
 def _login(client, username, password):

@@ -1,8 +1,8 @@
-"""Saved searches' ports: the repositories its use cases depend on."""
+"""Saved searches' ports: what its use cases need from storage and other modules."""
 
 from abc import ABC, abstractmethod
 
-from src.app.searches.entities import SavedSearch, SearchRun
+from src.app.searches.entities import RunLimits, SavedSearch, SearchRun
 
 
 class SavedSearchRepositoryInterface(ABC):
@@ -99,3 +99,34 @@ class SearchRunRepositoryInterface(ABC):
     def delete(self, search_execution_log_id: int) -> bool:
         """Delete a log by id. Returns True if deleted, False if not found."""
         ...
+
+
+class SearchAlerts(ABC):
+    """The price alerts that use saved searches (owned by alerts)."""
+
+    @abstractmethod
+    def user_has_alert(self, user_id: int, search_id: int) -> bool:
+        """Does the user have an alert (active or paused) on this search?"""
+        raise NotImplementedError
+
+    @abstractmethod
+    def count_using(self, search_id: int) -> int:
+        """How many alerts (active or paused) use this search."""
+        raise NotImplementedError
+
+
+class RunLimitsReader(ABC):
+    """The Run Now limits of a user's plan."""
+
+    @abstractmethod
+    def for_user(self, user_id: int) -> RunLimits:
+        raise NotImplementedError
+
+
+class SearchDispatcher(ABC):
+    """Sends a saved search to the scrapers."""
+
+    @abstractmethod
+    def dispatch(self, search_id: int) -> str:
+        """Queue a run of the search; returns the task id."""
+        raise NotImplementedError

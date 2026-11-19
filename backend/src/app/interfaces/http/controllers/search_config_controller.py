@@ -1,5 +1,3 @@
-from datetime import UTC, datetime
-
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 
@@ -10,18 +8,7 @@ from src.app.accounts.http.auth import (
     get_current_staff_user,
     is_staff_or_superuser,
 )
-from src.app.alerts.persistence.repositories import (
-    PriceAlertRepository,
-)
-from src.app.billing.http.limits import get_user_plan_limits
-from src.app.billing.limits import PlanLimits
-from src.app.domain.plan_limits import (
-    PlanLimitViolation,
-    manual_run_violation,
-    source_limit_violation,
-)
 from src.app.domain.validators.search_config_validator import SearchConfigValidator
-from src.app.infrastructure.celery_client import dispatch_scraper_search
 from src.app.infrastructure.database_config import get_db
 from src.app.interfaces.http.presenters.search_config_presenter import (
     SearchConfigPresenter,
@@ -32,7 +19,8 @@ from src.app.interfaces.http.schemas.search_config_schema import (
     SearchConfigsCollectionResponse,
     SearchConfigUpdateRequest,
 )
-from src.app.searches.entities import SavedSearch
+from src.app.searches import wiring
+from src.app.searches.entities import RunLimitViolation, SavedSearch
 from src.app.searches.persistence.repositories import (
     SavedSearchRepository,
     SearchRunRepository,
@@ -45,9 +33,12 @@ from src.app.searches.use_cases import (
     GetSavedSearchesOfUserUseCase,
     GetSavedSearchUseCase,
     ListSavedSearchesUseCase,
+    RunLimitReachedError,
+    RunSearchNowUseCase,
     SavedSearchChanges,
     SavedSearchInUseError,
     SavedSearchNotFoundError,
+    SearchAlreadyRunningError,
     UpdateSavedSearchUseCase,
 )
 from src.app.stores.persistence.repositories import StoreRepository
@@ -59,7 +50,7 @@ router = APIRouter(tags=["search_configs"], prefix="/search-configs")
 logger = get_logger(__name__)
 
 
-def _plan_limit_error(violation: PlanLimitViolation) -> JsonApiError:
+def _plan_limit_error(violation: RunLimitViolation) -> JsonApiError:
     """A plan limit a manual run breaks, as a JSON:API error."""
     return JsonApiError(
         status="403",
@@ -94,8 +85,12 @@ def get_search_execution_log_repository(
     return SearchRunRepository(db)
 
 
-def get_price_alert_repository(db=Depends(get_db)) -> PriceAlertRepository:
-    return PriceAlertRepository(db)
+def get_delete_saved_search(db=Depends(get_db)) -> DeleteSavedSearchUseCase:
+    return wiring.delete_saved_search(db)
+
+
+def get_run_search_now(db=Depends(get_db)) -> RunSearchNowUseCase:
+    return wiring.run_search_now(db)
 
 
 def get_source_website_repository(db=Depends(get_db)) -> StoreRepository:
@@ -353,7 +348,7 @@ def update_search_config(
 def delete_search_config(
     search_config_id: int,
     search_config_repo: SavedSearchRepository = Depends(get_search_config_repository),
-    price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
+    delete_saved_search: DeleteSavedSearchUseCase = Depends(get_delete_saved_search),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
     """
@@ -380,9 +375,8 @@ def delete_search_config(
             f"id {search_config_id}", "/data/id"
         )
 
-    delete_uc = DeleteSavedSearchUseCase(search_config_repo, price_alert_repo)
     try:
-        delete_uc.execute(search_config_id)
+        delete_saved_search.execute(search_config_id)
     except SavedSearchInUseError as in_use:
         return JSONResponse(
             status_code=409,
@@ -427,9 +421,7 @@ def delete_search_config(
 def trigger_search_config(
     search_config_id: int,
     search_config_repo: SavedSearchRepository = Depends(get_search_config_repository),
-    log_repo: SearchRunRepository = Depends(get_search_execution_log_repository),
-    price_alert_repo: PriceAlertRepository = Depends(get_price_alert_repository),
-    plan_limits: PlanLimits = Depends(get_user_plan_limits),
+    run_now: RunSearchNowUseCase = Depends(get_run_search_now),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
@@ -454,42 +446,25 @@ def trigger_search_config(
             f"id {search_config_id}", "/data/id"
         )
 
-    # Prevent concurrent runs: check the latest run (lost runs are closed)
-    latest_log = GetLatestSearchRunUseCase(log_repo).execute(search_config_id)
-
-    if not is_staff_or_superuser(current_user):
-        # Paused alerts can still be run by hand: pausing stops the schedule
-        # and the emails, not the customer's own manual check.
-        linked_alerts = [
-            alert
-            for alert in price_alert_repo.get_by_user_id(current_user.id)
-            if alert.search_config_id == search_config_id
-        ]
-        if not linked_alerts:
-            return SearchConfigPresenter.handle_not_found(
-                f"id {search_config_id}", "/data/id"
-            )
-        violation = source_limit_violation(
-            len(search_config.source_website_ids), plan_limits
+    try:
+        task_id = run_now.execute(
+            search_config,
+            user_id=current_user.id,
+            user_is_staff=is_staff_or_superuser(current_user),
         )
-        if violation is None and not (
-            latest_log and latest_log.status in ("pending", "running")
-        ):
-            violation = manual_run_violation(
-                latest_log.started_at if latest_log else None,
-                datetime.now(UTC),
-                plan_limits,
-            )
-        if violation:
-            return JSONResponse(
-                status_code=403,
-                content=JsonApiErrorResponse(
-                    errors=[_plan_limit_error(violation)]
-                ).model_dump(),
-                media_type="application/vnd.api+json",
-            )
-
-    if latest_log and latest_log.status in ("pending", "running"):
+    except SavedSearchNotFoundError:  # not behind one of the user's alerts
+        return SearchConfigPresenter.handle_not_found(
+            f"id {search_config_id}", "/data/id"
+        )
+    except RunLimitReachedError as refused:
+        return JSONResponse(
+            status_code=403,
+            content=JsonApiErrorResponse(
+                errors=[_plan_limit_error(refused.violation)]
+            ).model_dump(),
+            media_type="application/vnd.api+json",
+        )
+    except SearchAlreadyRunningError:
         logger.info(
             "Search config %s already running, skipping trigger",
             search_config_id,
@@ -511,8 +486,6 @@ def trigger_search_config(
                 }
             },
         )
-
-    task_id = dispatch_scraper_search(search_config_id)
 
     logger.info(
         "Triggered scraper search for config %s (task %s)",

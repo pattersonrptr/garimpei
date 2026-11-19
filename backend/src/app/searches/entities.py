@@ -65,3 +65,79 @@ def is_stale_run(status: str, started_at: datetime | None, now: datetime) -> boo
     if started_at.tzinfo is None:  # stored as naive UTC
         started_at = started_at.replace(tzinfo=UTC)
     return now - started_at > STALE_RUN_AFTER
+
+
+@dataclass(frozen=True, kw_only=True)
+class RunLimits:
+    """What the user's plan allows for running a search by hand."""
+
+    plan_name: str
+    min_frequency_minutes: int
+    max_sources: int | None  # None = all stores
+
+
+@dataclass(frozen=True)
+class RunLimitViolation:
+    """Why a run exceeds the user's plan (mapped to an API error)."""
+
+    title: str
+    detail: str
+    pointer: str | None = None
+    # Machine-readable facts so clients can explain it in the user's language:
+    # {"limit": "<name>", "value": <number>, "plan": "<plan name>"}
+    meta: dict | None = None
+
+
+def source_limit_violation(
+    source_count: int, limits: RunLimits
+) -> RunLimitViolation | None:
+    """Does the plan allow this many stores for one search?"""
+    if limits.max_sources is None:
+        return None  # unlimited
+    if source_count > limits.max_sources:
+        return RunLimitViolation(
+            title="Source limit reached",
+            detail=(
+                f"Your {limits.plan_name} plan allows up to "
+                f"{limits.max_sources} sources per alert. "
+                f"Upgrade your plan for more."
+            ),
+            pointer="/data/attributes/source_website_ids",
+            meta={
+                "limit": "max_sources",
+                "value": limits.max_sources,
+                "plan": limits.plan_name,
+            },
+        )
+    return None
+
+
+def manual_run_violation(
+    last_run_started_at: datetime | None, now: datetime, limits: RunLimits
+) -> RunLimitViolation | None:
+    """
+    A manual "Run Now" must respect the plan's minimum check interval,
+    otherwise it would be a way around min_frequency_minutes.
+    """
+    if last_run_started_at is None:
+        return None
+    if last_run_started_at.tzinfo is None:  # stored as naive UTC
+        last_run_started_at = last_run_started_at.replace(tzinfo=UTC)
+    next_allowed = last_run_started_at + timedelta(minutes=limits.min_frequency_minutes)
+    if now < next_allowed:
+        wait_minutes = int((next_allowed - now).total_seconds() // 60) + 1
+        return RunLimitViolation(
+            title="Search ran recently",
+            detail=(
+                f"Your {limits.plan_name} plan allows one check every "
+                f"{limits.min_frequency_minutes} minutes. "
+                f"Try again in {wait_minutes} minutes."
+            ),
+            meta={
+                "limit": "manual_run_interval",
+                "value": limits.min_frequency_minutes,
+                "wait_minutes": wait_minutes,
+                "plan": limits.plan_name,
+            },
+        )
+    return None
