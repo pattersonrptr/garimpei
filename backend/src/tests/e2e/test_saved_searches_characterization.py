@@ -136,6 +136,21 @@ class TestRunNow:
         assert response.status_code == 404
         dispatch.assert_not_called()
 
+    def test_an_alert_on_another_search_does_not_unlock_this_one(
+        self, client, auth_headers, test_db, sample_user
+    ):
+        with_alert = add_config(test_db, sample_user, "dom casmurro")
+        add_alert(test_db, sample_user, with_alert)
+        without_alert = add_config(test_db, sample_user, "quincas borba")
+
+        with patch(DISPATCH) as dispatch:
+            response = client.post(
+                f"/search-configs/{without_alert.id}/trigger", headers=auth_headers
+            )
+
+        assert response.status_code == 404
+        dispatch.assert_not_called()
+
     def test_more_stores_than_the_plan_allows_is_refused(
         self, client, auth_headers, test_db, sample_user
     ):

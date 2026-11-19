@@ -8,7 +8,12 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from src.app.searches.entities import RunLimits, SavedSearch, SearchRun
+from src.app.searches.entities import (
+    RunLimits,
+    SavedSearch,
+    SearchRun,
+    SearchRunStatus,
+)
 from src.app.searches.use_cases import (
     RunLimitReachedError,
     RunSearchNowUseCase,
@@ -31,7 +36,7 @@ SEARCH = SavedSearch(
 )
 
 
-def a_run(minutes_ago: int, status: str = "success") -> SearchRun:
+def a_run(minutes_ago: int, status: SearchRunStatus = "success") -> SearchRun:
     return SearchRun(
         id=1,
         search_config_id=1,
