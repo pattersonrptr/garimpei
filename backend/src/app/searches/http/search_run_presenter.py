@@ -1,17 +1,17 @@
 from fastapi.responses import JSONResponse
 
-from src.app.interfaces.http.schemas.search_execution_log_schema import (
-    SearchExecutionLogReadResponse,
-    SearchExecutionLogResource,
-    SearchExecutionLogsCollectionResponse,
-)
 from src.app.searches.entities import SearchRun
+from src.app.searches.http.search_run_schema import (
+    SearchRunReadResponse,
+    SearchRunResource,
+    SearchRunsCollectionResponse,
+)
 from src.common.jsonapi import JsonApiError, JsonApiErrorResponse
 
 
-class SearchExecutionLogPresenter:
+class SearchRunPresenter:
     """
-    Presenter for SearchExecutionLog entities following Clean Architecture.
+    Presenter for SearchRun entities following Clean Architecture.
     Transforms domain entities into HTTP presentation formats (JSON:API).
     """
 
@@ -47,18 +47,16 @@ class SearchExecutionLogPresenter:
     @staticmethod
     def handle_success(
         entity: SearchRun,
-    ) -> SearchExecutionLogReadResponse:
+    ) -> SearchRunReadResponse:
         """Returns search execution log in JSON:API format (success)."""
-        return SearchExecutionLogReadResponse(
-            data=SearchExecutionLogResource.from_entity(entity)
-        )
+        return SearchRunReadResponse(data=SearchRunResource.from_entity(entity))
 
     @staticmethod
     def handle_collection_success(
         entities: list[SearchRun], total: int
-    ) -> SearchExecutionLogsCollectionResponse:
+    ) -> SearchRunsCollectionResponse:
         """Returns collection of search execution logs in JSON:API format."""
-        return SearchExecutionLogsCollectionResponse(
-            data=[SearchExecutionLogResource.from_entity(e) for e in entities],
+        return SearchRunsCollectionResponse(
+            data=[SearchRunResource.from_entity(e) for e in entities],
             meta={"total": total},
         )

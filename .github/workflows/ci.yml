@@ -116,6 +116,14 @@ jobs:
             src/app/searches/adapters/alerts.py \
             src/app/searches/adapters/plan_limits.py \
             src/app/searches/adapters/dispatcher.py \
+            src/app/searches/adapters/stores.py \
+            src/app/searches/http/saved_search_schema.py \
+            src/app/searches/http/search_run_schema.py \
+            src/app/searches/http/saved_search_presenter.py \
+            src/app/searches/http/search_run_presenter.py \
+            src/app/searches/http/validators.py \
+            src/app/searches/http/saved_search_controller.py \
+            src/app/searches/http/search_run_controller.py \
             src/app/billing/ports.py \
             src/app/billing/persistence/models.py \
             src/app/billing/persistence/repositories.py \

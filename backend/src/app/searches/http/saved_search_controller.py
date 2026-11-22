@@ -8,24 +8,23 @@ from src.app.accounts.http.auth import (
     get_current_staff_user,
     is_staff_or_superuser,
 )
-from src.app.domain.validators.search_config_validator import SearchConfigValidator
 from src.app.infrastructure.database_config import get_db
-from src.app.interfaces.http.presenters.search_config_presenter import (
-    SearchConfigPresenter,
-)
-from src.app.interfaces.http.schemas.search_config_schema import (
-    SearchConfigCreateRequest,
-    SearchConfigReadResponse,
-    SearchConfigsCollectionResponse,
-    SearchConfigUpdateRequest,
-)
 from src.app.searches import wiring
 from src.app.searches.entities import RunLimitViolation, SavedSearch
-from src.app.searches.persistence.repositories import (
-    SavedSearchRepository,
-    SearchRunRepository,
+from src.app.searches.http.saved_search_presenter import (
+    SavedSearchPresenter,
 )
-from src.app.searches.ports import SavedSearchRepositoryInterface
+from src.app.searches.http.saved_search_schema import (
+    SavedSearchCreateRequest,
+    SavedSearchesCollectionResponse,
+    SavedSearchReadResponse,
+    SavedSearchUpdateRequest,
+)
+from src.app.searches.http.validators import SavedSearchValidator
+from src.app.searches.ports import (
+    SavedSearchRepositoryInterface,
+    SearchRunRepositoryInterface,
+)
 from src.app.searches.use_cases import (
     CreateSavedSearchUseCase,
     DeleteSavedSearchUseCase,
@@ -41,7 +40,6 @@ from src.app.searches.use_cases import (
     SearchAlreadyRunningError,
     UpdateSavedSearchUseCase,
 )
-from src.app.stores.persistence.repositories import StoreRepository
 from src.common.jsonapi import JsonApiError, JsonApiErrorResponse
 from src.config.logging_config import get_logger
 
@@ -73,16 +71,16 @@ def _owned_search(
     return search if can_access_owned_resource(search.user_id, user) else None
 
 
-def get_search_config_repository(db=Depends(get_db)) -> SavedSearchRepository:
-    """Dependency injection for SavedSearchRepository."""
-    return SavedSearchRepository(db)
+def get_search_config_repository(
+    db=Depends(get_db),
+) -> SavedSearchRepositoryInterface:
+    return wiring.saved_searches(db)
 
 
 def get_search_execution_log_repository(
     db=Depends(get_db),
-) -> SearchRunRepository:
-    """Dependency injection for SearchRunRepository."""
-    return SearchRunRepository(db)
+) -> SearchRunRepositoryInterface:
+    return wiring.search_runs(db)
 
 
 def get_delete_saved_search(db=Depends(get_db)) -> DeleteSavedSearchUseCase:
@@ -93,24 +91,17 @@ def get_run_search_now(db=Depends(get_db)) -> RunSearchNowUseCase:
     return wiring.run_search_now(db)
 
 
-def get_source_website_repository(db=Depends(get_db)) -> StoreRepository:
-    """Dependency injection for StoreRepository (used by validator)."""
-    return StoreRepository(db)
+def get_search_config_validator(db=Depends(get_db)) -> SavedSearchValidator:
+    return wiring.saved_search_validator(db)
 
 
-def get_search_config_validator(
-    search_config_repo: SavedSearchRepository = Depends(get_search_config_repository),
-    source_website_repo: StoreRepository = Depends(get_source_website_repository),
-) -> SearchConfigValidator:
-    """Dependency injection for SearchConfigValidator."""
-    return SearchConfigValidator(search_config_repo, source_website_repo)
-
-
-@router.post("/", response_model=SearchConfigReadResponse, status_code=201)
+@router.post("/", response_model=SavedSearchReadResponse, status_code=201)
 def create_search_config(
-    search_config_in: SearchConfigCreateRequest,
-    search_config_repo: SavedSearchRepository = Depends(get_search_config_repository),
-    search_config_validator: SearchConfigValidator = Depends(
+    search_config_in: SavedSearchCreateRequest,
+    search_config_repo: SavedSearchRepositoryInterface = Depends(
+        get_search_config_repository
+    ),
+    search_config_validator: SavedSearchValidator = Depends(
         get_search_config_validator
     ),
     current_user: UserEntity = Depends(get_current_staff_user),
@@ -142,7 +133,7 @@ def create_search_config(
                 "user_id": current_user.id,
             },
         )
-        return SearchConfigPresenter.handle_validation_errors(validation_errors)
+        return SavedSearchPresenter.handle_validation_errors(validation_errors)
 
     attrs = search_config_in.data.attributes
     search_config_entity = SavedSearch(
@@ -166,17 +157,19 @@ def create_search_config(
             "user_id": current_user.id,
         },
     )
-    return SearchConfigPresenter.handle_success(created)
+    return SavedSearchPresenter.handle_success(created)
 
 
-@router.get("/", response_model=SearchConfigsCollectionResponse)
+@router.get("/", response_model=SavedSearchesCollectionResponse)
 def list_search_configs(
     limit: int = Query(default=10, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     sort_by: str | None = Query(default=None),
     sort_order: str | None = Query(default="desc", pattern="^(asc|desc)$"),
     search_term: str | None = Query(default=None, max_length=255),
-    search_config_repo: SavedSearchRepository = Depends(get_search_config_repository),
+    search_config_repo: SavedSearchRepositoryInterface = Depends(
+        get_search_config_repository
+    ),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
@@ -202,13 +195,15 @@ def list_search_configs(
         user_id=None if is_staff_or_superuser(current_user) else current_user.id,
         search_term=search_term.strip() if search_term else None,
     )
-    return SearchConfigPresenter.handle_collection_success(search_configs, total)
+    return SavedSearchPresenter.handle_collection_success(search_configs, total)
 
 
-@router.get("/user/{user_id}", response_model=SearchConfigsCollectionResponse)
+@router.get("/user/{user_id}", response_model=SavedSearchesCollectionResponse)
 def get_search_configs_by_user(
     user_id: int,
-    search_config_repo: SavedSearchRepository = Depends(get_search_config_repository),
+    search_config_repo: SavedSearchRepositoryInterface = Depends(
+        get_search_config_repository
+    ),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
@@ -235,15 +230,17 @@ def get_search_configs_by_user(
         )
 
     search_configs = use_case.execute(user_id)
-    return SearchConfigPresenter.handle_collection_success(
+    return SavedSearchPresenter.handle_collection_success(
         search_configs, len(search_configs)
     )
 
 
-@router.get("/{search_config_id}", response_model=SearchConfigReadResponse)
+@router.get("/{search_config_id}", response_model=SavedSearchReadResponse)
 def get_search_config(
     search_config_id: int,
-    search_config_repo: SavedSearchRepository = Depends(get_search_config_repository),
+    search_config_repo: SavedSearchRepositoryInterface = Depends(
+        get_search_config_repository
+    ),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
@@ -265,19 +262,21 @@ def get_search_config(
 
     search_config = _owned_search(search_config_repo, search_config_id, current_user)
     if search_config is None:
-        return SearchConfigPresenter.handle_not_found(
+        return SavedSearchPresenter.handle_not_found(
             f"id {search_config_id}", "/data/id"
         )
 
-    return SearchConfigPresenter.handle_success(search_config)
+    return SavedSearchPresenter.handle_success(search_config)
 
 
-@router.put("/{search_config_id}", response_model=SearchConfigReadResponse)
+@router.put("/{search_config_id}", response_model=SavedSearchReadResponse)
 def update_search_config(
     search_config_id: int,
-    search_config_in: SearchConfigUpdateRequest,
-    search_config_repo: SavedSearchRepository = Depends(get_search_config_repository),
-    search_config_validator: SearchConfigValidator = Depends(
+    search_config_in: SavedSearchUpdateRequest,
+    search_config_repo: SavedSearchRepositoryInterface = Depends(
+        get_search_config_repository
+    ),
+    search_config_validator: SavedSearchValidator = Depends(
         get_search_config_validator
     ),
     current_user: UserEntity = Depends(get_current_staff_user),
@@ -303,7 +302,7 @@ def update_search_config(
     )
 
     if _owned_search(search_config_repo, search_config_id, current_user) is None:
-        return SearchConfigPresenter.handle_not_found(
+        return SavedSearchPresenter.handle_not_found(
             f"id {search_config_id}", "/data/id"
         )
 
@@ -318,7 +317,7 @@ def update_search_config(
                 "search_config_id": search_config_id,
             },
         )
-        return SearchConfigPresenter.handle_validation_errors(validation_errors)
+        return SavedSearchPresenter.handle_validation_errors(validation_errors)
 
     attrs = search_config_in.data.attributes
     updated = UpdateSavedSearchUseCase(search_config_repo).execute(
@@ -341,13 +340,15 @@ def update_search_config(
             "user_id": current_user.id,
         },
     )
-    return SearchConfigPresenter.handle_success(updated)
+    return SavedSearchPresenter.handle_success(updated)
 
 
 @router.delete("/{search_config_id}", status_code=204)
 def delete_search_config(
     search_config_id: int,
-    search_config_repo: SavedSearchRepository = Depends(get_search_config_repository),
+    search_config_repo: SavedSearchRepositoryInterface = Depends(
+        get_search_config_repository
+    ),
     delete_saved_search: DeleteSavedSearchUseCase = Depends(get_delete_saved_search),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
@@ -371,7 +372,7 @@ def delete_search_config(
 
     search_config = _owned_search(search_config_repo, search_config_id, current_user)
     if search_config is None:
-        return SearchConfigPresenter.handle_not_found(
+        return SavedSearchPresenter.handle_not_found(
             f"id {search_config_id}", "/data/id"
         )
 
@@ -397,7 +398,7 @@ def delete_search_config(
             media_type="application/vnd.api+json",
         )
     except SavedSearchNotFoundError:
-        return SearchConfigPresenter.handle_not_found(
+        return SavedSearchPresenter.handle_not_found(
             f"id {search_config_id}", "/data/id"
         )
 
@@ -420,7 +421,9 @@ def delete_search_config(
 @router.post("/{search_config_id}/trigger", status_code=202)
 def trigger_search_config(
     search_config_id: int,
-    search_config_repo: SavedSearchRepository = Depends(get_search_config_repository),
+    search_config_repo: SavedSearchRepositoryInterface = Depends(
+        get_search_config_repository
+    ),
     run_now: RunSearchNowUseCase = Depends(get_run_search_now),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
@@ -442,7 +445,7 @@ def trigger_search_config(
     """
     search_config = _owned_search(search_config_repo, search_config_id, current_user)
     if search_config is None:
-        return SearchConfigPresenter.handle_not_found(
+        return SavedSearchPresenter.handle_not_found(
             f"id {search_config_id}", "/data/id"
         )
 
@@ -453,7 +456,7 @@ def trigger_search_config(
             user_is_staff=is_staff_or_superuser(current_user),
         )
     except SavedSearchNotFoundError:  # not behind one of the user's alerts
-        return SearchConfigPresenter.handle_not_found(
+        return SavedSearchPresenter.handle_not_found(
             f"id {search_config_id}", "/data/id"
         )
     except RunLimitReachedError as refused:
@@ -516,8 +519,12 @@ def trigger_search_config(
 @router.get("/{search_config_id}/execution-status")
 def get_execution_status(
     search_config_id: int,
-    search_config_repo: SavedSearchRepository = Depends(get_search_config_repository),
-    log_repo: SearchRunRepository = Depends(get_search_execution_log_repository),
+    search_config_repo: SavedSearchRepositoryInterface = Depends(
+        get_search_config_repository
+    ),
+    log_repo: SearchRunRepositoryInterface = Depends(
+        get_search_execution_log_repository
+    ),
     current_user: UserEntity = Depends(get_current_active_user),
 ):
     """
@@ -529,7 +536,7 @@ def get_execution_status(
     """
     search_config = _owned_search(search_config_repo, search_config_id, current_user)
     if search_config is None:
-        return SearchConfigPresenter.handle_not_found(
+        return SavedSearchPresenter.handle_not_found(
             f"id {search_config_id}", "/data/id"
         )
 

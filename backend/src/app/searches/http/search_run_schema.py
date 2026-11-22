@@ -12,7 +12,7 @@ from src.common.jsonapi import (
 )
 
 
-class SearchExecutionLogAttributes(BaseModel):
+class SearchRunAttributes(BaseModel):
     """Search execution log attributes for responses."""
 
     search_config_id: int
@@ -25,7 +25,7 @@ class SearchExecutionLogAttributes(BaseModel):
     finished_at: datetime | None = None
 
 
-class SearchExecutionLogAttributesForCreation(BaseModel):
+class SearchRunAttributesForCreation(BaseModel):
     """Attributes for search execution log creation."""
 
     search_config_id: int
@@ -36,7 +36,7 @@ class SearchExecutionLogAttributesForCreation(BaseModel):
     error_message: str | None = None
 
 
-class SearchExecutionLogAttributesForUpdate(BaseModel):
+class SearchRunAttributesForUpdate(BaseModel):
     """Attributes a scraper may change while a run progresses (all optional)."""
 
     status: Literal["pending", "running", "success", "failed"] | None = None
@@ -46,62 +46,62 @@ class SearchExecutionLogAttributesForUpdate(BaseModel):
     error_message: str | None = None
 
 
-class SearchExecutionLogResourceForCreation(ResourceObjectForCreation):
+class SearchRunResourceForCreation(ResourceObjectForCreation):
     """ResourceObject for search execution log creation (without id)."""
 
     type: str = Field(
         default="search_execution_logs", examples=["search_execution_logs"]
     )
-    attributes: SearchExecutionLogAttributesForCreation
+    attributes: SearchRunAttributesForCreation
 
 
-class SearchExecutionLogCreateRequest(SingleResourceRequest):
+class SearchRunCreateRequest(SingleResourceRequest):
     """Request schema for creating a search execution log."""
 
-    data: SearchExecutionLogResourceForCreation
+    data: SearchRunResourceForCreation
 
 
-class SearchExecutionLogResourceForUpdate(BaseModel):
+class SearchRunResourceForUpdate(BaseModel):
     """ResourceObject for a partial update."""
 
     type: str = Field(
         default="search_execution_logs", examples=["search_execution_logs"]
     )
     id: str | None = None
-    attributes: SearchExecutionLogAttributesForUpdate
+    attributes: SearchRunAttributesForUpdate
 
 
-class SearchExecutionLogUpdateRequest(BaseModel):
+class SearchRunUpdateRequest(BaseModel):
     """Request schema for updating a search execution log."""
 
-    data: SearchExecutionLogResourceForUpdate
+    data: SearchRunResourceForUpdate
 
 
-class SearchExecutionLogResource(ResourceObject):
+class SearchRunResource(ResourceObject):
     """Search execution log resource following JSON:API specification."""
 
     type: str = Field(
         default="search_execution_logs", examples=["search_execution_logs"]
     )
-    attributes: SearchExecutionLogAttributes
+    attributes: SearchRunAttributes
 
     @classmethod
-    def from_entity(cls, entity) -> "SearchExecutionLogResource":
-        """Factory method: converts a SearchRun to SearchExecutionLogResource."""
+    def from_entity(cls, entity) -> "SearchRunResource":
+        """Factory method: converts a SearchRun to SearchRunResource."""
         return cls.from_model(
             entity,
             type_name="search_execution_logs",
-            attributes_field=SearchExecutionLogAttributes,
+            attributes_field=SearchRunAttributes,
         )
 
 
-class SearchExecutionLogReadResponse(SingleResourceResponse):
+class SearchRunReadResponse(SingleResourceResponse):
     """Response schema for a single search execution log."""
 
-    data: SearchExecutionLogResource
+    data: SearchRunResource
 
 
-class SearchExecutionLogsCollectionResponse(CollectionResponse):
+class SearchRunsCollectionResponse(CollectionResponse):
     """Response schema for a collection of search execution logs."""
 
-    data: list[SearchExecutionLogResource]
+    data: list[SearchRunResource]  # type: ignore[assignment]

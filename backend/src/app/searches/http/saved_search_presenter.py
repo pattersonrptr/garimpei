@@ -1,17 +1,17 @@
 from fastapi.responses import JSONResponse
 
-from src.app.interfaces.http.schemas.search_config_schema import (
-    SearchConfigReadResponse,
-    SearchConfigResource,
-    SearchConfigsCollectionResponse,
-)
 from src.app.searches.entities import SavedSearch
+from src.app.searches.http.saved_search_schema import (
+    SavedSearchesCollectionResponse,
+    SavedSearchReadResponse,
+    SavedSearchResource,
+)
 from src.common.jsonapi import JsonApiError, JsonApiErrorResponse
 
 
-class SearchConfigPresenter:
+class SavedSearchPresenter:
     """
-    Presenter for SearchConfig entities following Clean Architecture.
+    Presenter for SavedSearch entities following Clean Architecture.
     Transforms domain entities into HTTP presentation formats (JSON:API).
     """
 
@@ -45,16 +45,16 @@ class SearchConfigPresenter:
         )
 
     @staticmethod
-    def handle_success(entity: SavedSearch) -> SearchConfigReadResponse:
+    def handle_success(entity: SavedSearch) -> SavedSearchReadResponse:
         """Returns search config in JSON:API format (success)."""
-        return SearchConfigReadResponse(data=SearchConfigResource.from_entity(entity))
+        return SavedSearchReadResponse(data=SavedSearchResource.from_entity(entity))
 
     @staticmethod
     def handle_collection_success(
         entities: list[SavedSearch], total: int
-    ) -> SearchConfigsCollectionResponse:
+    ) -> SavedSearchesCollectionResponse:
         """Returns collection of search configs in JSON:API format."""
-        return SearchConfigsCollectionResponse(
-            data=[SearchConfigResource.from_entity(entity) for entity in entities],
+        return SavedSearchesCollectionResponse(
+            data=[SavedSearchResource.from_entity(entity) for entity in entities],
             meta={"total": total},
         )

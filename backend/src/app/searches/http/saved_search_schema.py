@@ -11,7 +11,7 @@ from src.common.jsonapi import (
 )
 
 
-class SearchConfigAttributes(BaseModel):
+class SavedSearchAttributes(BaseModel):
     """Search config attributes for responses."""
 
     search_term: str
@@ -25,7 +25,7 @@ class SearchConfigAttributes(BaseModel):
     updated_at: datetime | None = None
 
 
-class SearchConfigAttributesForCreation(BaseModel):
+class SavedSearchAttributesForCreation(BaseModel):
     """Attributes for search config creation."""
 
     search_term: str
@@ -37,7 +37,7 @@ class SearchConfigAttributesForCreation(BaseModel):
     source_website_ids: list[int] = Field(default_factory=list)
 
 
-class SearchConfigAttributesForUpdate(BaseModel):
+class SavedSearchAttributesForUpdate(BaseModel):
     """Attributes for search config update — all optional."""
 
     search_term: str | None = None
@@ -48,55 +48,55 @@ class SearchConfigAttributesForUpdate(BaseModel):
     source_website_ids: list[int] | None = None
 
 
-class SearchConfigResource(ResourceObject):
+class SavedSearchResource(ResourceObject):
     """Search config resource following JSON:API specification."""
 
     type: str = Field(default="search_configs", examples=["search_configs"])
-    attributes: SearchConfigAttributes
+    attributes: SavedSearchAttributes
 
     @classmethod
-    def from_entity(cls, entity) -> "SearchConfigResource":
-        """Factory method: converts a SavedSearch to SearchConfigResource."""
+    def from_entity(cls, entity) -> "SavedSearchResource":
+        """Factory method: converts a SavedSearch to SavedSearchResource."""
         return cls.from_model(
             entity,
             type_name="search_configs",
-            attributes_field=SearchConfigAttributes,
+            attributes_field=SavedSearchAttributes,
         )
 
 
-class SearchConfigResourceForCreation(ResourceObjectForCreation):
+class SavedSearchResourceForCreation(ResourceObjectForCreation):
     """ResourceObject for search config creation (without id)."""
 
     type: str = Field(default="search_config", examples=["search_config"])
-    attributes: SearchConfigAttributesForCreation
+    attributes: SavedSearchAttributesForCreation
 
 
-class SearchConfigResourceForUpdate(ResourceObjectForCreation):
+class SavedSearchResourceForUpdate(ResourceObjectForCreation):
     """ResourceObject for search config update (without id)."""
 
     type: str = Field(default="search_config", examples=["search_config"])
-    attributes: SearchConfigAttributesForUpdate
+    attributes: SavedSearchAttributesForUpdate
 
 
-class SearchConfigCreateRequest(SingleResourceRequest):
+class SavedSearchCreateRequest(SingleResourceRequest):
     """Request schema for creating a search config."""
 
-    data: SearchConfigResourceForCreation
+    data: SavedSearchResourceForCreation
 
 
-class SearchConfigUpdateRequest(SingleResourceRequest):
+class SavedSearchUpdateRequest(SingleResourceRequest):
     """Request schema for updating a search config."""
 
-    data: SearchConfigResourceForUpdate
+    data: SavedSearchResourceForUpdate
 
 
-class SearchConfigReadResponse(SingleResourceResponse):
+class SavedSearchReadResponse(SingleResourceResponse):
     """Response schema for a single search config."""
 
-    data: SearchConfigResource
+    data: SavedSearchResource
 
 
-class SearchConfigsCollectionResponse(CollectionResponse):
+class SavedSearchesCollectionResponse(CollectionResponse):
     """Response schema for a collection of search configs."""
 
-    data: list[SearchConfigResource]
+    data: list[SavedSearchResource]  # type: ignore[assignment]

@@ -41,10 +41,10 @@ from src.app.interfaces.http.controllers.admin_controller import (
 from src.app.interfaces.http.controllers.dashboard_controller import (
     router as dashboard_controller,
 )
-from src.app.interfaces.http.controllers.search_config_controller import (
+from src.app.searches.http.saved_search_controller import (
     router as search_config_controller,
 )
-from src.app.interfaces.http.controllers.search_execution_log_controller import (
+from src.app.searches.http.search_run_controller import (
     router as search_execution_log_controller,
 )
 from src.app.stores.http.store_controller import (
