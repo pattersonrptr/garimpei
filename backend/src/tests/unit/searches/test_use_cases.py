@@ -13,6 +13,7 @@ import pytest
 from src.app.searches.entities import SavedSearch, SearchRun
 from src.app.searches.use_cases import (
     DeleteSavedSearchUseCase,
+    FindSavedSearchByTermUseCase,
     GetLatestSearchRunUseCase,
     GetSavedSearchesOfUserUseCase,
     GetSavedSearchUseCase,
@@ -70,6 +71,27 @@ class TestGetSavedSearch:
         searches = FakeSavedSearches(DOM_CASMURRO, someone_elses)
 
         assert GetSavedSearchesOfUserUseCase(searches).execute(10) == [DOM_CASMURRO]
+
+
+class TestFindSavedSearchByTerm:
+    def test_a_users_search_is_found_by_its_term(self):
+        searches = FakeSavedSearches(DOM_CASMURRO)
+
+        found = FindSavedSearchByTermUseCase(searches).execute("dom casmurro", 10)
+
+        assert found == DOM_CASMURRO
+
+    def test_the_same_term_of_another_user_is_not_found(self):
+        searches = FakeSavedSearches(DOM_CASMURRO)
+
+        assert (
+            FindSavedSearchByTermUseCase(searches).execute("dom casmurro", 20) is None
+        )
+
+    def test_another_term_of_the_same_user_is_not_found(self):
+        searches = FakeSavedSearches(DOM_CASMURRO)
+
+        assert FindSavedSearchByTermUseCase(searches).execute("iphone 13", 10) is None
 
 
 class TestUpdateSavedSearch:

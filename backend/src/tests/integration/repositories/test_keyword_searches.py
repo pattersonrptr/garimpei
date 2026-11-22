@@ -23,6 +23,12 @@ from src.app.searches.persistence.models import (  # noqa: F401
     search_config_source_website,
 )
 from src.app.searches.persistence.repositories import SavedSearchRepository
+from src.app.searches.use_cases import (
+    CreateSavedSearchUseCase,
+    FindSavedSearchByTermUseCase,
+    GetSavedSearchUseCase,
+    UpdateSavedSearchUseCase,
+)
 from src.app.stores.persistence.models import Store as StoreModel
 
 
@@ -64,7 +70,12 @@ def configs(db):
 
 @pytest.fixture
 def searches(configs):
-    return SearchConfigKeywordSearches(configs)
+    return SearchConfigKeywordSearches(
+        create=CreateSavedSearchUseCase(configs),
+        get=GetSavedSearchUseCase(configs),
+        find_by_term=FindSavedSearchByTermUseCase(configs),
+        update=UpdateSavedSearchUseCase(configs),
+    )
 
 
 def test_created_search_is_saved_with_its_stores(searches, configs, user_id, store_ids):
