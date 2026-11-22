@@ -16,6 +16,7 @@ from src.app.searches.http.search_run_schema import (
     SearchRunsCollectionResponse,
     SearchRunUpdateRequest,
 )
+from src.app.searches.http.validators import SearchRunValidator
 from src.app.searches.ports import SearchRunRepositoryInterface
 from src.app.searches.use_cases import (
     CreateSearchRunUseCase,
@@ -37,6 +38,10 @@ def get_search_execution_log_repository(
     db=Depends(get_db),
 ) -> SearchRunRepositoryInterface:
     return wiring.search_runs(db)
+
+
+def get_search_run_validator(db=Depends(get_db)) -> SearchRunValidator:
+    return wiring.search_run_validator(db)
 
 
 @router.get("/", response_model=SearchRunsCollectionResponse)
@@ -146,6 +151,7 @@ def create_search_execution_log(
     search_execution_log_repo: SearchRunRepositoryInterface = Depends(
         get_search_execution_log_repository
     ),
+    search_run_validator: SearchRunValidator = Depends(get_search_run_validator),
     current_user: UserEntity = Depends(get_current_staff_user),
 ):
     """
@@ -153,8 +159,14 @@ def create_search_execution_log(
 
     Returns:
         - 201: Search execution log created successfully
+        - 400/422: Invalid request (type, status, counts)
         - 403: Permission denied
+        - 404: The search does not exist
     """
+    validation_errors = search_run_validator.validate_create_request(payload)
+    if validation_errors:
+        return SearchRunPresenter.handle_validation_errors(validation_errors)
+
     attrs = payload.data.attributes
     logger.debug(
         f"Creating search execution log for search_config_id={attrs.search_config_id}",
