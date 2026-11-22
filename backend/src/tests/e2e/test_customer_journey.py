@@ -520,7 +520,7 @@ class TestSearchRunProgress:
             "/search-execution-logs/",
             json={
                 "data": {
-                    "type": "search_execution_logs",
+                    "type": "search_execution_log",
                     "attributes": {
                         "search_config_id": sample_search_config.id,
                         "status": "running",

@@ -202,3 +202,42 @@ class TestGetSearchExecutionLogById:
         """
         response = client.get("/search-execution-logs/1")
         assert response.status_code in (401, 403)
+
+
+# ============================================================================
+# POST /search-execution-logs/
+# ============================================================================
+
+
+def _create_body(**attributes) -> dict:
+    return {"data": {"type": "search_execution_log", "attributes": attributes}}
+
+
+class TestCreateSearchExecutionLog:
+    """Tests for POST /search-execution-logs/: the request is validated."""
+
+    def test_an_unknown_status_is_rejected_with_422(
+        self, client, staff_auth_headers, sample_search_config
+    ):
+        response = client.post(
+            "/search-execution-logs/",
+            json=_create_body(search_config_id=sample_search_config.id, status="done"),
+            headers=staff_auth_headers,
+        )
+
+        assert response.status_code == 422
+        error = response.json()["errors"][0]
+        assert error["code"] == "INVALID_FIELD"
+        assert error["source"]["pointer"] == "/data/attributes/status"
+
+    def test_a_run_of_a_missing_search_is_rejected_with_404(
+        self, client, staff_auth_headers
+    ):
+        response = client.post(
+            "/search-execution-logs/",
+            json=_create_body(search_config_id=99999, status="running"),
+            headers=staff_auth_headers,
+        )
+
+        assert response.status_code == 404
+        assert response.json()["errors"][0]["code"] == "SEARCH_CONFIG_NOT_FOUND"
