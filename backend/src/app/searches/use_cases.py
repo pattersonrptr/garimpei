@@ -111,6 +111,14 @@ class GetSavedSearchesOfUserUseCase:
         return self.searches.get_by_user_id(user_id)
 
 
+class FindSavedSearchByTermUseCase:
+    def __init__(self, searches: SavedSearchRepositoryInterface):
+        self.searches = searches
+
+    def execute(self, search_term: str, user_id: int) -> SavedSearch | None:
+        return self.searches.get_by_search_term_and_user_id(search_term, user_id)
+
+
 class ListSavedSearchesUseCase:
     def __init__(self, searches: SavedSearchRepositoryInterface):
         self.searches = searches
