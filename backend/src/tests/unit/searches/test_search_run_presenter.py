@@ -10,10 +10,10 @@ from datetime import datetime
 import pytest
 from fastapi.responses import JSONResponse
 
-from src.app.interfaces.http.presenters.search_execution_log_presenter import (
-    SearchExecutionLogPresenter,
-)
 from src.app.searches.entities import SearchRun
+from src.app.searches.http.search_run_presenter import (
+    SearchRunPresenter,
+)
 from src.common.jsonapi import JsonApiError
 
 # ============================================================================
@@ -79,25 +79,23 @@ def sample_validation_errors():
 
 
 # ============================================================================
-# SearchExecutionLogPresenter.handle_success Tests
+# SearchRunPresenter.handle_success Tests
 # ============================================================================
 
 
-class TestSearchExecutionLogPresenterHandleSuccess:
-    """Tests for SearchExecutionLogPresenter.handle_success()."""
+class TestSearchRunPresenterHandleSuccess:
+    """Tests for SearchRunPresenter.handle_success()."""
 
     def test_handle_success_should_return_jsonapi_response(
         self, sample_search_execution_log_entity
     ):
         """
         Given: A valid search execution log entity
-        When: SearchExecutionLogPresenter.handle_success() is called
-        Then: Should return SearchExecutionLogReadResponse with correct JSON:API structure
+        When: SearchRunPresenter.handle_success() is called
+        Then: Should return SearchRunReadResponse with correct JSON:API structure
         """
         # When
-        response = SearchExecutionLogPresenter.handle_success(
-            sample_search_execution_log_entity
-        )
+        response = SearchRunPresenter.handle_success(sample_search_execution_log_entity)
 
         # Then
         assert response.data.type == "search_execution_logs"
@@ -110,13 +108,11 @@ class TestSearchExecutionLogPresenterHandleSuccess:
     ):
         """
         Given: A search execution log entity with all fields
-        When: SearchExecutionLogPresenter.handle_success() is called
+        When: SearchRunPresenter.handle_success() is called
         Then: Should include all attributes in the response
         """
         # When
-        response = SearchExecutionLogPresenter.handle_success(
-            sample_search_execution_log_entity
-        )
+        response = SearchRunPresenter.handle_success(sample_search_execution_log_entity)
 
         # Then
         attrs = response.data.attributes
@@ -130,13 +126,11 @@ class TestSearchExecutionLogPresenterHandleSuccess:
     ):
         """
         Given: A search execution log entity with integer id
-        When: SearchExecutionLogPresenter.handle_success() is called
+        When: SearchRunPresenter.handle_success() is called
         Then: JSON:API id should be a string
         """
         # When
-        response = SearchExecutionLogPresenter.handle_success(
-            sample_search_execution_log_entity
-        )
+        response = SearchRunPresenter.handle_success(sample_search_execution_log_entity)
 
         # Then
         assert isinstance(response.data.id, str)
@@ -147,11 +141,11 @@ class TestSearchExecutionLogPresenterHandleSuccess:
     ):
         """
         Given: A failed search execution log entity
-        When: SearchExecutionLogPresenter.handle_success() is called
+        When: SearchRunPresenter.handle_success() is called
         Then: Should correctly reflect status='failed' and error_message
         """
         # When
-        response = SearchExecutionLogPresenter.handle_success(sample_failed_log_entity)
+        response = SearchRunPresenter.handle_success(sample_failed_log_entity)
 
         # Then
         assert response.data.attributes.status == "failed"
@@ -161,7 +155,7 @@ class TestSearchExecutionLogPresenterHandleSuccess:
     def test_handle_success_should_handle_pending_log(self):
         """
         Given: A pending search execution log (not yet finished)
-        When: SearchExecutionLogPresenter.handle_success() is called
+        When: SearchRunPresenter.handle_success() is called
         Then: Should reflect status='pending' and finished_at=None
         """
         # Given
@@ -173,7 +167,7 @@ class TestSearchExecutionLogPresenterHandleSuccess:
         )
 
         # When
-        response = SearchExecutionLogPresenter.handle_success(entity)
+        response = SearchRunPresenter.handle_success(entity)
 
         # Then
         assert response.data.attributes.status == "pending"
@@ -181,23 +175,23 @@ class TestSearchExecutionLogPresenterHandleSuccess:
 
 
 # ============================================================================
-# SearchExecutionLogPresenter.handle_collection_success Tests
+# SearchRunPresenter.handle_collection_success Tests
 # ============================================================================
 
 
-class TestSearchExecutionLogPresenterHandleCollectionSuccess:
-    """Tests for SearchExecutionLogPresenter.handle_collection_success()."""
+class TestSearchRunPresenterHandleCollectionSuccess:
+    """Tests for SearchRunPresenter.handle_collection_success()."""
 
     def test_handle_collection_success_should_return_jsonapi_collection(
         self, sample_search_execution_log_collection
     ):
         """
         Given: A list of search execution log entities and total count
-        When: SearchExecutionLogPresenter.handle_collection_success() is called
+        When: SearchRunPresenter.handle_collection_success() is called
         Then: Should return collection response with all items
         """
         # When
-        response = SearchExecutionLogPresenter.handle_collection_success(
+        response = SearchRunPresenter.handle_collection_success(
             sample_search_execution_log_collection, total=2
         )
 
@@ -212,11 +206,11 @@ class TestSearchExecutionLogPresenterHandleCollectionSuccess:
     ):
         """
         Given: A collection with a known total
-        When: SearchExecutionLogPresenter.handle_collection_success() is called
+        When: SearchRunPresenter.handle_collection_success() is called
         Then: Should include meta with total count
         """
         # When
-        response = SearchExecutionLogPresenter.handle_collection_success(
+        response = SearchRunPresenter.handle_collection_success(
             sample_search_execution_log_collection, total=15
         )
 
@@ -226,11 +220,11 @@ class TestSearchExecutionLogPresenterHandleCollectionSuccess:
     def test_handle_collection_success_should_handle_empty_collection(self):
         """
         Given: An empty list
-        When: SearchExecutionLogPresenter.handle_collection_success() is called
+        When: SearchRunPresenter.handle_collection_success() is called
         Then: Should return empty data list with total=0
         """
         # When
-        response = SearchExecutionLogPresenter.handle_collection_success([], total=0)
+        response = SearchRunPresenter.handle_collection_success([], total=0)
 
         # Then
         assert response.data == []
@@ -241,11 +235,11 @@ class TestSearchExecutionLogPresenterHandleCollectionSuccess:
     ):
         """
         Given: A collection with logs of different statuses
-        When: SearchExecutionLogPresenter.handle_collection_success() is called
+        When: SearchRunPresenter.handle_collection_success() is called
         Then: Should preserve all statuses correctly
         """
         # When
-        response = SearchExecutionLogPresenter.handle_collection_success(
+        response = SearchRunPresenter.handle_collection_success(
             sample_search_execution_log_collection, total=2
         )
 
@@ -255,25 +249,23 @@ class TestSearchExecutionLogPresenterHandleCollectionSuccess:
 
 
 # ============================================================================
-# SearchExecutionLogPresenter.handle_validation_errors Tests
+# SearchRunPresenter.handle_validation_errors Tests
 # ============================================================================
 
 
-class TestSearchExecutionLogPresenterHandleValidationErrors:
-    """Tests for SearchExecutionLogPresenter.handle_validation_errors()."""
+class TestSearchRunPresenterHandleValidationErrors:
+    """Tests for SearchRunPresenter.handle_validation_errors()."""
 
     def test_handle_validation_errors_should_return_jsonapi_error_response(
         self, sample_validation_errors
     ):
         """
         Given: A list of validation errors
-        When: SearchExecutionLogPresenter.handle_validation_errors() is called
+        When: SearchRunPresenter.handle_validation_errors() is called
         Then: Should return JSONResponse with correct JSON:API error structure
         """
         # When
-        response = SearchExecutionLogPresenter.handle_validation_errors(
-            sample_validation_errors
-        )
+        response = SearchRunPresenter.handle_validation_errors(sample_validation_errors)
 
         # Then
         assert isinstance(response, JSONResponse)
@@ -285,13 +277,11 @@ class TestSearchExecutionLogPresenterHandleValidationErrors:
     ):
         """
         Given: Multiple validation errors
-        When: SearchExecutionLogPresenter.handle_validation_errors() is called
+        When: SearchRunPresenter.handle_validation_errors() is called
         Then: Should include all errors in the response body
         """
         # When
-        response = SearchExecutionLogPresenter.handle_validation_errors(
-            sample_validation_errors
-        )
+        response = SearchRunPresenter.handle_validation_errors(sample_validation_errors)
         content = response.body.decode("utf-8")
 
         # Then
@@ -302,7 +292,7 @@ class TestSearchExecutionLogPresenterHandleValidationErrors:
     def test_handle_validation_errors_should_use_first_error_status_code(self):
         """
         Given: Validation errors starting with status 400
-        When: SearchExecutionLogPresenter.handle_validation_errors() is called
+        When: SearchRunPresenter.handle_validation_errors() is called
         Then: Should use the first error's status code
         """
         # Given
@@ -316,28 +306,28 @@ class TestSearchExecutionLogPresenterHandleValidationErrors:
         ]
 
         # When
-        response = SearchExecutionLogPresenter.handle_validation_errors(errors)
+        response = SearchRunPresenter.handle_validation_errors(errors)
 
         # Then
         assert response.status_code == 400
 
 
 # ============================================================================
-# SearchExecutionLogPresenter.handle_not_found Tests
+# SearchRunPresenter.handle_not_found Tests
 # ============================================================================
 
 
-class TestSearchExecutionLogPresenterHandleNotFound:
-    """Tests for SearchExecutionLogPresenter.handle_not_found()."""
+class TestSearchRunPresenterHandleNotFound:
+    """Tests for SearchRunPresenter.handle_not_found()."""
 
     def test_handle_not_found_should_return_404_jsonapi_error(self):
         """
         Given: A search execution log identifier
-        When: SearchExecutionLogPresenter.handle_not_found() is called
+        When: SearchRunPresenter.handle_not_found() is called
         Then: Should return 404 JSONResponse with JSON:API error structure
         """
         # When
-        response = SearchExecutionLogPresenter.handle_not_found(
+        response = SearchRunPresenter.handle_not_found(
             identifier="id=999", pointer="/data/attributes/id"
         )
 
@@ -349,11 +339,11 @@ class TestSearchExecutionLogPresenterHandleNotFound:
     def test_handle_not_found_should_include_identifier_in_detail(self):
         """
         Given: A specific search execution log identifier
-        When: SearchExecutionLogPresenter.handle_not_found() is called
+        When: SearchRunPresenter.handle_not_found() is called
         Then: Should include identifier in the error detail
         """
         # When
-        response = SearchExecutionLogPresenter.handle_not_found(
+        response = SearchRunPresenter.handle_not_found(
             identifier="search_config_id=42",
             pointer="/data/attributes/search_config_id",
         )
@@ -366,11 +356,11 @@ class TestSearchExecutionLogPresenterHandleNotFound:
     def test_handle_not_found_should_have_correct_error_structure(self):
         """
         Given: A search execution log identifier
-        When: SearchExecutionLogPresenter.handle_not_found() is called
+        When: SearchRunPresenter.handle_not_found() is called
         Then: Should have correct JSON:API error fields
         """
         # When
-        response = SearchExecutionLogPresenter.handle_not_found(identifier="id=1")
+        response = SearchRunPresenter.handle_not_found(identifier="id=1")
         content = response.body.decode("utf-8")
 
         # Then
@@ -384,11 +374,11 @@ class TestSearchExecutionLogPresenterHandleNotFound:
     def test_handle_not_found_should_use_default_pointer(self):
         """
         Given: No pointer specified
-        When: SearchExecutionLogPresenter.handle_not_found() is called
+        When: SearchRunPresenter.handle_not_found() is called
         Then: Should use default pointer '/data'
         """
         # When
-        response = SearchExecutionLogPresenter.handle_not_found(identifier="id=1")
+        response = SearchRunPresenter.handle_not_found(identifier="id=1")
         content = response.body.decode("utf-8")
 
         # Then

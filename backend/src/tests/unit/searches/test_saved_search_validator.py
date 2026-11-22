@@ -1,27 +1,27 @@
-"""Unit tests for SearchConfigValidator."""
+"""Unit tests for SavedSearchValidator."""
 
 from datetime import time
 from unittest.mock import Mock
 
 import pytest
 
-from src.app.domain.validators.search_config_validator import SearchConfigValidator
-from src.app.interfaces.http.schemas.search_config_schema import (
-    SearchConfigAttributesForCreation,
-    SearchConfigAttributesForUpdate,
-    SearchConfigCreateRequest,
-    SearchConfigResourceForCreation,
-    SearchConfigResourceForUpdate,
-    SearchConfigUpdateRequest,
-)
 from src.app.searches.entities import SavedSearch
+from src.app.searches.http.saved_search_schema import (
+    SavedSearchAttributesForCreation,
+    SavedSearchAttributesForUpdate,
+    SavedSearchCreateRequest,
+    SavedSearchResourceForCreation,
+    SavedSearchResourceForUpdate,
+    SavedSearchUpdateRequest,
+)
+from src.app.searches.http.validators import SavedSearchValidator
 
 # ============================================================================
 # Helpers
 # ============================================================================
 
 
-def make_create_request(**overrides) -> SearchConfigCreateRequest:
+def make_create_request(**overrides) -> SavedSearchCreateRequest:
     attrs_data = {
         "search_term": overrides.pop("search_term", "iPhone 13"),
         "user_id": overrides.pop("user_id", 1),
@@ -31,16 +31,16 @@ def make_create_request(**overrides) -> SearchConfigCreateRequest:
         "source_website_ids": overrides.pop("source_website_ids", []),
         **overrides,
     }
-    attrs = SearchConfigAttributesForCreation(**attrs_data)
-    return SearchConfigCreateRequest(
-        data=SearchConfigResourceForCreation(type="search_config", attributes=attrs)
+    attrs = SavedSearchAttributesForCreation(**attrs_data)
+    return SavedSearchCreateRequest(
+        data=SavedSearchResourceForCreation(type="search_config", attributes=attrs)
     )
 
 
-def make_update_request(**overrides) -> SearchConfigUpdateRequest:
-    attrs = SearchConfigAttributesForUpdate(**overrides)
-    return SearchConfigUpdateRequest(
-        data=SearchConfigResourceForUpdate(type="search_config", attributes=attrs)
+def make_update_request(**overrides) -> SavedSearchUpdateRequest:
+    attrs = SavedSearchAttributesForUpdate(**overrides)
+    return SavedSearchUpdateRequest(
+        data=SavedSearchResourceForUpdate(type="search_config", attributes=attrs)
     )
 
 
@@ -63,8 +63,8 @@ def make_search_config_entity(**overrides) -> SavedSearch:
 # ============================================================================
 
 
-class TestSearchConfigValidatorCreate:
-    """Tests for SearchConfigValidator.validate_create_request"""
+class TestSavedSearchValidatorCreate:
+    """Tests for SavedSearchValidator.validate_create_request"""
 
     def test_valid_create_request_returns_no_errors(self):
         """
@@ -75,7 +75,7 @@ class TestSearchConfigValidatorCreate:
         mock_sc_repo = Mock()
         mock_sw_repo = Mock()
         mock_sc_repo.get_by_search_term_and_user_id.return_value = None
-        validator = SearchConfigValidator(mock_sc_repo, mock_sw_repo)
+        validator = SavedSearchValidator(mock_sc_repo, mock_sw_repo)
 
         errors = validator.validate_create_request(make_create_request())
 
@@ -92,7 +92,7 @@ class TestSearchConfigValidatorCreate:
         request = make_create_request()
         request.data.type = "search_configs"
 
-        validator = SearchConfigValidator(mock_sc_repo, mock_sw_repo)
+        validator = SavedSearchValidator(mock_sc_repo, mock_sw_repo)
         errors = validator.validate_create_request(request)
 
         assert len(errors) == 1
@@ -108,7 +108,7 @@ class TestSearchConfigValidatorCreate:
         """
         mock_sc_repo = Mock()
         mock_sw_repo = Mock()
-        validator = SearchConfigValidator(mock_sc_repo, mock_sw_repo)
+        validator = SavedSearchValidator(mock_sc_repo, mock_sw_repo)
 
         request = make_create_request(search_term=bad_term)
         errors = validator.validate_create_request(request)
@@ -123,7 +123,7 @@ class TestSearchConfigValidatorCreate:
         """
         mock_sc_repo = Mock()
         mock_sw_repo = Mock()
-        validator = SearchConfigValidator(mock_sc_repo, mock_sw_repo)
+        validator = SavedSearchValidator(mock_sc_repo, mock_sw_repo)
 
         request = make_create_request()
         request.data.attributes.user_id = None
@@ -141,7 +141,7 @@ class TestSearchConfigValidatorCreate:
         """
         mock_sc_repo = Mock()
         mock_sw_repo = Mock()
-        validator = SearchConfigValidator(mock_sc_repo, mock_sw_repo)
+        validator = SavedSearchValidator(mock_sc_repo, mock_sw_repo)
 
         request = make_create_request(frequency_days=bad_days)
         errors = validator.validate_create_request(request)
@@ -157,8 +157,8 @@ class TestSearchConfigValidatorCreate:
         """
         mock_sc_repo = Mock()
         mock_sw_repo = Mock()
-        mock_sw_repo.get_by_id.return_value = None
-        validator = SearchConfigValidator(mock_sc_repo, mock_sw_repo)
+        mock_sw_repo.exists.return_value = False
+        validator = SavedSearchValidator(mock_sc_repo, mock_sw_repo)
 
         request = make_create_request(source_website_ids=[999])
         errors = validator.validate_create_request(request)
@@ -178,7 +178,7 @@ class TestSearchConfigValidatorCreate:
         mock_sc_repo.get_by_search_term_and_user_id.return_value = (
             make_search_config_entity()
         )
-        validator = SearchConfigValidator(mock_sc_repo, mock_sw_repo)
+        validator = SavedSearchValidator(mock_sc_repo, mock_sw_repo)
 
         errors = validator.validate_create_request(make_create_request())
 
@@ -195,7 +195,7 @@ class TestSearchConfigValidatorCreate:
         mock_sc_repo = Mock()
         mock_sw_repo = Mock()
         mock_sc_repo.get_by_search_term_and_user_id.return_value = None
-        validator = SearchConfigValidator(mock_sc_repo, mock_sw_repo)
+        validator = SavedSearchValidator(mock_sc_repo, mock_sw_repo)
 
         errors = validator.validate_create_request(make_create_request(user_id=2))
 
@@ -207,8 +207,8 @@ class TestSearchConfigValidatorCreate:
 # ============================================================================
 
 
-class TestSearchConfigValidatorUpdate:
-    """Tests for SearchConfigValidator.validate_update_request"""
+class TestSavedSearchValidatorUpdate:
+    """Tests for SavedSearchValidator.validate_update_request"""
 
     def test_valid_update_request_returns_no_errors(self):
         """
@@ -221,7 +221,7 @@ class TestSearchConfigValidatorUpdate:
         existing = make_search_config_entity(id=1)
         mock_sc_repo.get_by_id.return_value = existing
         mock_sc_repo.get_by_search_term_and_user_id.return_value = None
-        validator = SearchConfigValidator(mock_sc_repo, mock_sw_repo)
+        validator = SavedSearchValidator(mock_sc_repo, mock_sw_repo)
 
         errors = validator.validate_update_request(
             1, make_update_request(search_term="Samsung S23")
@@ -239,7 +239,7 @@ class TestSearchConfigValidatorUpdate:
         mock_sw_repo = Mock()
         request = make_update_request()
         request.data.type = "wrong"
-        validator = SearchConfigValidator(mock_sc_repo, mock_sw_repo)
+        validator = SavedSearchValidator(mock_sc_repo, mock_sw_repo)
 
         errors = validator.validate_update_request(1, request)
 
@@ -253,7 +253,7 @@ class TestSearchConfigValidatorUpdate:
         """
         mock_sc_repo = Mock()
         mock_sw_repo = Mock()
-        validator = SearchConfigValidator(mock_sc_repo, mock_sw_repo)
+        validator = SavedSearchValidator(mock_sc_repo, mock_sw_repo)
 
         errors = validator.validate_update_request(
             1, make_update_request(search_term="")
@@ -270,7 +270,7 @@ class TestSearchConfigValidatorUpdate:
         """
         mock_sc_repo = Mock()
         mock_sw_repo = Mock()
-        validator = SearchConfigValidator(mock_sc_repo, mock_sw_repo)
+        validator = SavedSearchValidator(mock_sc_repo, mock_sw_repo)
 
         errors = validator.validate_update_request(
             1, make_update_request(frequency_days=bad_days)
@@ -286,8 +286,8 @@ class TestSearchConfigValidatorUpdate:
         """
         mock_sc_repo = Mock()
         mock_sw_repo = Mock()
-        mock_sw_repo.get_by_id.return_value = None
-        validator = SearchConfigValidator(mock_sc_repo, mock_sw_repo)
+        mock_sw_repo.exists.return_value = False
+        validator = SavedSearchValidator(mock_sc_repo, mock_sw_repo)
 
         errors = validator.validate_update_request(
             1, make_update_request(source_website_ids=[999])
@@ -309,7 +309,7 @@ class TestSearchConfigValidatorUpdate:
         )
         mock_sc_repo.get_by_id.return_value = existing_self
         mock_sc_repo.get_by_search_term_and_user_id.return_value = duplicate
-        validator = SearchConfigValidator(mock_sc_repo, mock_sw_repo)
+        validator = SavedSearchValidator(mock_sc_repo, mock_sw_repo)
 
         errors = validator.validate_update_request(
             1, make_update_request(search_term="Samsung S23")
@@ -329,7 +329,7 @@ class TestSearchConfigValidatorUpdate:
         mock_sc_repo.get_by_id.return_value = existing
         # Same record returned — duplicate.id == search_config_id
         mock_sc_repo.get_by_search_term_and_user_id.return_value = existing
-        validator = SearchConfigValidator(mock_sc_repo, mock_sw_repo)
+        validator = SavedSearchValidator(mock_sc_repo, mock_sw_repo)
 
         errors = validator.validate_update_request(
             1, make_update_request(search_term="iPhone 13")

@@ -1,14 +1,14 @@
-"""Unit tests for SearchExecutionLogValidator."""
+"""Unit tests for SearchRunValidator."""
 
 from unittest.mock import Mock
 
 import pytest
 from pydantic import BaseModel
 
-from src.app.domain.validators.search_execution_log_validator import (
-    SearchExecutionLogValidator,
-)
 from src.app.searches.entities import SavedSearch
+from src.app.searches.http.validators import (
+    SearchRunValidator,
+)
 
 # ============================================================================
 # Minimal stubs to feed into the validator (mimics internal system usage)
@@ -50,8 +50,8 @@ def make_search_config_entity(id: int = 1) -> SavedSearch:
 # ============================================================================
 
 
-class TestSearchExecutionLogValidatorCreate:
-    """Tests for SearchExecutionLogValidator.validate_create_request"""
+class TestSearchRunValidatorCreate:
+    """Tests for SearchRunValidator.validate_create_request"""
 
     def test_valid_request_should_return_no_errors(self):
         """
@@ -63,9 +63,7 @@ class TestSearchExecutionLogValidatorCreate:
         search_config_repo = Mock()
         search_config_repo.get_by_id.return_value = make_search_config_entity()
 
-        validator = SearchExecutionLogValidator(
-            search_execution_log_repo, search_config_repo
-        )
+        validator = SearchRunValidator(search_execution_log_repo, search_config_repo)
         errors = validator.validate_create_request(make_request())
 
         assert errors == []
@@ -76,7 +74,7 @@ class TestSearchExecutionLogValidatorCreate:
         When: validate_create_request is called
         Then: Returns one error with status '400' and code 'INVALID_TYPE'
         """
-        validator = SearchExecutionLogValidator(Mock(), Mock())
+        validator = SearchRunValidator(Mock(), Mock())
         errors = validator.validate_create_request(
             make_request_with_type("search_execution_logs")
         )
@@ -94,7 +92,7 @@ class TestSearchExecutionLogValidatorCreate:
         When: validate_create_request is called
         Then: Returns error with code 'MISSING_FIELD'
         """
-        validator = SearchExecutionLogValidator(Mock(), Mock())
+        validator = SearchRunValidator(Mock(), Mock())
         errors = validator.validate_create_request(
             make_request(search_config_id=search_config_id)
         )
@@ -108,7 +106,7 @@ class TestSearchExecutionLogValidatorCreate:
         When: validate_create_request is called
         Then: Returns error with code 'INVALID_FIELD'
         """
-        validator = SearchExecutionLogValidator(Mock(), Mock())
+        validator = SearchRunValidator(Mock(), Mock())
         errors = validator.validate_create_request(make_request(status=status))
 
         assert any(e.code == "INVALID_FIELD" for e in errors)
@@ -123,7 +121,7 @@ class TestSearchExecutionLogValidatorCreate:
         search_config_repo = Mock()
         search_config_repo.get_by_id.return_value = make_search_config_entity()
 
-        validator = SearchExecutionLogValidator(Mock(), search_config_repo)
+        validator = SearchRunValidator(Mock(), search_config_repo)
         errors = validator.validate_create_request(make_request(status=status))
 
         assert errors == []
@@ -135,7 +133,7 @@ class TestSearchExecutionLogValidatorCreate:
         When: validate_create_request is called
         Then: Returns error with code 'INVALID_FIELD'
         """
-        validator = SearchExecutionLogValidator(Mock(), Mock())
+        validator = SearchRunValidator(Mock(), Mock())
         errors = validator.validate_create_request(
             make_request(results_count=results_count)
         )
@@ -151,7 +149,7 @@ class TestSearchExecutionLogValidatorCreate:
         search_config_repo = Mock()
         search_config_repo.get_by_id.return_value = make_search_config_entity()
 
-        validator = SearchExecutionLogValidator(Mock(), search_config_repo)
+        validator = SearchRunValidator(Mock(), search_config_repo)
         errors = validator.validate_create_request(make_request(results_count=0))
 
         assert errors == []
@@ -165,7 +163,7 @@ class TestSearchExecutionLogValidatorCreate:
         search_config_repo = Mock()
         search_config_repo.get_by_id.return_value = None
 
-        validator = SearchExecutionLogValidator(Mock(), search_config_repo)
+        validator = SearchRunValidator(Mock(), search_config_repo)
         errors = validator.validate_create_request(make_request())
 
         assert len(errors) == 1
