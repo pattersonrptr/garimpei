@@ -15,11 +15,34 @@ from src.app.searches.persistence.repositories import (
     SavedSearchRepository,
     SearchRunRepository,
 )
-from src.app.searches.use_cases import DeleteSavedSearchUseCase, RunSearchNowUseCase
+from src.app.searches.use_cases import (
+    CreateSavedSearchUseCase,
+    DeleteSavedSearchUseCase,
+    FindSavedSearchByTermUseCase,
+    GetSavedSearchUseCase,
+    RunSearchNowUseCase,
+    UpdateSavedSearchUseCase,
+)
 
 
 def _alerts(db: Session) -> SearchAlertsOverAlerts:
     return SearchAlertsOverAlerts(alerts_wiring.price_alerts(db))
+
+
+def create_saved_search(db: Session) -> CreateSavedSearchUseCase:
+    return CreateSavedSearchUseCase(SavedSearchRepository(db))
+
+
+def saved_search_by_id(db: Session) -> GetSavedSearchUseCase:
+    return GetSavedSearchUseCase(SavedSearchRepository(db))
+
+
+def saved_search_by_term(db: Session) -> FindSavedSearchByTermUseCase:
+    return FindSavedSearchByTermUseCase(SavedSearchRepository(db))
+
+
+def update_saved_search(db: Session) -> UpdateSavedSearchUseCase:
+    return UpdateSavedSearchUseCase(SavedSearchRepository(db))
 
 
 def delete_saved_search(db: Session) -> DeleteSavedSearchUseCase:
