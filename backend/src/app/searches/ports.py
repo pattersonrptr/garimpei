@@ -130,3 +130,11 @@ class SearchDispatcher(ABC):
     def dispatch(self, search_id: int) -> str:
         """Queue a run of the search; returns the task id."""
         raise NotImplementedError
+
+
+class SearchStores(ABC):
+    """The stores a saved search can run on (owned by stores)."""
+
+    @abstractmethod
+    def exists(self, store_id: int) -> bool:
+        raise NotImplementedError

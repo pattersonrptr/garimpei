@@ -10,10 +10,10 @@ from datetime import datetime, time
 import pytest
 from fastapi.responses import JSONResponse
 
-from src.app.interfaces.http.presenters.search_config_presenter import (
-    SearchConfigPresenter,
-)
 from src.app.searches.entities import SavedSearch
+from src.app.searches.http.saved_search_presenter import (
+    SavedSearchPresenter,
+)
 from src.common.jsonapi import JsonApiError
 
 # ============================================================================
@@ -77,23 +77,23 @@ def sample_validation_errors():
 
 
 # ============================================================================
-# SearchConfigPresenter.handle_success Tests
+# SavedSearchPresenter.handle_success Tests
 # ============================================================================
 
 
-class TestSearchConfigPresenterHandleSuccess:
-    """Tests for SearchConfigPresenter.handle_success()."""
+class TestSavedSearchPresenterHandleSuccess:
+    """Tests for SavedSearchPresenter.handle_success()."""
 
     def test_handle_success_should_return_jsonapi_response(
         self, sample_search_config_entity
     ):
         """
         Given: A valid search config entity
-        When: SearchConfigPresenter.handle_success() is called
-        Then: Should return SearchConfigReadResponse with correct JSON:API structure
+        When: SavedSearchPresenter.handle_success() is called
+        Then: Should return SavedSearchReadResponse with correct JSON:API structure
         """
         # When
-        response = SearchConfigPresenter.handle_success(sample_search_config_entity)
+        response = SavedSearchPresenter.handle_success(sample_search_config_entity)
 
         # Then
         assert response.data.type == "search_configs"
@@ -106,11 +106,11 @@ class TestSearchConfigPresenterHandleSuccess:
     ):
         """
         Given: A search config entity with all fields
-        When: SearchConfigPresenter.handle_success() is called
+        When: SavedSearchPresenter.handle_success() is called
         Then: Should include all attributes in the response
         """
         # When
-        response = SearchConfigPresenter.handle_success(sample_search_config_entity)
+        response = SavedSearchPresenter.handle_success(sample_search_config_entity)
 
         # Then
         attrs = response.data.attributes
@@ -123,11 +123,11 @@ class TestSearchConfigPresenterHandleSuccess:
     def test_handle_success_should_have_string_id(self, sample_search_config_entity):
         """
         Given: A search config entity with integer id
-        When: SearchConfigPresenter.handle_success() is called
+        When: SavedSearchPresenter.handle_success() is called
         Then: JSON:API id should be a string
         """
         # When
-        response = SearchConfigPresenter.handle_success(sample_search_config_entity)
+        response = SavedSearchPresenter.handle_success(sample_search_config_entity)
 
         # Then
         assert isinstance(response.data.id, str)
@@ -136,7 +136,7 @@ class TestSearchConfigPresenterHandleSuccess:
     def test_handle_success_should_reflect_inactive_status(self):
         """
         Given: An inactive search config entity
-        When: SearchConfigPresenter.handle_success() is called
+        When: SavedSearchPresenter.handle_success() is called
         Then: Should correctly reflect is_active=False
         """
         # Given
@@ -150,7 +150,7 @@ class TestSearchConfigPresenterHandleSuccess:
         )
 
         # When
-        response = SearchConfigPresenter.handle_success(entity)
+        response = SavedSearchPresenter.handle_success(entity)
 
         # Then
         assert response.data.attributes.is_active is False
@@ -158,7 +158,7 @@ class TestSearchConfigPresenterHandleSuccess:
     def test_handle_success_should_handle_empty_source_website_ids(self):
         """
         Given: A search config entity with no source websites
-        When: SearchConfigPresenter.handle_success() is called
+        When: SavedSearchPresenter.handle_success() is called
         Then: Should return empty list for source_website_ids
         """
         # Given
@@ -173,30 +173,30 @@ class TestSearchConfigPresenterHandleSuccess:
         )
 
         # When
-        response = SearchConfigPresenter.handle_success(entity)
+        response = SavedSearchPresenter.handle_success(entity)
 
         # Then
         assert response.data.attributes.source_website_ids == []
 
 
 # ============================================================================
-# SearchConfigPresenter.handle_collection_success Tests
+# SavedSearchPresenter.handle_collection_success Tests
 # ============================================================================
 
 
-class TestSearchConfigPresenterHandleCollectionSuccess:
-    """Tests for SearchConfigPresenter.handle_collection_success()."""
+class TestSavedSearchPresenterHandleCollectionSuccess:
+    """Tests for SavedSearchPresenter.handle_collection_success()."""
 
     def test_handle_collection_success_should_return_jsonapi_collection(
         self, sample_search_config_collection
     ):
         """
         Given: A list of search config entities and total count
-        When: SearchConfigPresenter.handle_collection_success() is called
+        When: SavedSearchPresenter.handle_collection_success() is called
         Then: Should return collection response with all items
         """
         # When
-        response = SearchConfigPresenter.handle_collection_success(
+        response = SavedSearchPresenter.handle_collection_success(
             sample_search_config_collection, total=2
         )
 
@@ -211,11 +211,11 @@ class TestSearchConfigPresenterHandleCollectionSuccess:
     ):
         """
         Given: A collection with a known total
-        When: SearchConfigPresenter.handle_collection_success() is called
+        When: SavedSearchPresenter.handle_collection_success() is called
         Then: Should include meta with total count
         """
         # When
-        response = SearchConfigPresenter.handle_collection_success(
+        response = SavedSearchPresenter.handle_collection_success(
             sample_search_config_collection, total=25
         )
 
@@ -225,11 +225,11 @@ class TestSearchConfigPresenterHandleCollectionSuccess:
     def test_handle_collection_success_should_handle_empty_collection(self):
         """
         Given: An empty list
-        When: SearchConfigPresenter.handle_collection_success() is called
+        When: SavedSearchPresenter.handle_collection_success() is called
         Then: Should return empty data list with total=0
         """
         # When
-        response = SearchConfigPresenter.handle_collection_success([], total=0)
+        response = SavedSearchPresenter.handle_collection_success([], total=0)
 
         # Then
         assert response.data == []
@@ -237,23 +237,23 @@ class TestSearchConfigPresenterHandleCollectionSuccess:
 
 
 # ============================================================================
-# SearchConfigPresenter.handle_validation_errors Tests
+# SavedSearchPresenter.handle_validation_errors Tests
 # ============================================================================
 
 
-class TestSearchConfigPresenterHandleValidationErrors:
-    """Tests for SearchConfigPresenter.handle_validation_errors()."""
+class TestSavedSearchPresenterHandleValidationErrors:
+    """Tests for SavedSearchPresenter.handle_validation_errors()."""
 
     def test_handle_validation_errors_should_return_jsonapi_error_response(
         self, sample_validation_errors
     ):
         """
         Given: A list of validation errors
-        When: SearchConfigPresenter.handle_validation_errors() is called
+        When: SavedSearchPresenter.handle_validation_errors() is called
         Then: Should return JSONResponse with correct JSON:API error structure
         """
         # When
-        response = SearchConfigPresenter.handle_validation_errors(
+        response = SavedSearchPresenter.handle_validation_errors(
             sample_validation_errors
         )
 
@@ -267,11 +267,11 @@ class TestSearchConfigPresenterHandleValidationErrors:
     ):
         """
         Given: Multiple validation errors
-        When: SearchConfigPresenter.handle_validation_errors() is called
+        When: SavedSearchPresenter.handle_validation_errors() is called
         Then: Should include all errors in the response body
         """
         # When
-        response = SearchConfigPresenter.handle_validation_errors(
+        response = SavedSearchPresenter.handle_validation_errors(
             sample_validation_errors
         )
         content = response.body.decode("utf-8")
@@ -284,7 +284,7 @@ class TestSearchConfigPresenterHandleValidationErrors:
     def test_handle_validation_errors_should_use_first_error_status_code(self):
         """
         Given: Validation errors starting with status 400
-        When: SearchConfigPresenter.handle_validation_errors() is called
+        When: SavedSearchPresenter.handle_validation_errors() is called
         Then: Should use the first error's status code
         """
         # Given
@@ -298,28 +298,28 @@ class TestSearchConfigPresenterHandleValidationErrors:
         ]
 
         # When
-        response = SearchConfigPresenter.handle_validation_errors(errors)
+        response = SavedSearchPresenter.handle_validation_errors(errors)
 
         # Then
         assert response.status_code == 400
 
 
 # ============================================================================
-# SearchConfigPresenter.handle_not_found Tests
+# SavedSearchPresenter.handle_not_found Tests
 # ============================================================================
 
 
-class TestSearchConfigPresenterHandleNotFound:
-    """Tests for SearchConfigPresenter.handle_not_found()."""
+class TestSavedSearchPresenterHandleNotFound:
+    """Tests for SavedSearchPresenter.handle_not_found()."""
 
     def test_handle_not_found_should_return_404_jsonapi_error(self):
         """
         Given: A search config identifier
-        When: SearchConfigPresenter.handle_not_found() is called
+        When: SavedSearchPresenter.handle_not_found() is called
         Then: Should return 404 JSONResponse with JSON:API error structure
         """
         # When
-        response = SearchConfigPresenter.handle_not_found(
+        response = SavedSearchPresenter.handle_not_found(
             identifier="id=999", pointer="/data/attributes/id"
         )
 
@@ -331,11 +331,11 @@ class TestSearchConfigPresenterHandleNotFound:
     def test_handle_not_found_should_include_identifier_in_detail(self):
         """
         Given: A specific search config identifier
-        When: SearchConfigPresenter.handle_not_found() is called
+        When: SavedSearchPresenter.handle_not_found() is called
         Then: Should include identifier in the error detail
         """
         # When
-        response = SearchConfigPresenter.handle_not_found(
+        response = SavedSearchPresenter.handle_not_found(
             identifier="user_id=42",
             pointer="/data/attributes/user_id",
         )
@@ -348,11 +348,11 @@ class TestSearchConfigPresenterHandleNotFound:
     def test_handle_not_found_should_have_correct_error_structure(self):
         """
         Given: A search config identifier
-        When: SearchConfigPresenter.handle_not_found() is called
+        When: SavedSearchPresenter.handle_not_found() is called
         Then: Should have correct JSON:API error fields
         """
         # When
-        response = SearchConfigPresenter.handle_not_found(identifier="id=1")
+        response = SavedSearchPresenter.handle_not_found(identifier="id=1")
         content = response.body.decode("utf-8")
 
         # Then
@@ -366,11 +366,11 @@ class TestSearchConfigPresenterHandleNotFound:
     def test_handle_not_found_should_use_default_pointer(self):
         """
         Given: No pointer specified
-        When: SearchConfigPresenter.handle_not_found() is called
+        When: SavedSearchPresenter.handle_not_found() is called
         Then: Should use default pointer '/data'
         """
         # When
-        response = SearchConfigPresenter.handle_not_found(identifier="id=1")
+        response = SavedSearchPresenter.handle_not_found(identifier="id=1")
         content = response.body.decode("utf-8")
 
         # Then
