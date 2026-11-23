@@ -244,7 +244,7 @@ before it starts.
   now http-layer.
 - Checks that need a repository (unique URL, product exists) may belong in
   the use cases rather than in request validation.
-- Accounts: gaps covered #188. Done (this PR): a deleted user's token
+- Accounts: gaps covered #188. Done #235: a deleted user's token
   answered 404 and a deactivated user 400; now 401 and 403 (approved by the
   author, Nov 22, 2026). Still a question for the author, a fix with tests
   first: an admin cannot delete a user who owns an alert (the API answers
