@@ -49,9 +49,7 @@ class SearchRunAttributesForUpdate(BaseModel):
 class SearchRunResourceForCreation(ResourceObjectForCreation):
     """ResourceObject for search execution log creation (without id)."""
 
-    type: str = Field(
-        default="search_execution_logs", examples=["search_execution_logs"]
-    )
+    type: str = Field(default="search_execution_log", examples=["search_execution_log"])
     attributes: SearchRunAttributesForCreation
 
 

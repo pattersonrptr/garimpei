@@ -260,9 +260,7 @@ before it starts.
   config answers 404 on GET but 403 on `/search-configs/user/{id}`; the
   trigger and `execution-status` bodies and that 403 are not JSON:API errors
   or resources. Pinned as they are; questions for the author.
-- Saved searches (found in slice 1, Nov 18, 2026): `POST /search-execution-logs/`
-  never calls `SearchExecutionLogValidator` (only its tests use it), so a bad
-  status answers 500 instead of 422. A fix with tests first, for the author.
+- Done #234: `POST /search-execution-logs/` never called the run validator, so a bad status or a missing search answered 500 (found in slice 1, Nov 18, 2026). It now answers 422 or 404; the request type is the singular `search_execution_log` the scraper sends (decided by the author, Nov 22, 2026, who approved the one-word change in the customer journey test).
 - Saved searches (found in slice 2, Nov 18, 2026): `SavedSearchRepository.delete`
   also detaches soft-deleted alerts through alerts' ORM model (persistence
   coupling to alerts, like catalog → alerts before #182).

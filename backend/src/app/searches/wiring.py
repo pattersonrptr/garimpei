@@ -12,7 +12,7 @@ from src.app.searches.adapters.alerts import SearchAlertsOverAlerts
 from src.app.searches.adapters.dispatcher import CelerySearchDispatcher
 from src.app.searches.adapters.plan_limits import RunLimitsOverBilling
 from src.app.searches.adapters.stores import SearchStoresOverStores
-from src.app.searches.http.validators import SavedSearchValidator
+from src.app.searches.http.validators import SavedSearchValidator, SearchRunValidator
 from src.app.searches.persistence.repositories import (
     SavedSearchRepository,
     SearchRunRepository,
@@ -52,6 +52,11 @@ def saved_search_validator(db: Session) -> SavedSearchValidator:
         SavedSearchRepository(db),
         SearchStoresOverStores(stores_wiring.store_by_id(db)),
     )
+
+
+def search_run_validator(db: Session) -> SearchRunValidator:
+    """Checks run create requests (status, counts, the search exists)."""
+    return SearchRunValidator(SearchRunRepository(db), SavedSearchRepository(db))
 
 
 def create_saved_search(db: Session) -> CreateSavedSearchUseCase:
