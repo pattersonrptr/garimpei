@@ -29,7 +29,7 @@ async def get_current_user(
     user_repo = wiring.users(db)
     user = user_repo.get_by_username(username=username)
     if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=401, detail="Could not validate credentials")
     return user
 
 
@@ -37,7 +37,7 @@ async def get_current_active_user(
     current_user: User = Depends(get_current_user),
 ) -> User:
     if not current_user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
+        raise HTTPException(status_code=403, detail="Inactive user")
     return current_user
 
 

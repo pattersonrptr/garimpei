@@ -87,7 +87,7 @@ class TestLoggedInUser:
 
         assert response.status_code == 401
 
-    def test_a_token_of_a_user_that_no_longer_exists_is_not_found(
+    def test_a_token_of_a_user_that_no_longer_exists_is_unauthenticated(
         self, client, sample_user, test_db
     ):
         token = token_for({"sub": sample_user.username})
@@ -96,16 +96,16 @@ class TestLoggedInUser:
 
         response = me(client, token)
 
-        assert response.status_code == 404  # today's behavior; 401 would fit better
+        assert response.status_code == 401
 
-    def test_a_deactivated_user_is_refused(self, client, sample_user, test_db):
+    def test_a_deactivated_user_is_forbidden(self, client, sample_user, test_db):
         token = token_for({"sub": sample_user.username})
         sample_user.is_active = False
         test_db.commit()
 
         response = me(client, token)
 
-        assert response.status_code == 400
+        assert response.status_code == 403
 
 
 class TestUserUpdate:
