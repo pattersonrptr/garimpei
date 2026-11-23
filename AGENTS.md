@@ -135,8 +135,9 @@ Local addresses: site `http://localhost:3000`, admin `http://localhost`
   class (`.form-error`), not by role.
 - Intl currency formatting uses a no-break space (`R$ 18,00`).
 - The backend sends naive UTC timestamps; parse them as UTC.
-- API errors: bad login 400; no token, expired or invalid token 401
-  (FastAPI 0.122+); a valid token without permission 403.
+- API errors: bad login 400; no token, expired or invalid token, or the
+  token of a deleted user 401 (FastAPI 0.122+); a valid token without
+  permission, or a deactivated user, 403.
 
 ## Never
 

@@ -244,10 +244,11 @@ before it starts.
   now http-layer.
 - Checks that need a repository (unique URL, product exists) may belong in
   the use cases rather than in request validation.
-- Accounts: gaps covered #188. Questions for the author, each a fix
-  with tests first: a deleted user's token answers 404 and a deactivated
-  user 400 (401 and 403 would fit better); an admin cannot delete a user who
-  owns an alert (the API answers 500).
+- Accounts: gaps covered #188. Done (this PR): a deleted user's token
+  answered 404 and a deactivated user 400; now 401 and 403 (approved by the
+  author, Nov 22, 2026). Still a question for the author, a fix with tests
+  first: an admin cannot delete a user who owns an alert (the API answers
+  500).
 - Stores: an update of a missing store answers 404 before the body is
   validated, so the controller looks the store up twice (once before the
   validator, once in `UpdateStoreUseCase`). Validating first would drop one
