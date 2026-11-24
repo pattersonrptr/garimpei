@@ -1,0 +1,16 @@
+{
+  "core": {
+    "protected_branches": [
+      "main"
+    ],
+    "frozen_paths": [
+      "backend/alembic/versions/*.py"
+    ],
+    "brief": {
+      "open_prs": true,
+      "read_first": [
+        "docs/plan/README.md"
+      ]
+    }
+  }
+}
