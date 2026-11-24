@@ -38,7 +38,6 @@
     ],
     "deny": [
       "Edit(/.env)",
-      "Write(/.env)",
       "WebFetch(domain:amazon.com.br)",
       "WebFetch(domain:www.amazon.com.br)",
       "WebFetch(domain:amazon.com)",
