@@ -1,7 +1,10 @@
 from dataclasses import dataclass
 
 from src.app.accounts.entities import User as UserEntity
-from src.app.accounts.ports import UserRepositoryInterface
+from src.app.accounts.ports import (
+    UserHasDataError,  # noqa: F401
+    UserRepositoryInterface,
+)
 
 
 @dataclass(frozen=True, kw_only=True)

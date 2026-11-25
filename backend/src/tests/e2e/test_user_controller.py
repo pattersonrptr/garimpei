@@ -5,6 +5,13 @@ Tests the complete user management flow:
     HTTP Request → UserController → UserUseCases → UserRepository → Database
 """
 
+from datetime import UTC, datetime
+
+from src.app.alerts.persistence.models import PriceAlert as PriceAlertModel
+from src.app.billing.persistence.models import Subscription as SubscriptionModel
+from src.app.searches.persistence.models import SavedSearch as SavedSearchModel
+from src.tests.e2e.test_subscription_controller import _seed_plans
+
 
 class TestUserCreate:
     """Test POST /users/ - Create new user"""
@@ -462,3 +469,101 @@ class TestUserDelete:
         # Adjust based on your authorization implementation
         # For now, assuming no fine-grained authorization:
         assert response.status_code in [200, 204, 403]
+
+
+class TestUserDeleteRefusedWhenTheUserHasData:
+    """A user who still has data is kept: the admin deactivates them instead.
+
+    Rule decided by the author (Nov 24, 2026, issue #238): refuse with 409,
+    saved searches included.
+    """
+
+    @staticmethod
+    def _delete(client, user_id, headers):
+        return client.delete(f"/users/{user_id}", headers=headers)
+
+    @staticmethod
+    def _assert_refused_and_kept(client, response, user_id, headers):
+        assert response.status_code == 409
+        error = response.json()["errors"][0]
+        assert error["code"] == "USER_HAS_DATA"
+        assert client.get(f"/users/{user_id}", headers=headers).status_code == 200
+
+    def test_a_user_with_an_active_alert_is_not_deleted(
+        self, client, test_db, sample_user, superuser_auth_headers
+    ):
+        test_db.add(
+            PriceAlertModel(search_term="duna", max_price=30.0, user_id=sample_user.id)
+        )
+        test_db.commit()
+
+        response = self._delete(client, sample_user.id, superuser_auth_headers)
+
+        self._assert_refused_and_kept(
+            client, response, sample_user.id, superuser_auth_headers
+        )
+
+    def test_a_user_whose_only_alert_was_deleted_is_not_deleted(
+        self, client, test_db, sample_user, superuser_auth_headers
+    ):
+        test_db.add(
+            PriceAlertModel(
+                search_term="duna",
+                max_price=30.0,
+                user_id=sample_user.id,
+                is_active=False,
+                deleted_at=datetime.now(UTC),
+            )
+        )
+        test_db.commit()
+
+        response = self._delete(client, sample_user.id, superuser_auth_headers)
+
+        self._assert_refused_and_kept(
+            client, response, sample_user.id, superuser_auth_headers
+        )
+
+    def test_a_user_with_a_subscription_is_not_deleted(
+        self, client, test_db, sample_user, superuser_auth_headers
+    ):
+        _seed_plans(test_db)
+        test_db.add(
+            SubscriptionModel(user_id=sample_user.id, plan_id=2, status="active")
+        )
+        test_db.commit()
+
+        response = self._delete(client, sample_user.id, superuser_auth_headers)
+
+        self._assert_refused_and_kept(
+            client, response, sample_user.id, superuser_auth_headers
+        )
+
+    def test_a_user_with_a_saved_search_is_not_deleted_and_the_search_keeps_its_owner(
+        self, client, test_db, sample_search_config, superuser_auth_headers
+    ):
+        owner_id = sample_search_config.user_id
+
+        response = self._delete(client, owner_id, superuser_auth_headers)
+
+        self._assert_refused_and_kept(
+            client, response, owner_id, superuser_auth_headers
+        )
+        test_db.expire_all()
+        assert (
+            test_db.get(SavedSearchModel, sample_search_config.id).user_id == owner_id
+        )
+
+    def test_the_refusal_carries_none_of_the_users_data(
+        self, client, test_db, sample_user, superuser_auth_headers
+    ):
+        test_db.add(
+            PriceAlertModel(search_term="duna", max_price=30.0, user_id=sample_user.id)
+        )
+        test_db.commit()
+
+        response = self._delete(client, sample_user.id, superuser_auth_headers)
+
+        error = response.json()["errors"][0]
+        assert "meta" not in error
+        assert "duna" not in response.text
+        assert sample_user.email not in response.text

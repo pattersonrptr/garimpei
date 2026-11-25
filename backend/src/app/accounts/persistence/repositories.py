@@ -2,11 +2,12 @@ from dataclasses import asdict, fields
 from datetime import UTC, datetime
 
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from src.app.accounts.entities import User as UserEntity
 from src.app.accounts.persistence.models import User as UserModel
-from src.app.accounts.ports import UserRepositoryInterface
+from src.app.accounts.ports import UserHasDataError, UserRepositoryInterface
 
 _USER_FIELDS = [f.name for f in fields(UserEntity)]
 
@@ -76,6 +77,9 @@ class UserRepository(UserRepositoryInterface):
             self.db.delete(db_user_model)
             self.db.commit()
             return True
+        except IntegrityError as e:
+            self.db.rollback()
+            raise UserHasDataError() from e
         except Exception as e:
             self.db.rollback()
             raise e
