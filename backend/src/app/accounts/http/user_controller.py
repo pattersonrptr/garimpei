@@ -14,7 +14,7 @@ from src.app.accounts.http.user_schema import (
     UserUpdateRequest,
 )
 from src.app.accounts.http.validators import UserValidator
-from src.app.accounts.ports import UserRepositoryInterface
+from src.app.accounts.ports import UserHasDataError, UserRepositoryInterface
 from src.app.accounts.use_cases import (
     CreateUserUseCase,
     DeleteUserUseCase,
@@ -25,7 +25,7 @@ from src.app.accounts.use_cases import (
     UpdateUserUseCase,
 )
 from src.app.infrastructure.database_config import get_db
-from src.common.jsonapi import JsonApiErrorResponse
+from src.common.jsonapi import JsonApiError, JsonApiErrorResponse
 from src.config.logging_config import get_logger
 
 router = APIRouter(tags=["users"], prefix="/users")
@@ -248,6 +248,7 @@ def delete_user(
     - 204: No Content (success, no body)
     - 403: { "errors": [ permission denied ] }
     - 404: { "errors": [ { status, code, title, detail, source } ] }
+    - 409: { "errors": [ the user still has data ] }
     """
     logger.warning(
         f"Deleting user ID: {user_id}",
@@ -276,7 +277,27 @@ def delete_user(
         return UserPresenter.handle_not_found(f"id {user_id}", "/data/id")
 
     delete_uc = DeleteUserUseCase(user_repo)
-    deleted = delete_uc.execute(user_id)
+    try:
+        deleted = delete_uc.execute(user_id)
+    except UserHasDataError:
+        return JSONResponse(
+            status_code=409,
+            content=JsonApiErrorResponse(
+                errors=[
+                    JsonApiError(
+                        status="409",
+                        code="USER_HAS_DATA",
+                        title="User has data",
+                        detail=(
+                            "The user still has data (alerts, notifications, "
+                            "subscription or saved searches); deactivate the "
+                            "user instead."
+                        ),
+                    )
+                ]
+            ).model_dump(exclude_none=True),
+            media_type="application/vnd.api+json",
+        )
 
     if not deleted:
         logger.error(f"Failed to delete user ID: {user_id}")

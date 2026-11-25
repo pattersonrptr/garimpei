@@ -23,8 +23,17 @@ class User(Base):
         default=lambda: datetime.now(UTC),
         onupdate=lambda: datetime.now(UTC),
     )
-    # Relationships
-    search_configs = relationship("SavedSearch", back_populates="user")
-    price_alerts = relationship("PriceAlert", back_populates="user")
-    notification_logs = relationship("NotificationLog", back_populates="user")
-    subscription = relationship("Subscription", back_populates="user", uselist=False)
+    # Relationships. passive_deletes="all": deleting a user never touches the
+    # children, so the foreign keys refuse to delete a user who still has data.
+    search_configs = relationship(
+        "SavedSearch", back_populates="user", passive_deletes="all"
+    )
+    price_alerts = relationship(
+        "PriceAlert", back_populates="user", passive_deletes="all"
+    )
+    notification_logs = relationship(
+        "NotificationLog", back_populates="user", passive_deletes="all"
+    )
+    subscription = relationship(
+        "Subscription", back_populates="user", uselist=False, passive_deletes="all"
+    )

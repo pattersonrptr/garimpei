@@ -3,6 +3,11 @@ from abc import ABC, abstractmethod
 from src.app.accounts.entities import User as UserEntity
 
 
+class UserHasDataError(Exception):
+    """The user still has data (alerts, notifications, subscription or saved
+    searches), so they are kept; deactivate them instead."""
+
+
 class UserRepositoryInterface(ABC):
     """
     Interface for User Repository operations.
@@ -103,5 +108,8 @@ class UserRepositoryInterface(ABC):
 
         Returns:
             True if user was deleted, False if user not found
+
+        Raises:
+            UserHasDataError: When the user still has data; the user is kept
         """
         raise NotImplementedError

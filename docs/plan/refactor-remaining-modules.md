@@ -246,9 +246,18 @@ before it starts.
   the use cases rather than in request validation.
 - Accounts: gaps covered #188. Done #235: a deleted user's token
   answered 404 and a deactivated user 400; now 401 and 403 (approved by the
-  author, Nov 22, 2026). Still a question for the author, a fix with tests
-  first: an admin cannot delete a user who owns an alert (the API answers
-  500).
+  author, Nov 22, 2026). Done #238: deleting a user who still has data
+  (alerts, soft-deleted ones included, notification logs, a subscription or
+  saved searches) answered 500, or left the saved searches without an owner;
+  now 409 `USER_HAS_DATA` and the user is kept (rule decided by the author,
+  Nov 24, 2026: refuse, the admin deactivates instead). The admin page's
+  message is #239.
+- Accounts (Nov 24, 2026): the 409 is the admin's rule only. A user-initiated
+  "delete my account" (LGPD erasure, deleting the user's data with them) is
+  a separate flow, not planned yet. A soft-deleted alert blocks the delete
+  for good, since nothing purges it.
+- Alerts: a deactivated user still gets alert e-mails (#240, found while
+  planning #238).
 - Stores: an update of a missing store answers 404 before the body is
   validated, so the controller looks the store up twice (once before the
   validator, once in `UpdateStoreUseCase`). Validating first would drop one
