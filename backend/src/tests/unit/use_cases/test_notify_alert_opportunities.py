@@ -8,7 +8,7 @@ without a price, which no other test covered.
 from types import SimpleNamespace
 from unittest.mock import Mock
 
-from src.app.alerts.entities import Listing
+from src.app.alerts.entities import AlertOwner, Listing
 from src.app.alerts.entities import PriceAlert as PriceAlertEntity
 from src.app.alerts.use_cases import NotifyAlertOpportunitiesUseCase
 
@@ -44,7 +44,9 @@ def make_use_case(listings, stores):
     notification_log_repo.exists_for_alert_and_product.return_value = False
     notification_log_repo.create.side_effect = lambda log: log
     user_repo = Mock()
-    user_repo.get_by_id.return_value = SimpleNamespace(email="owner@example.com")
+    user_repo.get_by_id.return_value = AlertOwner(
+        id=7, email="owner@example.com", is_active=True
+    )
     source_website_repo = Mock()
     source_website_repo.get_by_id.side_effect = stores.get
     email_service = Mock()
