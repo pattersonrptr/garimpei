@@ -352,6 +352,8 @@ class SendPriceAlertNotificationUseCase:
         user = self.owners.get_by_id(alert.user_id)
         if not user:
             return [], "User not found"
+        if not user.is_active:
+            return [], "User is deactivated"
 
         # Resolve source website name
         source_website = self.stores.get_by_id(best_product.store_id)
@@ -444,6 +446,11 @@ class OpportunityNotifier:
         if not user:
             logger.warning(
                 "User %s not found for alert %s, skipping", alert.user_id, alert_id
+            )
+            return None
+        if not user.is_active:
+            logger.info(
+                "User %s is deactivated, skipping alert %s", alert.user_id, alert_id
             )
             return None
 

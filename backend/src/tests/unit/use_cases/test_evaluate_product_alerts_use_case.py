@@ -15,7 +15,7 @@ from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
 from src.app.accounts.entities import User as UserEntity
-from src.app.alerts.entities import Listing
+from src.app.alerts.entities import AlertOwner, Listing
 from src.app.alerts.entities import PriceAlert as PriceAlertEntity
 from src.app.alerts.use_cases import (
     EvaluateProductAlertsUseCase,
@@ -344,6 +344,39 @@ class TestEvaluateProductAlertsUseCase:
         assert sent == []
         assert skipped == 1
         assert error is None
+
+    def test_a_deactivated_owner_gets_no_email_and_nothing_is_logged(self):
+        prod_repo = MagicMock()
+        prod_repo.get_by_id.return_value = make_listing()
+
+        pa_repo = MagicMock()
+        pa_repo.find_matching_alerts_for_product.return_value = [make_price_alert()]
+
+        nl_repo = MagicMock()
+        nl_repo.exists_for_alert_and_product.return_value = False
+
+        owners = MagicMock()
+        owners.get_by_id.return_value = AlertOwner(
+            id=1, email="user@example.com", is_active=False
+        )
+
+        email_svc = MagicMock()
+
+        uc = self._build_use_case(
+            product_repo=prod_repo,
+            price_alert_repo=pa_repo,
+            notification_log_repo=nl_repo,
+            user_repo=owners,
+            source_website_repo=MagicMock(),
+            email_service=email_svc,
+        )
+        sent, skipped, error = uc.execute(100)
+
+        assert sent == []
+        assert skipped == 1
+        assert error is None
+        email_svc.send_price_alert_email.assert_not_called()
+        nl_repo.create.assert_not_called()
 
     # ------------------------------------------------------------------
     # Multiple alerts mixed

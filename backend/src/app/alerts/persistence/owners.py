@@ -13,4 +13,4 @@ class UserAccountOwners(AlertOwnerReader):
         user = self.user_by_id.execute(user_id)
         if user is None or user.id is None:
             return None
-        return AlertOwner(id=user.id, email=user.email)
+        return AlertOwner(id=user.id, email=user.email, is_active=user.is_active)

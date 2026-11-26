@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 from src.app.accounts.entities import User as UserEntity
-from src.app.alerts.entities import Listing
+from src.app.alerts.entities import AlertOwner, Listing
 from src.app.alerts.entities import NotificationLog as NotificationLogEntity
 from src.app.alerts.entities import PriceAlert as PriceAlertEntity
 from src.app.alerts.use_cases import (
@@ -311,6 +311,42 @@ class TestSendPriceAlertNotificationUseCase:
 
         assert logs == []
         assert "User not found" in error
+
+    @patch("src.app.alerts.use_cases.settings")
+    def test_a_deactivated_owner_gets_no_email_and_nothing_is_logged(
+        self, mock_settings
+    ):
+        mock_settings.NOTIFICATION_RATE_LIMIT_MINUTES = 60
+        pa_repo = MagicMock()
+        pa_repo.get_by_id.return_value = make_price_alert()
+
+        nl_repo = MagicMock()
+        nl_repo.count_since.return_value = 0
+
+        prod_repo = MagicMock()
+        prod_repo.cheapest_match.return_value = make_listing()
+
+        owners = MagicMock()
+        owners.get_by_id.return_value = AlertOwner(
+            id=1, email="user@example.com", is_active=False
+        )
+
+        email_svc = MagicMock()
+
+        uc = self._build_use_case(
+            price_alert_repo=pa_repo,
+            notification_log_repo=nl_repo,
+            product_repo=prod_repo,
+            user_repo=owners,
+            email_service=email_svc,
+        )
+        logs, error = uc.execute(10)
+
+        assert logs == []
+        assert "deactivated" in error.lower()
+        email_svc.send_price_alert_email.assert_not_called()
+        nl_repo.create.assert_not_called()
+        pa_repo.update.assert_not_called()
 
     @patch("src.app.alerts.use_cases.settings")
     def test_sends_email_and_creates_log_on_success(self, mock_settings):
