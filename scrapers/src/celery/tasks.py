@@ -15,7 +15,9 @@ from src.scrapers.manager.scraper_manager import ScraperManager
 logger = logging.getLogger(__name__)
 
 broker_url = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0")
-app = Celery(main="scrapers", broker=broker_url, backend="redis://redis:6379/0")
+# The result backend (which chord needs) lives on the same Redis as the broker,
+# as in the backend's celery_client, so CELERY_BROKER_URL moves both together.
+app = Celery(main="scrapers", broker=broker_url, backend=broker_url)
 
 _redis = redis.Redis.from_url(broker_url, decode_responses=True)
 
