@@ -244,6 +244,51 @@ class TestIngestingOffersChecksBookAlerts:
 
         email.send_price_alert_email.assert_not_called()
 
+    def test_a_deactivated_owner_gets_no_email(
+        self,
+        client,
+        auth_headers,
+        staff_auth_headers,
+        sample_user,
+        sample_store,
+        book,
+        email,
+        test_db,
+    ):
+        create_alert(client, auth_headers, sample_user.id, 20)
+        sample_user.is_active = False
+        test_db.commit()
+
+        ingest(client, staff_auth_headers, sample_store.id, 19.9)
+
+        email.send_price_alert_email.assert_not_called()
+        assert test_db.query(NotificationLogModel).count() == 0
+
+    def test_a_reactivated_owner_hears_about_an_offer_collected_again(
+        self,
+        client,
+        auth_headers,
+        staff_auth_headers,
+        sample_user,
+        sample_store,
+        book,
+        email,
+        test_db,
+    ):
+        create_alert(client, auth_headers, sample_user.id, 20)
+        sample_user.is_active = False
+        test_db.commit()
+        ingest(client, staff_auth_headers, sample_store.id, 19.9, url="https://s/a")
+
+        sample_user.is_active = True
+        test_db.commit()
+        ingest(client, staff_auth_headers, sample_store.id, 19.9, url="https://s/a")
+
+        email.send_price_alert_email.assert_called_once()
+        assert email.send_price_alert_email.call_args.kwargs["to_email"] == (
+            sample_user.email
+        )
+
     def test_an_alert_failure_does_not_fail_the_ingestion(
         self,
         client,
