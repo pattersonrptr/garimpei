@@ -112,10 +112,12 @@ class Store:
 
 @dataclass(frozen=True, kw_only=True)
 class AlertOwner:
-    """The user who owns an alert, as far as alerts needs: where to write."""
+    """The user who owns an alert, as far as alerts needs: where to write,
+    and whether the account is still active."""
 
     id: int
     email: str
+    is_active: bool
 
 
 @dataclass(frozen=True, kw_only=True)
