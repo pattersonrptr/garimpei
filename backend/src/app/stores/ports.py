@@ -3,6 +3,10 @@ from abc import ABC, abstractmethod
 from src.app.stores.entities import Store
 
 
+class StoreHasOffersError(Exception):
+    """The store still has offers (available or not), so it is kept."""
+
+
 class StoreRepositoryInterface(ABC):
     """
     Interface for SourceWebsite Repository operations.
@@ -102,5 +106,8 @@ class StoreRepositoryInterface(ABC):
 
         Returns:
             True if source website was deleted, False if not found
+
+        Raises:
+            StoreHasOffersError: When the store still has offers; it is kept
         """
         raise NotImplementedError
