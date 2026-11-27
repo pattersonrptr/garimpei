@@ -60,7 +60,8 @@
       "deleteFailed": "Failed to delete user",
       "bulkDeleted_one": "{{count}} user deleted",
       "bulkDeleted_other": "{{count}} users deleted",
-      "bulkDeleteFailed": "Failed to delete some users"
+      "hasData": "Cannot delete: this user still has data. Deactivate the user instead.",
+      "bulkSummary": "Deleted: {{deleted}}. Not deleted: {{kept}}."
     },
     "dialogs": {
       "deleteTitle": "Delete User",
