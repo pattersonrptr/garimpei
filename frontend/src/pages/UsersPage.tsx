@@ -29,6 +29,7 @@ import { GenericFormModal } from '@/components/common/GenericFormModal'
 import { PageHeader } from '@/components/common/PageHeader'
 import { useAuth } from '@/context/AuthContext'
 import { usePaginatedResource } from '@/hooks/usePaginatedResource'
+import { firstApiError } from '@/lib/apiErrors'
 import { formatDateTime } from '@/lib/formatters'
 import { logger } from '@/lib/logger'
 import { EMPTY_SELECTION, selectedRowIds } from '@/lib/selection'
@@ -114,6 +115,12 @@ export function UsersPage() {
     return selectedIds().length
   }
 
+  /** Whether the API refused to delete the user because they still have data. */
+  function userHasData(err: unknown): boolean {
+    const { status, error } = firstApiError(err)
+    return status === 409 && error?.code === 'USER_HAS_DATA'
+  }
+
   // ---------------------------------------------------------------------------
   // Handlers
   // ---------------------------------------------------------------------------
@@ -159,8 +166,12 @@ export function UsersPage() {
       enqueueSnackbar(t('toast.deleted'), { variant: 'success' })
       reload()
     } catch (err) {
-      logger.error('Failed to delete user', { id: deleteId }, err)
-      enqueueSnackbar(t('toast.deleteFailed'), { variant: 'error' })
+      if (userHasData(err)) {
+        enqueueSnackbar(t('toast.hasData'), { variant: 'warning' })
+      } else {
+        logger.error('Failed to delete user', { id: deleteId }, err)
+        enqueueSnackbar(t('toast.deleteFailed'), { variant: 'error' })
+      }
     } finally {
       setDeleteId(null)
     }
@@ -169,15 +180,20 @@ export function UsersPage() {
   async function handleBulkDelete() {
     setBulkDeleteOpen(false)
     const ids = selectedIds()
-    try {
-      await Promise.all(ids.map(deleteUser))
-      enqueueSnackbar(t('toast.bulkDeleted', { count: ids.length }), { variant: 'success' })
-      setRowSelection(EMPTY_SELECTION)
-      reload()
-    } catch (err) {
-      logger.error('Failed to bulk delete users', { ids }, err)
-      enqueueSnackbar(t('toast.bulkDeleteFailed'), { variant: 'error' })
+    const results = await Promise.allSettled(ids.map(deleteUser))
+    const failures = results.flatMap((r) => (r.status === 'rejected' ? [r.reason] : []))
+    const deleted = results.length - failures.length
+
+    if (failures.length === 0) {
+      enqueueSnackbar(t('toast.bulkDeleted', { count: deleted }), { variant: 'success' })
+    } else {
+      logger.error('Failed to bulk delete users', { ids }, failures)
+      enqueueSnackbar(t('toast.bulkSummary', { deleted, kept: failures.length }), {
+        variant: 'warning',
+      })
     }
+    setRowSelection(EMPTY_SELECTION)
+    reload()
   }
 
   // ---------------------------------------------------------------------------
