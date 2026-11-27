@@ -9,12 +9,14 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from src.app.catalog.persistence.models import Product as ProductModel
 from src.app.infrastructure.database_config import Base
 from src.app.stores.entities import Store
 
 # Import model to register with Base.metadata
 from src.app.stores.persistence.models import Store as StoreModel  # noqa: F401
 from src.app.stores.persistence.repositories import StoreRepository
+from src.app.stores.use_cases import StoreHasOffersError
 
 # ============================================================================
 # Fixtures
@@ -273,3 +275,22 @@ class TestDeleteSourceWebsite:
         result = source_website_repository.delete(99999)
 
         assert result is False
+
+    def test_deleting_a_store_with_an_offer_is_refused_and_keeps_the_store(
+        self, test_db, source_website_repository, sample_store_entity
+    ):
+        """A store that has offers is kept (rule decided Nov 27, 2026, #251)."""
+        created = source_website_repository.create(sample_store_entity)
+        test_db.add(
+            ProductModel(
+                url="https://www.olx.com.br/item/1",
+                title="Duna",
+                source_website_id=created.id,
+            )
+        )
+        test_db.commit()
+
+        with pytest.raises(StoreHasOffersError):
+            source_website_repository.delete(created.id)
+
+        assert source_website_repository.get_by_id(created.id) is not None
