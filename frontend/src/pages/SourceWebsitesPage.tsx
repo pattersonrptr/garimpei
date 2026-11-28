@@ -28,6 +28,7 @@ import { ConfirmationDialog } from '@/components/common/ConfirmationDialog'
 import { GenericFormModal } from '@/components/common/GenericFormModal'
 import { PageHeader } from '@/components/common/PageHeader'
 import { usePaginatedResource } from '@/hooks/usePaginatedResource'
+import { firstApiError } from '@/lib/apiErrors'
 import { logger } from '@/lib/logger'
 import { EMPTY_SELECTION, selectedRowIds } from '@/lib/selection'
 import {
@@ -108,6 +109,12 @@ export function SourceWebsitesPage() {
     return selectedIds().length
   }
 
+  /** Whether the API refused to delete the website because it still has offers. */
+  function siteHasOffers(err: unknown): boolean {
+    const { status, error } = firstApiError(err)
+    return status === 409 && error?.code === 'STORE_HAS_OFFERS'
+  }
+
   function openEdit(site: SourceWebsite) {
     setEditSite(site)
     setEditForm({ name: site.name, baseUrl: site.baseUrl, isActive: site.isActive })
@@ -170,8 +177,12 @@ export function SourceWebsitesPage() {
       enqueueSnackbar(t('toast.deleted'), { variant: 'success' })
       reload()
     } catch (err) {
-      logger.error('Failed to delete source website', { id: deleteId }, err)
-      enqueueSnackbar(t('toast.deleteFailed'), { variant: 'error' })
+      if (siteHasOffers(err)) {
+        enqueueSnackbar(t('toast.hasOffers'), { variant: 'warning' })
+      } else {
+        logger.error('Failed to delete source website', { id: deleteId }, err)
+        enqueueSnackbar(t('toast.deleteFailed'), { variant: 'error' })
+      }
     } finally {
       setDeleteId(null)
     }
@@ -180,15 +191,20 @@ export function SourceWebsitesPage() {
   async function handleBulkDelete() {
     setBulkDeleteOpen(false)
     const ids = selectedIds()
-    try {
-      await Promise.all(ids.map(deleteSourceWebsite))
-      enqueueSnackbar(t('toast.bulkDeleted', { count: ids.length }), { variant: 'success' })
-      setRowSelection(EMPTY_SELECTION)
-      reload()
-    } catch (err) {
-      logger.error('Failed to bulk delete source websites', { ids }, err)
-      enqueueSnackbar(t('toast.bulkDeleteFailed'), { variant: 'error' })
+    const results = await Promise.allSettled(ids.map(deleteSourceWebsite))
+    const failures = results.flatMap((r) => (r.status === 'rejected' ? [r.reason] : []))
+    const deleted = results.length - failures.length
+
+    if (failures.length === 0) {
+      enqueueSnackbar(t('toast.bulkDeleted', { count: deleted }), { variant: 'success' })
+    } else {
+      logger.error('Failed to bulk delete source websites', { ids }, failures)
+      enqueueSnackbar(t('toast.bulkSummary', { deleted, kept: failures.length }), {
+        variant: 'warning',
+      })
     }
+    setRowSelection(EMPTY_SELECTION)
+    reload()
   }
 
   // ---------------------------------------------------------------------------
@@ -377,5 +393,3 @@ export function SourceWebsitesPage() {
     </Box>
   )
 }
-
-
