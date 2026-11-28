@@ -272,7 +272,7 @@ before it starts.
   to alerts and saved searches are kept (rule decided by the author, Nov 27,
   2026: refuse, any offer counts, available or not). A store with no offers
   is still deleted and removed from alerts and saved searches. Done #253
-  (merged as (this PR)): the admin's websites page explains the 409 from its
+  (merged as #254): the admin's websites page explains the 409 from its
   code (pt and en) and a bulk delete reports how many websites were deleted
   and how many were not.
 - Saved searches (found in the characterization, Nov 18, 2026): another user's
