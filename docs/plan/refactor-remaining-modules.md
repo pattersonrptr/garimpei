@@ -203,7 +203,7 @@ and non-JSON:API answers found by the characterization.
 
 ## Admin module plan
 
-Proposed Nov 28, 2026, awaiting the author's approval. `admin` holds what only
+Approved by the author (Nov 28, 2026). `admin` holds what only
 the back office asks for: the platform summary and the product cleanup.
 Today `interfaces/http/controllers/admin_controller.py` queries the ORM
 models of accounts, alerts, catalog, stores and searches itself. The
