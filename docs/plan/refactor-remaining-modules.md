@@ -266,7 +266,7 @@ before it starts.
   validator, once in `UpdateStoreUseCase`). Validating first would drop one
   lookup but answer 400/422 for a missing store with a bad body: a question
   for the author (found in slice 3, Nov 18, 2026).
-- Stores: done #251 (merged as (this PR)): deleting a store that has offers answered
+- Stores: done #251 (merged as #252): deleting a store that has offers answered
   500 (the ORM set `products.source_website_id`, which is `NOT NULL`, to
   null); now 409 `STORE_HAS_OFFERS` and the store, its offers and its links
   to alerts and saved searches are kept (rule decided by the author, Nov 27,
