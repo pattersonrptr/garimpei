@@ -130,7 +130,8 @@
       "deleteFailed": "Não foi possível excluir o site",
       "bulkDeleted_one": "{{count}} site excluído",
       "bulkDeleted_other": "{{count}} sites excluídos",
-      "bulkDeleteFailed": "Não foi possível excluir alguns sites"
+      "hasOffers": "Não é possível excluir: este site ainda tem ofertas. Desative o site.",
+      "bulkSummary": "Excluídos: {{deleted}}. Não excluídos: {{kept}}."
     },
     "dialogs": {
       "deleteTitle": "Excluir site",

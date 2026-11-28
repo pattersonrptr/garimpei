@@ -271,8 +271,10 @@ before it starts.
   null); now 409 `STORE_HAS_OFFERS` and the store, its offers and its links
   to alerts and saved searches are kept (rule decided by the author, Nov 27,
   2026: refuse, any offer counts, available or not). A store with no offers
-  is still deleted and removed from alerts and saved searches. Next: the
-  admin's message for this 409 (like #239).
+  is still deleted and removed from alerts and saved searches. Done #253
+  (merged as #254): the admin's websites page explains the 409 from its
+  code (pt and en) and a bulk delete reports how many websites were deleted
+  and how many were not.
 - Saved searches (found in the characterization, Nov 18, 2026): another user's
   config answers 404 on GET but 403 on `/search-configs/user/{id}`; the
   trigger and `execution-status` bodies and that 403 are not JSON:API errors

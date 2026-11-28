@@ -130,7 +130,8 @@
       "deleteFailed": "Failed to delete source website",
       "bulkDeleted_one": "{{count}} website deleted",
       "bulkDeleted_other": "{{count}} websites deleted",
-      "bulkDeleteFailed": "Failed to delete some websites"
+      "hasOffers": "Cannot delete: this website still has offers. Deactivate the website instead.",
+      "bulkSummary": "Deleted: {{deleted}}. Not deleted: {{kept}}."
     },
     "dialogs": {
       "deleteTitle": "Delete Source Website",
