@@ -67,5 +67,21 @@ node ../.claude/skills/e2e-local/screenshots.mjs --login <out-dir> /alertas /con
   becomes a Windows path.
 - One PNG per page and size (390×844 and 1366×900), full page.
 - `--login` signs in on the site as `E2E_USER_USERNAME` first.
+- `--admin` signs in on the back office (`:80`) as `E2E_ADMIN_USERNAME`;
+  the paths are admin paths (`/admin/users`).
+- `--action <file.mjs>` runs an interaction on each page before the
+  screenshot (its default export gets `page` and `{ size, path }`); write
+  it in the scratchpad. For a toast after a click in a MUI DataGrid: find
+  the row by `.MuiDataGrid-row[data-id="<id>"]`, scroll
+  `.MuiDataGrid-virtualScroller` right first (on mobile the actions column
+  is not rendered), and wait for the dialog to be hidden plus ~800 ms so
+  the toast has finished sliding in.
+- Before an action that deletes, check in the database (or the API) that
+  the record is protected (e.g. it still has data, so the API answers
+  409); never delete real records for a screenshot.
+
+```bash
+node ../.claude/skills/e2e-local/screenshots.mjs --admin --action <scratchpad>/refused.mjs <out-dir> /admin/source-websites
+```
 - Write to the session scratchpad, not the repository. Look at every image
   before reporting; mention anything that looks broken.
