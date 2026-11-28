@@ -134,7 +134,13 @@ jobs:
             src/app/billing/http/plan_controller.py \
             src/app/billing/http/subscription_controller.py \
             src/app/alerts/http/limits.py \
-            src/app/alerts/persistence/plan_limits.py
+            src/app/alerts/persistence/plan_limits.py \
+            src/app/admin/entities.py \
+            src/app/admin/ports.py \
+            src/app/admin/use_cases.py \
+            src/app/admin/adapters/platform_stats.py \
+            src/app/admin/wiring.py \
+            src/app/admin/http/presenter.py
 
       - name: Type check with mypy (whole backend, report only)
         run: poetry run mypy src/

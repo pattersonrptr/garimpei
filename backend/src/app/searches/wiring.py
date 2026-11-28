@@ -26,6 +26,7 @@ from src.app.searches.use_cases import (
     DeleteSavedSearchUseCase,
     FindSavedSearchByTermUseCase,
     GetSavedSearchUseCase,
+    ListSearchRunsUseCase,
     RunSearchNowUseCase,
     UpdateSavedSearchUseCase,
 )
@@ -86,3 +87,8 @@ def run_search_now(db: Session) -> RunSearchNowUseCase:
         RunLimitsOverBilling(billing_wiring.user_plan_limits(db)),
         CelerySearchDispatcher(),
     )
+
+
+def list_search_runs(db: Session) -> ListSearchRunsUseCase:
+    """Pages of search runs (the admin summary shows the latest ones)."""
+    return ListSearchRunsUseCase(SearchRunRepository(db))

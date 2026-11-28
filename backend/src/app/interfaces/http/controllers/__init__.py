@@ -8,6 +8,9 @@ from src.app.accounts.http.auth_controller import (
 from src.app.accounts.http.user_controller import (
     router as user_controller,
 )
+from src.app.admin.http.admin_controller import (
+    router as admin_controller,
+)
 from src.app.alerts.http.my_alerts_controller import (
     router as my_alerts_controller,
 )
@@ -34,9 +37,6 @@ from src.app.catalog.http.price_history_controller import (
 )
 from src.app.catalog.http.product_controller import (
     router as product_controller,
-)
-from src.app.interfaces.http.controllers.admin_controller import (
-    router as admin_controller,
 )
 from src.app.searches.http.saved_search_controller import (
     router as search_config_controller,

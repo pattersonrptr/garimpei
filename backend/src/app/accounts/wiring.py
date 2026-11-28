@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from src.app.accounts.persistence.repositories import UserRepository
 from src.app.accounts.ports import UserRepositoryInterface
-from src.app.accounts.use_cases import GetUserByIdUseCase
+from src.app.accounts.use_cases import CountUsersUseCase, GetUserByIdUseCase
 
 
 def users(db: Session) -> UserRepositoryInterface:
@@ -19,3 +19,8 @@ def users(db: Session) -> UserRepositoryInterface:
 def user_by_id(db: Session) -> GetUserByIdUseCase:
     """Looks a user up by id; what other modules need from accounts."""
     return GetUserByIdUseCase(users(db))
+
+
+def count_users(db: Session) -> CountUsersUseCase:
+    """How many users there are (the admin summary)."""
+    return CountUsersUseCase(users(db))
