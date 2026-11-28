@@ -5,6 +5,7 @@ Tests the complete source website management flow:
     HTTP Request → SourceWebsiteController → SourceWebsiteUseCases → StoreRepository → Database
 """
 
+from src.app.catalog.persistence.models import Product as ProductModel
 from src.app.stores.persistence.models import Store as StoreModel
 
 SOURCE_WEBSITE_TYPE = "source_website"  # Used in requests (validator enforces singular)
@@ -433,3 +434,49 @@ class TestSourceWebsiteDelete:
         response = client.delete(f"/source-websites/{sample_store.id}")
 
         assert response.status_code in (401, 403)
+
+
+class TestStoreDeleteRefusedWhenItHasOffers:
+    """A store that still has offers is kept.
+
+    Rule decided by the author (Nov 27, 2026, issue #251): refuse with 409,
+    whether the offers are available or not.
+    """
+
+    @staticmethod
+    def _delete(client, store_id, headers):
+        return client.delete(f"/source-websites/{store_id}", headers=headers)
+
+    @staticmethod
+    def _assert_refused_and_kept(client, response, store_id, headers):
+        assert response.status_code == 409
+        error = response.json()["errors"][0]
+        assert error["code"] == "STORE_HAS_OFFERS"
+        assert (
+            client.get(f"/source-websites/{store_id}", headers=headers).status_code
+            == 200
+        )
+
+    def test_a_store_with_an_offer_is_not_deleted_and_the_offer_stays(
+        self, client, test_db, staff_auth_headers, sample_product
+    ):
+        store_id = sample_product.source_website_id
+
+        response = self._delete(client, store_id, staff_auth_headers)
+
+        self._assert_refused_and_kept(client, response, store_id, staff_auth_headers)
+        test_db.expire_all()
+        assert (
+            test_db.get(ProductModel, sample_product.id).source_website_id == store_id
+        )
+
+    def test_a_store_whose_only_offer_is_unavailable_is_not_deleted(
+        self, client, test_db, staff_auth_headers, sample_product
+    ):
+        sample_product.is_available = False
+        test_db.commit()
+        store_id = sample_product.source_website_id
+
+        response = self._delete(client, store_id, staff_auth_headers)
+
+        self._assert_refused_and_kept(client, response, store_id, staff_auth_headers)

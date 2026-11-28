@@ -23,6 +23,7 @@ from src.app.stores.use_cases import (
     GetStoreUseCase,
     ListStoresUseCase,
     StoreChanges,
+    StoreHasOffersError,
     StoreNotFoundError,
     UpdateStoreUseCase,
 )
@@ -279,6 +280,7 @@ def delete_source_website(
         - 204: Deleted successfully (no content)
         - 403: Permission denied
         - 404: Source website not found
+        - 409: The source website still has offers
     """
     logger.warning(
         f"Deleting source website ID: {source_website_id}",
@@ -293,6 +295,8 @@ def delete_source_website(
         DeleteStoreUseCase(source_website_repo).execute(source_website_id)
     except StoreNotFoundError:
         return _not_found_by_id(source_website_id)
+    except StoreHasOffersError:
+        return StorePresenter.handle_has_offers()
 
     logger.warning(
         f"Source website deleted (ID: {source_website_id})",

@@ -266,9 +266,13 @@ before it starts.
   validator, once in `UpdateStoreUseCase`). Validating first would drop one
   lookup but answer 400/422 for a missing store with a bad body: a question
   for the author (found in slice 3, Nov 18, 2026).
-- Stores: deleting a store that has offers answers 500 (the ORM sets
-  `products.source_website_id`, which is `NOT NULL`, to null). A fix with
-  tests first, after the author decides the rule (found Nov 18, 2026).
+- Stores: done #251 (merged as #252): deleting a store that has offers answered
+  500 (the ORM set `products.source_website_id`, which is `NOT NULL`, to
+  null); now 409 `STORE_HAS_OFFERS` and the store, its offers and its links
+  to alerts and saved searches are kept (rule decided by the author, Nov 27,
+  2026: refuse, any offer counts, available or not). A store with no offers
+  is still deleted and removed from alerts and saved searches. Next: the
+  admin's message for this 409 (like #239).
 - Saved searches (found in the characterization, Nov 18, 2026): another user's
   config answers 404 on GET but 403 on `/search-configs/user/{id}`; the
   trigger and `execution-status` bodies and that 403 are not JSON:API errors

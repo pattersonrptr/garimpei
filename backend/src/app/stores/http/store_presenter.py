@@ -45,6 +45,23 @@ class StorePresenter:
         )
 
     @staticmethod
+    def handle_has_offers() -> JSONResponse:
+        """Returns 409 in JSON:API format: the store still has offers."""
+        errors = [
+            JsonApiError(
+                status="409",
+                code="STORE_HAS_OFFERS",
+                title="Source website has offers",
+                detail=("The source website still has offers; deactivate it instead."),
+            )
+        ]
+        return JSONResponse(
+            status_code=409,
+            content=JsonApiErrorResponse(errors=errors).model_dump(exclude_none=True),
+            media_type="application/vnd.api+json",
+        )
+
+    @staticmethod
     def handle_success(entity: Store) -> StoreReadResponse:
         """Returns source website in JSON:API format (success)."""
         return StoreReadResponse(data=StoreResource.from_entity(entity))

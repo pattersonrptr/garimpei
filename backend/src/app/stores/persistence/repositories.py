@@ -2,11 +2,12 @@ from dataclasses import asdict, fields
 from datetime import UTC, datetime
 
 from sqlalchemy import asc, desc
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from src.app.stores.entities import Store
 from src.app.stores.persistence.models import Store as StoreModel
-from src.app.stores.ports import StoreRepositoryInterface
+from src.app.stores.ports import StoreHasOffersError, StoreRepositoryInterface
 
 # The fields an update writes (the controller passes no dates).
 _UPDATABLE = ("name", "base_url", "is_active")
@@ -102,6 +103,9 @@ class StoreRepository(StoreRepositoryInterface):
             self.db.delete(db_source_website)
             self.db.commit()
             return True
+        except IntegrityError as e:
+            self.db.rollback()
+            raise StoreHasOffersError() from e
         except Exception as e:
             self.db.rollback()
             raise e

@@ -7,7 +7,10 @@ store is a StoreNotFoundError, which the HTTP layer maps to a 404.
 from dataclasses import dataclass, replace
 
 from src.app.stores.entities import Store
-from src.app.stores.ports import StoreRepositoryInterface
+from src.app.stores.ports import (
+    StoreHasOffersError,  # noqa: F401
+    StoreRepositoryInterface,
+)
 
 
 class StoreNotFoundError(Exception):

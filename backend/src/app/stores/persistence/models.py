@@ -24,7 +24,11 @@ class Store(Base):
     )
 
     # Relationships
-    products = relationship("Product", back_populates="source_website")
+    # passive_deletes="all": deleting a store never touches its offers, so the
+    # foreign key refuses to delete a store that still has offers.
+    products = relationship(
+        "Product", back_populates="source_website", passive_deletes="all"
+    )
     search_configs = relationship(
         "SavedSearch",
         secondary="search_config_source_website",
