@@ -54,9 +54,6 @@ export const ENDPOINTS = {
     opportunities: (id: string) => `${BASE}/price-alerts/${id}/opportunities`,
     notify: (id: string) => `${BASE}/price-alerts/${id}/notify`,
   },
-  dashboard: {
-    summary: `${BASE}/dashboard/summary`,
-  },
   plans: {
     list: `${BASE}/plans/`,
     byId: (id: string) => `${BASE}/plans/${id}`,

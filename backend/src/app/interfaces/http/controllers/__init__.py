@@ -38,9 +38,6 @@ from src.app.catalog.http.product_controller import (
 from src.app.interfaces.http.controllers.admin_controller import (
     router as admin_controller,
 )
-from src.app.interfaces.http.controllers.dashboard_controller import (
-    router as dashboard_controller,
-)
 from src.app.searches.http.saved_search_controller import (
     router as search_config_controller,
 )
@@ -54,7 +51,6 @@ from src.app.stores.http.store_controller import (
 __all__ = [
     "user_controller",
     "auth_controller",
-    "dashboard_controller",
     "book_controller",
     "my_alerts_controller",
     "offer_controller",

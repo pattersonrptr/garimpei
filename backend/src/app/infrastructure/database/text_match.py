@@ -3,7 +3,7 @@ Accent- and case-insensitive matching of search terms against product titles.
 
 Users type "microsservicos" and listings say "Microsserviços"; both must match.
 The same rule is applied in SQL (``title_contains``) and in Python
-(``fold_text``), so alerts, opportunities and the dashboard agree.
+(``fold_text``), so alerts, opportunities and the admin's product cleanup agree.
 
 On PostgreSQL this uses the ``unaccent`` extension (created by a migration).
 On other dialects (SQLite in the test suite) ``unaccent`` compiles to a no-op,
