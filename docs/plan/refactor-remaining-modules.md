@@ -66,6 +66,7 @@ characterization tests first, in their own PR, reviewed by the author.
 | Saved searches slice 6: HTTP | #230 | Move Function + Rename Class; Inappropriate Intimacy → Extract Interface + adapter | `search_config_schema`, `search_execution_log_schema`, their presenters, both validators and both controllers leave `interfaces/http/` and `domain/validators/` for `searches/http/` (`saved_search_schema.py`, `search_run_schema.py`, `saved_search_presenter.py`, `search_run_presenter.py`, `validators.py`, `saved_search_controller.py`, `search_run_controller.py`), with `SavedSearch*` and `SearchRun*` class names. The controllers get repositories and the validator from `searches/wiring.py`; the validator checks stores through searches' own `SearchStores.exists` port (adapter over stores' `GetStoreUseCase`) instead of stores' repository. URLs, JSON:API types, bodies and error texts are unchanged; only the OpenAPI component names change. Tests: validator and presenter tests move to `tests/unit/searches/`, the two controller e2e files are renamed; imports and class names only, plus the store mock in two validator tests (`get_by_id` → `exists`). Approved by the author (Nov 22, 2026). The new files join the blocking mypy step; whole-backend mypy 207 → 204. **Saved searches module done** |
 | Unused dashboard summary removed | #261 | Dead Code → Remove Dead Code | `GET /dashboard/summary` (a user's alert counts, opportunities and next checks) had no client: the admin dropped its dashboard service in #98 and the site never called it. Found while scoping the admin module; removal decided by the author (Nov 28, 2026). The controller, its three e2e tests, the admin's unused endpoint constant and one status check in `test_price_alert_ownership.py` (approved by the author) go. `/admin/summary` and `/admin/cleanup-products` stay and get characterization tests next |
 | Characterization tests for admin | #262 | — | Before the admin gets its own module. 15 e2e tests in `test_admin_characterization.py`. `GET /admin/summary`: a staff user gets 403; all users and the active ones; alert counts leave out soft-deleted alerts (active means active and not deleted); every product, available or not; all stores and the active ones; the latest 20 runs newest first, each as stored; scraper stats count successes and failures among those 20 (a running run counts only in the total). `POST /admin/cleanup-products`: keeps products newer than `days_old` (default 30) and the ones an active alert finds (term in the title, store among the alert's); a paused or soft-deleted alert keeps nothing; the alert's `max_price` plays no part. 22 mutations: the existing suite killed 1 (dry run deleting), these tests the other 21. Approved by the author (Nov 28, 2026) |
+| Admin module plan | (this PR) | — | Three slices: see *Admin module plan* below |
 
 ## Accounts module plan
 
@@ -199,6 +200,47 @@ Left for the queue: the admin and dashboard controllers query the run ORM
 model directly (they move when admin gets its home); searches' persistence
 joins the stores table through `search_config_source_website`; the 404/403
 and non-JSON:API answers found by the characterization.
+
+## Admin module plan
+
+Proposed Nov 28, 2026, awaiting the author's approval. `admin` holds what only
+the back office asks for: the platform summary and the product cleanup.
+Today `interfaces/http/controllers/admin_controller.py` queries the ORM
+models of accounts, alerts, catalog, stores and searches itself. The
+characterization tests (#262) pin both endpoints. The HTTP contract stays
+(`GET /admin/summary`, `POST /admin/cleanup-products`, the bodies, the
+superuser check), since the admin page and the scrapers' daily cleanup task
+use it. One PR per slice, behavior unchanged:
+
+1. **Counts where the data lives**: each module answers its own count
+   through a new use case and a repository method. Accounts:
+   `CountUsersUseCase` (all and active). Alerts: `CountAlertsUseCase` (all
+   and active, soft-deleted left out). Catalog: `CountProductsUseCase`.
+   Stores: `CountStoresUseCase` (all and active). Searches:
+   `ListLatestRunsUseCase` (the latest N runs, newest first). Unit tests over
+   the modules' in-memory fakes, tests first (Extract Function + Move
+   Function, out of the controller).
+2. **Admin summary**: the new `admin` module. `admin/entities.py` holds
+   `AdminSummary`, `Counts`, `RecentRun` and the scraper stats rule
+   (successes and failures among the recent runs). `admin/ports.py` holds
+   one port, `PlatformStats`, implemented by `admin/adapters/` over the five
+   use cases of slice 1. `GetAdminSummaryUseCase` gets unit tests over a
+   fake. The endpoint moves to `admin/http/` (controller and presenter,
+   same body), built by `admin/wiring.py` (Inappropriate Intimacy → Extract
+   Interface (port owned by the client) + adapter; Move Function).
+3. **Cleanup in catalog**: decided by the author (Nov 28, 2026), since
+   catalog owns the products. `ListingScope.found_by_alerts` gets
+   `active_only` (alerts' adapter adds `is_active`). The new
+   `DeleteStaleProductsUseCase` (`days_old`, `dry_run`, `now`) deletes the
+   products not updated since the cutoff that no active alert finds and
+   returns the eligible and deleted counts. Admin reaches it through its own
+   `ProductCleanup` port with an adapter. The endpoint moves to
+   `admin/http/` and the old controller is removed (Feature Envy → Move
+   Function; Extract Interface + adapter). The admin files join the blocking
+   mypy step.
+
+Left as they are (pinned by #262): the alert's `max_price` plays no part
+in the cleanup; a running run counts in the scraper stats total only.
 
 ## Queue
 
