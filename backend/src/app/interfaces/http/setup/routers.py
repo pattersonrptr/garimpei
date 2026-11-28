@@ -6,7 +6,6 @@ from src.app.interfaces.http.controllers import (
     admin_controller,
     auth_controller,
     book_controller,
-    dashboard_controller,
     my_alerts_controller,
     notification_log_controller,
     offer_controller,
@@ -44,7 +43,6 @@ def setup_routers(app: FastAPI) -> None:
     """
     app.include_router(admin_controller)
     app.include_router(auth_controller)
-    app.include_router(dashboard_controller)
     app.include_router(plan_controller)
     app.include_router(subscription_controller)
     app.include_router(user_controller)

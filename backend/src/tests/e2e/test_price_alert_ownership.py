@@ -385,7 +385,6 @@ class TestPublicListingData:
     def test_regular_user_can_read(self, client, auth_headers, sample_product):
         assert client.get("/products/", headers=auth_headers).status_code == 200
         assert client.get("/source-websites/", headers=auth_headers).status_code == 200
-        assert client.get("/dashboard/summary", headers=auth_headers).status_code == 200
 
     def test_regular_user_cannot_write_products(
         self, client, auth_headers, sample_product

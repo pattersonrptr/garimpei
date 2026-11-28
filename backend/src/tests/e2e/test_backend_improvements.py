@@ -3,7 +3,6 @@ E2E Tests for Backend Improvements (Issue #42)
 
 Tests:
 - Soft delete on PriceAlerts
-- GET /dashboard/summary
 - GET /price-alerts/{id}/opportunities
 - POST /admin/cleanup-products
 """
@@ -24,7 +23,6 @@ from src.app.catalog.persistence.models import (
     Product as ProductModel,
 )
 from src.app.searches.persistence.models import SavedSearch as SavedSearchModel
-from src.app.searches.persistence.models import SearchRun as SearchRunModel
 
 # ============================================================================
 # JSON:API payload helpers
@@ -159,140 +157,6 @@ class TestPriceAlertSoftDelete:
         search_terms = [item["attributes"]["search_term"] for item in items]
         assert "active item" in search_terms
         assert "deleted item" not in search_terms
-
-
-# ============================================================================
-# GET /dashboard/summary
-# ============================================================================
-
-
-class TestDashboardSummary:
-    """Test GET /dashboard/summary endpoint."""
-
-    def test_returns_summary_for_authenticated_user(
-        self,
-        client,
-        staff_auth_headers,
-        test_db,
-        sample_staff_user,
-        sample_store,
-    ):
-        """
-        Given: A staff user with alerts and matching products
-        When: GET /dashboard/summary
-        Then: Returns aggregated dashboard data
-        """
-        # Create search config
-        config = SavedSearchModel(
-            search_term="phone",
-            is_active=True,
-            frequency_days=1,
-            user_id=sample_staff_user.id,
-        )
-        test_db.add(config)
-        test_db.commit()
-        test_db.refresh(config)
-
-        # Create alert
-        alert = PriceAlertModel(
-            search_term="phone",
-            max_price=500.0,
-            is_active=True,
-            frequency_minutes=60,
-            user_id=sample_staff_user.id,
-            search_config_id=config.id,
-        )
-        test_db.add(alert)
-        test_db.commit()
-        test_db.refresh(alert)
-
-        # Link source website to alert
-        test_db.execute(
-            price_alert_source_website.insert().values(
-                price_alert_id=alert.id,
-                source_website_id=sample_store.id,
-            )
-        )
-        test_db.commit()
-
-        # Create a matching product with price history
-        product = ProductModel(
-            url="https://test.example.com/phone/1",
-            title="Great Phone Deal",
-            condition=ProductCondition.NEW,
-            is_available=True,
-            source_website_id=sample_store.id,
-        )
-        test_db.add(product)
-        test_db.commit()
-        test_db.refresh(product)
-
-        test_db.add(PriceHistoryModel(product_id=product.id, price=300.0))
-        test_db.commit()
-
-        # Create execution log
-        log = SearchRunModel(
-            search_config_id=config.id,
-            status="success",
-            results_count=1,
-            started_at=datetime.now(UTC) - timedelta(minutes=30),
-            finished_at=datetime.now(UTC) - timedelta(minutes=29),
-        )
-        test_db.add(log)
-        test_db.commit()
-
-        response = client.get("/dashboard/summary", headers=staff_auth_headers)
-        assert response.status_code == 200
-
-        data = response.json()["data"]
-        assert data["type"] == "dashboard-summary"
-        attrs = data["attributes"]
-        assert attrs["active-alerts"] == 1
-        assert attrs["total-alerts"] == 1
-        assert isinstance(attrs["recent-opportunities"], list)
-        assert isinstance(attrs["next-checks"], list)
-        assert len(attrs["next-checks"]) == 1
-
-    def test_excludes_soft_deleted_alerts(
-        self, client, staff_auth_headers, test_db, sample_staff_user
-    ):
-        """
-        Given: One active and one soft-deleted alert
-        When: GET /dashboard/summary
-        Then: Only counts non-deleted alerts
-        """
-        active = PriceAlertModel(
-            search_term="watch",
-            max_price=200.0,
-            is_active=True,
-            frequency_minutes=60,
-            user_id=sample_staff_user.id,
-        )
-        deleted = PriceAlertModel(
-            search_term="old watch",
-            max_price=100.0,
-            is_active=False,
-            frequency_minutes=60,
-            user_id=sample_staff_user.id,
-            deleted_at=datetime.now(UTC),
-        )
-        test_db.add_all([active, deleted])
-        test_db.commit()
-
-        response = client.get("/dashboard/summary", headers=staff_auth_headers)
-        assert response.status_code == 200
-        attrs = response.json()["data"]["attributes"]
-        assert attrs["total-alerts"] == 1
-        assert attrs["active-alerts"] == 1
-
-    def test_requires_authentication(self, client):
-        """
-        Given: No auth token
-        When: GET /dashboard/summary
-        Then: Returns 401 or 403
-        """
-        response = client.get("/dashboard/summary")
-        assert response.status_code in (401, 403)
 
 
 # ============================================================================
