@@ -92,6 +92,11 @@ class ProductRepositoryInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def count(self) -> int:
+        """How many products there are, available or not."""
+        raise NotImplementedError
+
+    @abstractmethod
     def update(self, product_id: int, product: ProductEntity) -> ProductEntity | None:
         """
         Update an existing product's information.

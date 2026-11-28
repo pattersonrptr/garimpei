@@ -152,6 +152,14 @@ class PriceAlertRepository(PriceAlertRepositoryInterface):
         records = query.offset(offset).limit(limit).all()
         return [self._to_entity(r) for r in records], total
 
+    def count(self, active_only: bool = False) -> int:
+        query = self.db.query(func.count(PriceAlertModel.id)).filter(
+            PriceAlertModel.deleted_at.is_(None)
+        )
+        if active_only:
+            query = query.filter(PriceAlertModel.is_active.is_(True))
+        return query.scalar() or 0
+
     def update(
         self, price_alert_id: int, price_alert: PriceAlertEntity
     ) -> PriceAlertEntity | None:

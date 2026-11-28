@@ -82,6 +82,11 @@ class UserRepositoryInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def count(self, active_only: bool = False) -> int:
+        """How many users there are; only the active ones with ``active_only``."""
+        raise NotImplementedError
+
+    @abstractmethod
     def update(self, user_id: int, user: UserEntity) -> UserEntity | None:
         """
         Update an existing user's information.

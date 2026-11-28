@@ -22,6 +22,7 @@ from src.app.catalog.entities import ProductCondition
 from src.app.catalog.persistence.models import Product as ProductModel
 from src.app.catalog.persistence.repositories import ProductRepository
 from src.app.catalog.use_cases import CountProductsUseCase
+from src.app.infrastructure.database import models  # noqa: F401
 from src.app.infrastructure.database_config import Base
 from src.app.stores.persistence.models import Store as StoreModel
 from src.app.stores.persistence.repositories import StoreRepository

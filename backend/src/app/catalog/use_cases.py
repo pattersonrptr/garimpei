@@ -138,6 +138,15 @@ class ListProductsUseCase:
         )
 
 
+class CountProductsUseCase:
+    def __init__(self, products: ProductRepositoryInterface):
+        self.products = products
+
+    def execute(self) -> int:
+        """How many products there are, available or not."""
+        return self.products.count()
+
+
 class SearchProductsByTermUseCase:
     """Listings whose title contains a term, in some stores, cheapest first.
 
