@@ -69,6 +69,7 @@ characterization tests first, in their own PR, reviewed by the author.
 | Admin module plan | #263 | — | Three slices: see *Admin module plan* below |
 | Admin slice 1: counts where the data lives | #264 | Extract Function + Move Function | Accounts, alerts, catalog and stores answer their own counts: `CountUsersUseCase`, `CountPriceAlertsUseCase` (soft-deleted alerts left out), `CountProductsUseCase` and `CountStoresUseCase`, each with `active_only` where the admin needs it, over a new `count()` on the module's repository port. Searches needs no new use case: `ListSearchRunsUseCase` sorted by `started_at` desc gives the latest runs (the plan's `ListLatestRunsUseCase` dropped). Tests: 7 integration tests over the real repositories on SQLite (`tests/integration/test_counts.py`), since the rules live in each query; approved by the author (Nov 28, 2026), with a fake count added to `FakeStores` and one model-registry import added before the red. Red on assertions (`assert 0 == 2`) from repositories that returned 0. mypy unchanged (203) |
 | Admin slice 2: admin summary | #265 | Inappropriate Intimacy → Extract Interface (port owned by the client) + adapter; Move Function | The new `admin` module. `admin/entities.py`: `AdminSummary`, `Counts`, `RecentRun` and `ScraperStats.of` (successes and failures among the recent runs; another status counts only in the total). `admin/ports.py`: `PlatformStats`, implemented by `admin/adapters/platform_stats.py` over slice 1's count use cases and searches' `ListSearchRunsUseCase`, which each module's wiring now builds (`count_users`, `count_price_alerts`, `count_products`, `count_stores`, `list_search_runs`). `GetAdminSummaryUseCase` asks for the latest 20 runs; `admin/wiring.py` builds it. The controller moves to `admin/http/admin_controller.py` with a presenter that builds the same body; the cleanup endpoint moves with it unchanged until slice 3. Tests: 4 unit tests over a fake `PlatformStats` (`tests/unit/admin/test_admin_summary.py`), approved by the author (Nov 28, 2026); the body stays pinned by #262. Red on assertions from a skeleton returning a zero summary. The admin files except the controller join the blocking mypy step; whole-backend mypy 203 → 203 |
+| Admin slice 3: cleanup in catalog | #266 | Feature Envy → Move Function | The cleanup leaves the admin controller for catalog's `DeleteStaleProductsUseCase` (`days_old`, `dry_run`, `now`), which returns `StaleProductsCleanup(eligible, deleted)` through `ProductRepository.count_stale` / `delete_stale`. They use catalog's `ListingScope`, whose `found_by_alerts` gets `active_only` (alerts' adapter adds `is_active`; the default keeps "what my alerts found" as it was). The admin controller calls the use case through `catalog/wiring.py` with the registered `ListingScope`; the plan's admin `ProductCleanup` port was dropped because it would only pass the call on (decided by the author, Nov 28, 2026). `deleted-count` is now the rows deleted instead of the count taken before. The admin controller imports no ORM model and joins the blocking mypy step. Tests: 4 integration tests over the real repository and `AlertListingScope` (`tests/integration/test_stale_products_cleanup.py`), approved by the author (Nov 28, 2026); the HTTP rules stay pinned by #262. Red on assertions from a skeleton returning 0/0. Checked on the dev PostgreSQL inside a rolled-back transaction (867 of 1057 eligible with `days_old=1`, all deleted, all back after the rollback). Whole-backend mypy 203 → 204: the new test's helper returns `product.id` typed `Column[int]` (report-only step; a fix needs the author's OK to touch the approved test). **Admin module done** |
 
 ## Accounts module plan
 
@@ -230,13 +231,13 @@ use it. One PR per slice, behavior unchanged:
    fake. The endpoint moves to `admin/http/` (controller and presenter,
    same body), built by `admin/wiring.py` (Inappropriate Intimacy → Extract
    Interface (port owned by the client) + adapter; Move Function).
-3. **Cleanup in catalog**: decided by the author (Nov 28, 2026), since
+3. **Cleanup in catalog** #266: decided by the author (Nov 28, 2026), since
    catalog owns the products. `ListingScope.found_by_alerts` gets
    `active_only` (alerts' adapter adds `is_active`). The new
    `DeleteStaleProductsUseCase` (`days_old`, `dry_run`, `now`) deletes the
    products not updated since the cutoff that no active alert finds and
-   returns the eligible and deleted counts. Admin reaches it through its own
-   `ProductCleanup` port with an adapter. The endpoint moves to
+   returns the eligible and deleted counts. Admin calls it through catalog's
+   wiring (the `ProductCleanup` port was dropped: it would only pass the call on). The endpoint moves to
    `admin/http/` and the old controller is removed (Feature Envy → Move
    Function; Extract Interface + adapter). The admin files join the blocking
    mypy step.

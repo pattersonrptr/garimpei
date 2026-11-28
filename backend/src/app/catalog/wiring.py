@@ -25,6 +25,7 @@ from src.app.catalog.ports import (
 )
 from src.app.catalog.use_cases import (
     CountProductsUseCase,
+    DeleteStaleProductsUseCase,
     GetOrCreateBookByIsbnUseCase,
     IngestOfferUseCase,
     ListCollectionQueueUseCase,
@@ -78,3 +79,10 @@ def collection_queue(db: Session) -> ListCollectionQueueUseCase:
 def count_products(db: Session) -> CountProductsUseCase:
     """How many products there are (the admin summary)."""
     return CountProductsUseCase(ProductRepository(db))
+
+
+def delete_stale_products(
+    db: Session, scope: ListingScope
+) -> DeleteStaleProductsUseCase:
+    """The admin's cleanup; ``scope`` tells which listings active alerts find."""
+    return DeleteStaleProductsUseCase(ProductRepository(db, scope))

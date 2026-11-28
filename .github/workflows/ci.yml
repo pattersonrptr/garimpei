@@ -140,7 +140,8 @@ jobs:
             src/app/admin/use_cases.py \
             src/app/admin/adapters/platform_stats.py \
             src/app/admin/wiring.py \
-            src/app/admin/http/presenter.py
+            src/app/admin/http/presenter.py \
+            src/app/admin/http/admin_controller.py
 
       - name: Type check with mypy (whole backend, report only)
         run: poetry run mypy src/
