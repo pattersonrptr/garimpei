@@ -62,6 +62,9 @@ updates:
         versions: [">=8"]
       - dependency-name: "@mui/icons-material"
         versions: [">=8"]
+      # Types follow the Node runtime (node:22 in frontend/Dockerfile).
+      - dependency-name: "@types/node"
+        versions: [">=23"]
     groups:
       minor-and-patch:
         update-types: [minor, patch]
