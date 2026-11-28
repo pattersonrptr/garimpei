@@ -16,6 +16,7 @@ class AlertListingScope(ListingScope):
         user_id: int | None = None,
         alert_id: int | None = None,
         current_price: ColumnElement | None = None,
+        active_only: bool = False,
     ) -> ColumnElement[bool]:
         matches = [
             PriceAlertModel.deleted_at.is_(None),
@@ -28,6 +29,8 @@ class AlertListingScope(ListingScope):
             matches.append(PriceAlertModel.user_id == user_id)
         if alert_id is not None:
             matches.append(PriceAlertModel.id == alert_id)
+        if active_only:
+            matches.append(PriceAlertModel.is_active.is_(True))
         if current_price is not None:
             matches.append(current_price <= PriceAlertModel.max_price)
         return (

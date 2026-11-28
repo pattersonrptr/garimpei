@@ -14,6 +14,7 @@ from src.app.catalog.entities import (
     ProductCondition,
     ProductListFilters,
     QueuedProduct,
+    StaleProductsCleanup,
 )
 from src.app.catalog.entities import PriceHistory as PriceHistoryEntity
 from src.app.catalog.entities import Product as ProductEntity
@@ -145,6 +146,28 @@ class CountProductsUseCase:
     def execute(self) -> int:
         """How many products there are, available or not."""
         return self.products.count()
+
+
+class DeleteStaleProductsUseCase:
+    """Delete the products not updated for ``days_old`` days that no active
+    alert finds (the admin's cleanup)."""
+
+    def __init__(
+        self,
+        products: ProductRepositoryInterface,
+        now: Callable[[], datetime] = lambda: datetime.now(UTC),
+    ):
+        self.products = products
+        self.now = now
+
+    def execute(self, days_old: int, dry_run: bool) -> StaleProductsCleanup:
+        """With ``dry_run``, only count what would be deleted."""
+        updated_before = self.now() - timedelta(days=days_old)
+        eligible = self.products.count_stale(updated_before)
+        if dry_run:
+            return StaleProductsCleanup(eligible=eligible, deleted=0)
+        deleted = self.products.delete_stale(updated_before)
+        return StaleProductsCleanup(eligible=eligible, deleted=deleted)
 
 
 class SearchProductsByTermUseCase:

@@ -97,6 +97,17 @@ class ProductRepositoryInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def count_stale(self, updated_before: datetime) -> int:
+        """Products not updated since ``updated_before`` that no active alert
+        finds."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def delete_stale(self, updated_before: datetime) -> int:
+        """Delete the products ``count_stale`` counts; returns how many."""
+        raise NotImplementedError
+
+    @abstractmethod
     def update(self, product_id: int, product: ProductEntity) -> ProductEntity | None:
         """
         Update an existing product's information.
@@ -290,12 +301,13 @@ class ListingScope(ABC):
         user_id: int | None = None,
         alert_id: int | None = None,
         current_price: ColumnElement | None = None,
+        active_only: bool = False,
     ) -> ColumnElement[bool]:
         """True for a listing that a live alert found: the alert's search term
         is in its title and it comes from one of the alert's stores. Only that
         user's alerts (``user_id``) or that one alert (``alert_id``). With
         ``current_price``, the listing's price must also be at or under the
-        alert's max price."""
+        alert's max price. With ``active_only``, paused alerts do not count."""
         raise NotImplementedError
 
 

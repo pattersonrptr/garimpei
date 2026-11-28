@@ -265,3 +265,11 @@ class AlertEvaluation:
     sent: int = 0
     skipped: int = 0
     stop_reason: str | None = None
+
+
+@dataclass(frozen=True)
+class StaleProductsCleanup:
+    """What a cleanup of stale products found and deleted."""
+
+    eligible: int
+    deleted: int

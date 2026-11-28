@@ -1,8 +1,10 @@
-"""The admin summary as the admin page reads it (JSON:API-like, kebab-case)."""
+"""Admin responses as the admin page and the scrapers read them
+(JSON:API-like, kebab-case)."""
 
 from datetime import datetime
 
 from src.app.admin.entities import AdminSummary, RecentRun
+from src.app.catalog.entities import StaleProductsCleanup
 
 
 def _iso(value: datetime | None) -> str | None:
@@ -40,6 +42,20 @@ def present_summary(summary: AdminSummary) -> dict:
                     "success-count": summary.scraper_stats.success_count,
                     "failed-count": summary.scraper_stats.failed_count,
                 },
+            },
+        }
+    }
+
+
+def present_cleanup(result: StaleProductsCleanup, *, dry_run: bool) -> dict:
+    return {
+        "data": {
+            "type": "cleanup-result",
+            "id": "1",
+            "attributes": {
+                "dry-run": dry_run,
+                "eligible-count": result.eligible,
+                "deleted-count": result.deleted,
             },
         }
     }

@@ -1,7 +1,7 @@
 from dataclasses import asdict
 from datetime import UTC, datetime, timedelta, timezone
 
-from sqlalchemy import asc, desc, exists, func
+from sqlalchemy import asc, desc, exists, func, not_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
@@ -239,6 +239,22 @@ class ProductRepository(ProductRepositoryInterface):
 
     def count(self) -> int:
         return self.db.query(func.count(ProductModel.id)).scalar() or 0
+
+    def _stale(self, updated_before: datetime):
+        if self.scope is None:
+            raise ValueError("Finding stale products needs a ListingScope")
+        return self.db.query(ProductModel).filter(
+            ProductModel.updated_at < updated_before,
+            not_(self.scope.found_by_alerts(active_only=True)),
+        )
+
+    def count_stale(self, updated_before: datetime) -> int:
+        return self._stale(updated_before).count()
+
+    def delete_stale(self, updated_before: datetime) -> int:
+        deleted = self._stale(updated_before).delete(synchronize_session=False)
+        self.db.commit()
+        return deleted
 
     def update(self, product_id: int, product: ProductEntity) -> ProductEntity | None:
         """Update an existing product."""
