@@ -23,6 +23,7 @@ from src.app.alerts.persistence.stores import StoreReaderOverStores
 from src.app.alerts.ports import BookFinder, PriceAlertRepositoryInterface
 from src.app.alerts.use_cases import (
     CheckAlertLimitsUseCase,
+    CountPriceAlertsUseCase,
     CreatePriceAlertUseCase,
     DeletePriceAlertUseCase,
     EvaluateBookAlertsUseCase,
@@ -167,3 +168,8 @@ class CatalogAlertChecks(PriceAlertChecks):
             self.db, self.email_service
         ).execute(product_id)
         return AlertEvaluation(sent=len(sent), skipped=skipped, stop_reason=stop_reason)
+
+
+def count_price_alerts(db: Session) -> CountPriceAlertsUseCase:
+    """How many alerts there are (the admin summary)."""
+    return CountPriceAlertsUseCase(price_alerts(db))

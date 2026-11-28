@@ -24,6 +24,7 @@ from src.app.catalog.ports import (
     StoreDirectory,
 )
 from src.app.catalog.use_cases import (
+    CountProductsUseCase,
     GetOrCreateBookByIsbnUseCase,
     IngestOfferUseCase,
     ListCollectionQueueUseCase,
@@ -72,3 +73,8 @@ def ingest_offer(db: Session, metadata: BookMetadataGateway) -> IngestOfferUseCa
 def collection_queue(db: Session) -> ListCollectionQueueUseCase:
     """The books the daily collection should look up next."""
     return ListCollectionQueueUseCase(CanonicalProductRepository(db))
+
+
+def count_products(db: Session) -> CountProductsUseCase:
+    """How many products there are (the admin summary)."""
+    return CountProductsUseCase(ProductRepository(db))

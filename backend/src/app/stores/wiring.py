@@ -8,7 +8,11 @@ from sqlalchemy.orm import Session
 
 from src.app.stores.persistence.repositories import StoreRepository
 from src.app.stores.ports import StoreRepositoryInterface
-from src.app.stores.use_cases import GetStoreByNameUseCase, GetStoreUseCase
+from src.app.stores.use_cases import (
+    CountStoresUseCase,
+    GetStoreByNameUseCase,
+    GetStoreUseCase,
+)
 
 
 def stores(db: Session) -> StoreRepositoryInterface:
@@ -22,3 +26,8 @@ def store_by_id(db: Session) -> GetStoreUseCase:
 
 def store_by_name(db: Session) -> GetStoreByNameUseCase:
     return GetStoreByNameUseCase(StoreRepository(db))
+
+
+def count_stores(db: Session) -> CountStoresUseCase:
+    """How many stores there are (the admin summary)."""
+    return CountStoresUseCase(StoreRepository(db))

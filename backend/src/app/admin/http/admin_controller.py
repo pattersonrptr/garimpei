@@ -1,12 +1,13 @@
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import func, not_
+from sqlalchemy import not_
 from sqlalchemy.orm import Session
 
 from src.app.accounts.entities import User as UserEntity
 from src.app.accounts.http.auth import get_current_superuser
-from src.app.accounts.persistence.models import User
+from src.app.admin import wiring
+from src.app.admin.http.presenter import present_summary
 from src.app.alerts.persistence.models import (
     PriceAlert,
     price_alert_source_website,
@@ -14,8 +15,6 @@ from src.app.alerts.persistence.models import (
 from src.app.catalog.persistence.models import Product
 from src.app.infrastructure.database.text_match import title_contains
 from src.app.infrastructure.database_config import get_db
-from src.app.searches.persistence.models import SearchRun
-from src.app.stores.persistence.models import Store as StoreModel
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -25,76 +24,7 @@ def get_admin_summary(
     db: Session = Depends(get_db),
     current_user: UserEntity = Depends(get_current_superuser),
 ):
-    total_users = db.query(func.count(User.id)).scalar()
-    active_users = (
-        db.query(func.count(User.id)).filter(User.is_active.is_(True)).scalar()
-    )
-
-    total_products = db.query(func.count(Product.id)).scalar()
-    total_alerts = (
-        db.query(func.count(PriceAlert.id))
-        .filter(PriceAlert.deleted_at.is_(None))
-        .scalar()
-    )
-    active_alerts = (
-        db.query(func.count(PriceAlert.id))
-        .filter(
-            PriceAlert.is_active.is_(True),
-            PriceAlert.deleted_at.is_(None),
-        )
-        .scalar()
-    )
-
-    total_source_websites = db.query(func.count(StoreModel.id)).scalar()
-    active_source_websites = (
-        db.query(func.count(StoreModel.id))
-        .filter(StoreModel.is_active.is_(True))
-        .scalar()
-    )
-
-    recent_executions = (
-        db.query(SearchRun).order_by(SearchRun.started_at.desc()).limit(20).all()
-    )
-
-    success_count = sum(1 for e in recent_executions if e.status == "success")
-    failed_count = sum(1 for e in recent_executions if e.status == "failed")
-
-    return {
-        "data": {
-            "type": "admin-summary",
-            "id": "1",
-            "attributes": {
-                "total-users": total_users,
-                "active-users": active_users,
-                "total-products": total_products,
-                "total-alerts": total_alerts,
-                "active-alerts": active_alerts,
-                "total-source-websites": total_source_websites,
-                "active-source-websites": active_source_websites,
-                "recent-executions": [
-                    {
-                        "id": e.id,
-                        "search-config-id": e.search_config_id,
-                        "status": e.status,
-                        "results-count": e.results_count,
-                        "error-message": e.error_message,
-                        "started-at": e.started_at.isoformat()
-                        if e.started_at
-                        else None,
-                        "finished-at": e.finished_at.isoformat()
-                        if e.finished_at
-                        else None,
-                    }
-                    for e in recent_executions
-                ],
-                "scraper-stats": {
-                    "recent-total": len(recent_executions),
-                    "success-count": success_count,
-                    "failed-count": failed_count,
-                },
-            },
-        }
-    }
+    return present_summary(wiring.admin_summary(db).execute())
 
 
 @router.post("/cleanup-products")
