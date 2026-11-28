@@ -60,6 +60,9 @@ class FakeStores(StoreRepositoryInterface):
     def delete(self, source_website_id: int) -> bool:
         return self.rows.pop(source_website_id, None) is not None
 
+    def count(self, active_only: bool = False) -> int:
+        return sum(1 for s in self.rows.values() if s.is_active or not active_only)
+
 
 class TestGetStore:
     def test_a_store_is_found_by_id(self):

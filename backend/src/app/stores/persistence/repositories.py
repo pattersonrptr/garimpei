@@ -1,7 +1,7 @@
 from dataclasses import asdict, fields
 from datetime import UTC, datetime
 
-from sqlalchemy import asc, desc
+from sqlalchemy import asc, desc, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -71,6 +71,12 @@ class StoreRepository(StoreRepositoryInterface):
         source_websites = query.limit(limit).offset(offset).all()
 
         return [self._to_entity(sw) for sw in source_websites], total
+
+    def count(self, active_only: bool = False) -> int:
+        query = self.db.query(func.count(StoreModel.id))
+        if active_only:
+            query = query.filter(StoreModel.is_active.is_(True))
+        return query.scalar() or 0
 
     def update(self, source_website_id: int, source_website: Store) -> Store | None:
         """Update an existing source website."""

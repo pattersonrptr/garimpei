@@ -73,6 +73,15 @@ class ListStoresUseCase:
         )
 
 
+class CountStoresUseCase:
+    def __init__(self, stores: StoreRepositoryInterface):
+        self.stores = stores
+
+    def execute(self, active_only: bool = False) -> int:
+        """How many stores there are; only the active ones with ``active_only``."""
+        return self.stores.count(active_only=active_only)
+
+
 class UpdateStoreUseCase:
     def __init__(self, stores: StoreRepositoryInterface):
         self.stores = stores

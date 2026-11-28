@@ -54,6 +54,12 @@ class UserRepository(UserRepositoryInterface):
         users = self.db.query(UserModel).all()
         return [_to_entity(user) for user in users]
 
+    def count(self, active_only: bool = False) -> int:
+        query = self.db.query(func.count(UserModel.id))
+        if active_only:
+            query = query.filter(UserModel.is_active.is_(True))
+        return query.scalar() or 0
+
     def update(self, user_id: int, user: UserEntity) -> UserEntity | None:
         db_user = self.db.query(UserModel).filter(UserModel.id == user_id).first()
         if not db_user:

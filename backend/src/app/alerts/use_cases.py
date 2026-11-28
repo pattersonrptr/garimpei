@@ -145,6 +145,16 @@ class ListPriceAlertsUseCase:
         )
 
 
+class CountPriceAlertsUseCase:
+    def __init__(self, alerts: PriceAlertRepositoryInterface):
+        self.alerts = alerts
+
+    def execute(self, active_only: bool = False) -> int:
+        """How many alerts there are, soft-deleted ones left out; only the
+        active ones with ``active_only``."""
+        return self.alerts.count(active_only=active_only)
+
+
 class UpdatePriceAlertUseCase:
     """Update an existing price alert, handling SearchConfig linking."""
 

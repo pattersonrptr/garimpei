@@ -80,6 +80,11 @@ class StoreRepositoryInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def count(self, active_only: bool = False) -> int:
+        """How many stores there are; only the active ones with ``active_only``."""
+        raise NotImplementedError
+
+    @abstractmethod
     def update(self, source_website_id: int, source_website: Store) -> Store | None:
         """
         Update an existing source website's information.

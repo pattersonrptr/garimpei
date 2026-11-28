@@ -237,6 +237,9 @@ class ProductRepository(ProductRepositoryInterface):
             )
         return conditions
 
+    def count(self) -> int:
+        return self.db.query(func.count(ProductModel.id)).scalar() or 0
+
     def update(self, product_id: int, product: ProductEntity) -> ProductEntity | None:
         """Update an existing product."""
         db_product = (

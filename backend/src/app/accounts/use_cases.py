@@ -78,6 +78,15 @@ class GetAllUsersUseCase:
         return self.user_repo.get_all()
 
 
+class CountUsersUseCase:
+    def __init__(self, users: UserRepositoryInterface):
+        self.users = users
+
+    def execute(self, active_only: bool = False) -> int:
+        """How many users there are; only the active ones with ``active_only``."""
+        return self.users.count(active_only=active_only)
+
+
 class UpdateUserUseCase:
     def __init__(self, user_repo: UserRepositoryInterface):
         self.user_repo = user_repo

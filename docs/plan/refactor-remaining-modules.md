@@ -67,6 +67,7 @@ characterization tests first, in their own PR, reviewed by the author.
 | Unused dashboard summary removed | #261 | Dead Code → Remove Dead Code | `GET /dashboard/summary` (a user's alert counts, opportunities and next checks) had no client: the admin dropped its dashboard service in #98 and the site never called it. Found while scoping the admin module; removal decided by the author (Nov 28, 2026). The controller, its three e2e tests, the admin's unused endpoint constant and one status check in `test_price_alert_ownership.py` (approved by the author) go. `/admin/summary` and `/admin/cleanup-products` stay and get characterization tests next |
 | Characterization tests for admin | #262 | — | Before the admin gets its own module. 15 e2e tests in `test_admin_characterization.py`. `GET /admin/summary`: a staff user gets 403; all users and the active ones; alert counts leave out soft-deleted alerts (active means active and not deleted); every product, available or not; all stores and the active ones; the latest 20 runs newest first, each as stored; scraper stats count successes and failures among those 20 (a running run counts only in the total). `POST /admin/cleanup-products`: keeps products newer than `days_old` (default 30) and the ones an active alert finds (term in the title, store among the alert's); a paused or soft-deleted alert keeps nothing; the alert's `max_price` plays no part. 22 mutations: the existing suite killed 1 (dry run deleting), these tests the other 21. Approved by the author (Nov 28, 2026) |
 | Admin module plan | #263 | — | Three slices: see *Admin module plan* below |
+| Admin slice 1: counts where the data lives | #264 | Extract Function + Move Function | Accounts, alerts, catalog and stores answer their own counts: `CountUsersUseCase`, `CountPriceAlertsUseCase` (soft-deleted alerts left out), `CountProductsUseCase` and `CountStoresUseCase`, each with `active_only` where the admin needs it, over a new `count()` on the module's repository port. Searches needs no new use case: `ListSearchRunsUseCase` sorted by `started_at` desc gives the latest runs (the plan's `ListLatestRunsUseCase` dropped). Tests: 7 integration tests over the real repositories on SQLite (`tests/integration/test_counts.py`), since the rules live in each query; approved by the author (Nov 28, 2026), with a fake count added to `FakeStores` and one model-registry import added before the red. Red on assertions (`assert 0 == 2`) from repositories that returned 0. mypy unchanged (203) |
 
 ## Accounts module plan
 
@@ -212,7 +213,7 @@ characterization tests (#262) pin both endpoints. The HTTP contract stays
 superuser check), since the admin page and the scrapers' daily cleanup task
 use it. One PR per slice, behavior unchanged:
 
-1. **Counts where the data lives**: each module answers its own count
+1. **Counts where the data lives** #264: each module answers its own count
    through a new use case and a repository method. Accounts:
    `CountUsersUseCase` (all and active). Alerts: `CountAlertsUseCase` (all
    and active, soft-deleted left out). Catalog: `CountProductsUseCase`.

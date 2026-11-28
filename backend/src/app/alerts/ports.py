@@ -66,6 +66,12 @@ class PriceAlertRepositoryInterface(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def count(self, active_only: bool = False) -> int:
+        """How many alerts there are, soft-deleted ones left out; only the
+        active ones with ``active_only``."""
+        raise NotImplementedError
+
+    @abstractmethod
     def update(
         self, price_alert_id: int, price_alert: PriceAlertEntity
     ) -> PriceAlertEntity | None:
