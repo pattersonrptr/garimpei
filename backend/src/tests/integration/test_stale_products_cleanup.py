@@ -6,6 +6,7 @@ a product) lives in the query.
 """
 
 from datetime import UTC, datetime, timedelta
+from typing import cast
 
 import pytest
 from sqlalchemy import create_engine
@@ -56,7 +57,7 @@ def a_product(db, title: str, days_old: int) -> int:
     )
     db.add(product)
     db.commit()
-    return product.id
+    return cast(int, product.id)
 
 
 def an_alert(db, term: str, is_active: bool = True) -> None:
